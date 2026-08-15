@@ -54,8 +54,11 @@ Image probing is attempted only when all of these conditions hold:
 
 The current implementation opens and stats the file, maps the complete file,
 guesses a format, allocates a Wuffs decoder, and decodes its image
-configuration. It recognizes BMP, GIF, JPEG, Netpbm, NIE, PNG, QOI, TGA, WBMP,
-and WebP.
+configuration. Its dispatch recognizes BMP, GIF, JPEG, Netpbm, NIE, PNG, QOI,
+TGA, WBMP, and WebP. The executable oracle confirms the WebP decoder accepts
+the simple lossless `VP8L` fixture but rejects the direct lossy `VP8 ` and
+extended `VP8X` fixtures. Supporting all three is therefore an intentional
+improvement in the replacement rather than legacy compatibility.
 
 Observed source-level failure behavior is deliberately non-fatal:
 

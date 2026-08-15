@@ -440,6 +440,31 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&zine_run.step);
 
     const test_step = b.step("test", "build snapshot tests and diff the results");
+    const legacy_wuffs_oracle_module = b.createModule(.{
+        .root_source_file = b.path("src/wuffs.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    legacy_wuffs_oracle_module.addImport("supermd", supermd);
+    legacy_wuffs_oracle_module.addImport("scripty", scripty);
+    legacy_wuffs_oracle_module.addImport("superhtml", superhtml);
+    legacy_wuffs_oracle_module.addImport("wuffs", wuffs.module("wuffs"));
+    const wuffs_oracle_module = b.createModule(.{
+        .root_source_file = b.path("src/wuffs_oracle_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    wuffs_oracle_module.addImport("legacy_wuffs", legacy_wuffs_oracle_module);
+    const wuffs_oracle_tests = b.addTest(.{
+        .root_module = wuffs_oracle_module,
+    });
+    const run_wuffs_oracle_tests = b.addRunArtifact(wuffs_oracle_tests);
+    const test_image_dimensions_step = b.step(
+        "test-image-dimensions",
+        "Run image-dimension compatibility tests",
+    );
+    test_image_dimensions_step.dependOn(&run_wuffs_oracle_tests.step);
+    test_step.dependOn(&run_wuffs_oracle_tests.step);
     const markdown_tests = b.addTest(.{
         .root_module = markdown,
     });
