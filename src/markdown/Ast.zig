@@ -808,6 +808,16 @@ test "footnote definitions and references expose labels and ranges" {
     try std.testing.expectEqualStrings("Footnote body.", try definition.renderPlaintext());
 }
 
+test "tilde fenced code retains info and full fence range" {
+    var ast = try parseTestAst("~~~zig\ncode\n~~~~\n");
+    defer ast.deinit();
+
+    const code = findType(ast.root(), .CODE_BLOCK).?;
+    try std.testing.expectEqualStrings("zig", code.fenceInfo().?);
+    try std.testing.expectEqualStrings("code\n", code.literal().?);
+    try expectRange(code, 0, 16, 1, 1, 3, 4);
+}
+
 test "source ranges cover nested blocks and fenced code" {
     const source = "> - item\r\n>   continued\r\n\r\n```zig\r\nconst \xCF\x80 = 1;\r\n```\r\n";
     var ast = try parseTestAst(source);

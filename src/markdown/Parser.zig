@@ -111,6 +111,7 @@ const Block = struct {
         },
         code_block: struct {
             tag: StringIndex,
+            fence_char: u8,
             fence_len: usize,
             indent: usize,
         },
@@ -180,7 +181,8 @@ const Block = struct {
             .heading => null,
             .code_block => code_block: {
                 const trimmed = mem.trimEnd(u8, unindented, " \t");
-                if (mem.findNone(u8, trimmed, "`") != null or trimmed.len != b.data.code_block.fence_len) {
+                const closer_len = mem.findNonePos(u8, trimmed, 0, &.{b.data.code_block.fence_char}) orelse trimmed.len;
+                if (closer_len < b.data.code_block.fence_len or closer_len != trimmed.len) {
                     const effective_indent = @min(indent, b.data.code_block.indent);
                     break :code_block line[effective_indent..];
                 } else {
@@ -457,6 +459,7 @@ const BlockStart = struct {
         },
         code_block: struct {
             tag: StringIndex,
+            fence_char: u8,
             fence_len: usize,
             indent: usize,
         },
@@ -567,6 +570,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
         } } },
         .code_block => .{ .code_block, .{ .code_block = .{
             .tag = block_start.data.code_block.tag,
+            .fence_char = block_start.data.code_block.fence_char,
             .fence_len = block_start.data.code_block.fence_len,
             .indent = block_start.data.code_block.indent,
         } } },
@@ -665,6 +669,7 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
             .tag = .code_block,
             .data = .{ .code_block = .{
                 .tag = code_block.tag,
+                .fence_char = code_block.fence_char,
                 .fence_len = code_block.fence_len,
                 .indent = indent,
             } },
@@ -1024,22 +1029,28 @@ fn startHeading(unindented_line: []const u8) ?HeadingStart {
 
 const CodeBlockStart = struct {
     tag: StringIndex,
+    fence_char: u8,
     fence_len: usize,
 };
 
 fn startCodeBlock(p: *Parser, unindented_line: []const u8) !?CodeBlockStart {
+    if (unindented_line.len == 0 or
+        (unindented_line[0] != '`' and unindented_line[0] != '~')) return null;
+    const fence_char = unindented_line[0];
     var fence_len: usize = 0;
     const tag_bytes = for (unindented_line, 0..) |c, i| {
-        switch (c) {
-            '`' => fence_len += 1,
-            else => break unindented_line[i..],
-        }
+        if (c == fence_char)
+            fence_len += 1
+        else
+            break unindented_line[i..];
     } else "";
     // Code block tags may not contain backticks, since that would create
     // potential confusion with inline code spans.
-    if (fence_len < 3 or mem.findScalar(u8, tag_bytes, '`') != null) return null;
+    if (fence_len < 3 or
+        (fence_char == '`' and mem.findScalar(u8, tag_bytes, '`') != null)) return null;
     return .{
         .tag = try p.addString(mem.trim(u8, tag_bytes, " ")),
+        .fence_char = fence_char,
         .fence_len = fence_len,
     };
 }

@@ -967,6 +967,17 @@ test "GFM footnotes" {
     );
 }
 
+test "tilde fenced code blocks" {
+    try testRender(
+        "~~~zig\ncode with ` backtick\n~~~~\n",
+        "<pre><code>code with ` backtick\n</code></pre>\n",
+    );
+    try testRender(
+        "```\ncode\n`````\n",
+        "<pre><code>code\n</code></pre>\n",
+    );
+}
+
 test "images" {
     try testRender(
         \\![Alt text](https://example.com/image.png)
