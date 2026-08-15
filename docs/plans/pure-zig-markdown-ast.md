@@ -258,6 +258,13 @@ Deliverable: a reproducible oracle corpus against which the pure-Zig implementat
 
 ### Phase 1: Vendor the Zig parser
 
+Status: implemented on `2026-08-15`. The four upstream files were imported
+unchanged in commit `71e47a1`, exposed as the `markdown` build module, and their
+31 upstream tests are available through `zig build test-markdown` and the main
+`zig build test` gate. Two minimal `std.Io` compatibility fixes were required
+because the pinned source set mixed old and current writer APIs; these do not
+change parser behavior.
+
 1. Copy the four source files into a dedicated module, tentatively:
 
    ```text

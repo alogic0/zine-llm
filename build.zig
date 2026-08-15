@@ -160,6 +160,12 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const markdown = b.addModule("markdown", .{
+        .root_source_file = b.path("src/markdown.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const no_git_version = b.option(
         bool,
         "no-git-version",
@@ -376,6 +382,17 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&zine_run.step);
 
     const test_step = b.step("test", "build snapshot tests and diff the results");
+    const markdown_tests = b.addTest(.{
+        .root_module = markdown,
+    });
+    const run_markdown_tests = b.addRunArtifact(markdown_tests);
+    const test_markdown_step = b.step(
+        "test-markdown",
+        "Run the vendored Zig Markdown tests",
+    );
+    test_markdown_step.dependOn(&run_markdown_tests.step);
+    test_step.dependOn(&run_markdown_tests.step);
+
     setupSchemaCheck(b, target, zine_mod, test_step);
     try setupSnapshotTesting(b, target, zine_exe, supermd, test_step);
 

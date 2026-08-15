@@ -17,6 +17,17 @@ inputs before Phase 1 copies them into the repository.
 The four source files do not carry separate copyright headers. They are covered
 by Zig's repository-level MIT license, reproduced in `LICENSE`.
 
+The files were imported byte-for-byte in commit `71e47a1`. The hashes below
+identify that untouched import. Later commits may intentionally adapt the
+vendored copies while retaining this commit as the reviewable upstream
+boundary.
+
+The pinned Zig source set contained two stale uses of an earlier `std.Io`
+interface: `Document.render` used the old two-parameter `Renderer` generic, and
+the test helper used the removed `Managed.writer()` API. Phase 1 updates those
+two call sites to the `std.Io.Writer` API already used by `renderer.zig`; no
+Markdown parsing or rendering behavior is changed.
+
 ## Original files
 
 | Future repository path | Original path under the installed source root | SHA-256 |
