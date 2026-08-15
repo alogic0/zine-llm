@@ -309,6 +309,17 @@ pub fn build(b: *std.Build) !void {
         setupReleaseStep(b, release, check_release_targets, version, translate_c);
     }
 
+    const archive_tool_isolation = b.addSystemCommand(&.{"sh"});
+    archive_tool_isolation.addFileArg(b.path("build/archive_tool_isolation.sh"));
+    archive_tool_isolation.addArg(b.root.root_dir.path.?);
+    archive_tool_isolation.addArg(b.graph.zig_exe);
+    archive_tool_isolation.setName("verify release archive-tool isolation");
+    const test_archive_tool_isolation = b.step(
+        "test-release-tool-isolation",
+        "Verify non-release steps do not require archive tools",
+    );
+    test_archive_tool_isolation.dependOn(&archive_tool_isolation.step);
+
     const shtml_docgen = b.addExecutable(.{
         .name = "shtml_docgen",
         .root_module = b.createModule(.{
