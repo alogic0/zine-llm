@@ -747,8 +747,6 @@ fn setupReleaseStep(
     version: []const u8,
     translate_c: *std.Build.Dependency,
 ) void {
-    const tar_exe = b.findProgram(.{ .names = &.{ "gtar", "tar" } }) orelse
-        std.debug.panic("unable to find gtar or tar for release packaging", .{});
     const targets: []const std.Target.Query = &.{
         .{ .cpu_arch = .aarch64, .os_tag = .macos },
         .{ .cpu_arch = .aarch64, .os_tag = .linux, .abi = .musl },
@@ -920,7 +918,7 @@ fn setupReleaseStep(
                 });
 
                 const tar = b.addSystemCommand(&.{
-                    tar_exe,
+                    "tar",
                     "-cJf",
                 });
 
