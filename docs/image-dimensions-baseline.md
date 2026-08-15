@@ -138,3 +138,69 @@ These values include the entire Zine dependency graph and vary with machine,
 cache state, compression tools, compiler revision, and archive metadata. The
 migration result should compare direction and order of magnitude, not enforce
 these numbers as pass/fail limits.
+
+## Pure Zig migration result
+
+The post-migration measurement was recorded on 2026-08-15 after commit
+`60db771`, using the same Zig version and host. The source and build graph no
+longer contain:
+
+- `src/wuffs.zig` or the temporary Wuffs differential oracle;
+- the root `wuffs` package dependency;
+- the vendored Wuffs package wrapper and its upstream release-C archive;
+- Wuffs declaration translation, monolithic C compilation, libc linkage, or
+  target-specific Wuffs modules.
+
+The root `translate_c` package remains because Zine still translates
+`src/c.h`; that work is independent of image probing.
+
+An isolated local-cache host check used:
+
+```sh
+./build.sh check --cache-dir <empty>/cache --prefix <empty>/out
+```
+
+Results:
+
+- wall time: 24.13 seconds, down from 66.39 seconds;
+- peak RSS: 1,195,080 KiB, down from 1,420,424 KiB;
+- local cache after the build: 865,932 KiB (about 846 MiB), down from about
+  920 MiB;
+- Debug `zine` artifact: 399,466,298 bytes, 749,850 bytes (0.19%) larger than
+  the isolated baseline artifact;
+- immediate incremental check: 0.65 seconds and 40,936 KiB peak RSS.
+
+The Debug artifact result shows why executable size is recorded rather than
+used as a pass/fail gate: the compact release binaries benefit while Zig debug
+code and metadata make the host Debug executable slightly larger.
+
+An eight-target release and archive verification from a separate empty local
+cache completed in 304.70 seconds with 1,557,464 KiB peak RSS. That clean time
+is not directly comparable to the 81.98-second baseline refresh, which reused
+existing target compilation inputs. Repeating the command with the new local
+cache warm took 4.15 seconds and 41,444 KiB peak RSS.
+
+| Target | Before (bytes) | After (bytes) | Change (bytes) |
+| --- | ---: | ---: | ---: |
+| `aarch64-freebsd.15.0` | 10,579,172 | 10,056,796 | -522,376 |
+| `aarch64-linux-musl` | 10,796,764 | 10,276,408 | -520,356 |
+| `aarch64-macos` | 12,901,914 | 12,726,642 | -175,272 |
+| `aarch64-windows` | 12,597,428 | 12,347,767 | -249,661 |
+| `x86_64-freebsd.15.0` | 10,910,260 | 10,366,740 | -543,520 |
+| `x86_64-linux-musl` | 11,083,580 | 10,536,316 | -547,264 |
+| `x86_64-macos` | 12,719,464 | 12,575,205 | -144,259 |
+| `x86_64-windows` | 12,757,761 | 12,526,177 | -231,584 |
+
+Every release archive became smaller. The decrease ranges from 144,259 bytes
+to 547,264 bytes depending on target and archive format.
+
+The final supported-format contract is PNG, JPEG, GIF, direct `VP8 `, `VP8L`,
+and `VP8X` WebP, supported BMP DIB headers, SVG with resolvable intrinsic
+dimensions, and direct static AVIF primary items. SVG parsing is bounded and
+does not evaluate CSS or entities. AVIF sequences, grids, and unsupported
+derived items are rejected rather than guessed.
+
+Netpbm, NIE, QOI, TGA, and WBMP autosizing was intentionally removed. SVG and
+static AVIF autosizing was added, as was support for the direct lossy and
+extended WebP fixtures the legacy Wuffs configuration path rejected. All
+probe failures remain non-fatal and leave dimensions unset.
