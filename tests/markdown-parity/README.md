@@ -1,18 +1,11 @@
-# Markdown backend parity gate
+# Archived Markdown backend parity record
 
-Run the complete migration comparison with:
+Phase 6 ran the repository's full test graph through cmark/SuperMD and the
+pure-Zig parser and semantic pass. Both implementations reproduced the same
+committed snapshots before Phase 7 made the pure-Zig parser authoritative.
 
-```console
-./build.sh test-parser-parity
-```
-
-The gate runs the repository's full test graph twice, first with cmark/SuperMD
-and then with the pure-Zig parser and semantic pass. Both runs must reproduce
-the same committed snapshots. Running sequentially is intentional because the
-two backends write to the same snapshot locations.
-
-The normal `./build.sh test` gate uses the pure-Zig backend. Use
-`-Dmarkdown-parser=cmark` only for temporary migration comparison.
+The migration-only `test-parser-parity` step and `-Dmarkdown-parser` option no
+longer exist. The supported gate is now `./build.sh test`.
 
 The corpus includes every `tests/**/*.smd` content file plus the focused
 Markdown and semantic fixtures. Together the gates compare:
@@ -25,7 +18,5 @@ Markdown and semantic fixtures. Together the gates compare:
 - renderer-independent directive, ID, reference, section, footnote, and error
   state in `tests/markdown-semantic/semantic.snapshot`.
 
-An output difference is never accepted by updating an existing shared snapshot
-alone. It must have a focused fixture and an entry in `DIFFERENCES.md` that
-classifies it as a pure-parser bug, an intentional compatibility change, or a
-cmark-dependent quirk preserved during migration.
+`DIFFERENCES.md` preserves the discrepancies found and resolved during the
+migration. No output difference was accepted.

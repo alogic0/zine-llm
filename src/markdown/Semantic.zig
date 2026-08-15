@@ -2,7 +2,7 @@
 //!
 //! Syntax parsing remains independent of SuperMD. This layer owns the
 //! directive-typed AST contract and incrementally ports the semantic behavior
-//! that used to run directly over cmark nodes.
+//! that used to run directly over nodes from the legacy parser.
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -263,7 +263,7 @@ const Analyzer = struct {
                 const id = directive.id orelse return;
 
                 // Keep section semantics on the containing block, then turn
-                // the source link into the same self-link cmark produced.
+                // the source link into the same self-link the legacy parser produced.
                 _ = try parent.setDirective(analyzer.allocator, directive, true);
                 directive.id = null;
                 directive.attrs = &.{};
@@ -865,7 +865,7 @@ test "semantic snapshot is independent of HTML rendering" {
     try std.testing.expectEqualStrings(expected, output.written());
 }
 
-test "cmark compatibility permits inline HTML but rejects HTML blocks" {
+test "inline HTML policy permits inline HTML but rejects HTML blocks" {
     var inline_ast = try Ast.init(std.testing.allocator, "text <ctx> text\n", .{});
     defer inline_ast.deinit();
     try std.testing.expectEqual(@as(usize, 0), inline_ast.errors.len);

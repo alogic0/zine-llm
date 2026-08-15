@@ -621,7 +621,7 @@ pub fn Contract(comptime Directive: type) type {
             }
 
             /// Positions the iterator immediately after `current`'s specified
-            /// event, matching cmark iterator reset semantics.
+            /// event, matching the legacy iterator reset semantics.
             pub fn reset(iterator: *Iter, current: Node, dir: Event.Dir) void {
                 std.debug.assert(iterator.root.store == current.store);
                 iterator.next_event = iterator.after(.{ .dir = dir, .node = current });

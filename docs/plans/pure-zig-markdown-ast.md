@@ -232,8 +232,9 @@ The Zig parser preserves `$...` link targets, but angle-bracket destinations cur
 ### Phase 0: Capture the compatibility baseline
 
 Status: implemented on `2026-08-15`. Provenance is recorded in
-`src/markdown/UPSTREAM.md`; the reproducible compatibility runner, focused
-fixtures, and generated baseline live in `tests/markdown-oracle/`. The
+`src/markdown/UPSTREAM.md`; the focused fixtures and generated baseline are
+archived in `tests/markdown-oracle/`. The migration-only runner was removed in
+Phase 7 after the pure-Zig parser became authoritative. The
 unmodified source import required by step 3 remains the first Phase 1 change
 and must be kept separate from adaptation work.
 
@@ -363,12 +364,12 @@ Deliverable: pure-Zig `Ast.init()` produces the semantic data currently consumed
 ### Phase 6: Integrate behind a temporary parser switch
 
 Status: complete. `-Dmarkdown-parser=zig|cmark` selects the temporary backend,
-with pure Zig now the default. `zig build test-parser-parity` runs the complete
-repository corpus through both implementations sequentially and requires the
-same committed render, semantic-index, footnote, page-analysis, and diagnostic
-snapshots. All discrepancies found during integration are fixed and classified
-in `tests/markdown-parity/DIFFERENCES.md`; no unexplained or accepted output
-differences remain.
+with pure Zig as the default during the migration. The former
+`test-parser-parity` gate ran the complete repository corpus through both
+implementations sequentially and required the same committed render,
+semantic-index, footnote, page-analysis, and diagnostic snapshots. Phase 7
+removed the switch and gate after all discrepancies were fixed and classified
+in `tests/markdown-parity/DIFFERENCES.md`.
 
 1. Add a temporary build/test option selecting `cmark` or `zig` parsing.
 2. Keep both implementations available only during migration.
@@ -388,6 +389,13 @@ differences remain.
 Deliverable: the Zig parser is the default in tests with no unexplained differences.
 
 ### Phase 7: Remove cmark coupling from Zine
+
+Status: complete. Page parsing and worker jobs no longer receive or own parser
+contexts; `src/markdown/Backend.zig` now exposes only the pure-Zig semantic AST.
+The temporary parser option, parity and oracle steps, cmark-backed SuperMD AST,
+C header, package dependencies, compiled libraries, and extension registration
+have been removed. Native checks, Markdown tests, the full snapshot suite, and
+all configured release targets build without cmark.
 
 1. Change `Page.parse()` so each job creates or uses the pure-Zig parser without a cmark parser argument.
 2. Remove thread-local cmark parser initialization and cleanup from `worker.zig`.
