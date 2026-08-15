@@ -197,13 +197,6 @@ pub fn build(b: *std.Build) !void {
         "highlight",
         "Include treesitter grammars for build-time syntax highlighting (enabled by default). Disabling reduces executable size significantly.",
     ) orelse true;
-    const MarkdownParser = enum { cmark, zig };
-    const markdown_parser = b.option(
-        MarkdownParser,
-        "markdown-parser",
-        "Select the temporary Markdown parser backend",
-    ) orelse .zig;
-
     const zine_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
@@ -239,11 +232,9 @@ pub fn build(b: *std.Build) !void {
             \\pub const tsan = {};
             \\pub const enable_treesitter = {};
             \\pub const version = "{s}";
-            \\pub const MarkdownParser = enum {{ cmark, zig }};
-            \\pub const markdown_parser: MarkdownParser = .{s};
             \\pub const log_scope_levels: []const std.log.ScopeLevel = &.{{
             \\
-        , .{ tsan, highlight, version, @tagName(markdown_parser) });
+        , .{ tsan, highlight, version });
 
         for (scopes) |l| try options.contents.print(b.allocator,
             \\.{{.scope = .{f}, .level = .debug}},
@@ -411,7 +402,6 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    markdown_backend_module.addImport("options", options);
     markdown_backend_module.addImport("supermd", supermd);
     markdown_backend_module.addImport("scripty", scripty);
     markdown_backend_module.addImport("superhtml", superhtml);
@@ -429,27 +419,6 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_markdown_tests.step);
     test_step.dependOn(&run_semantic_markdown_tests.step);
     test_step.dependOn(&run_markdown_backend_tests.step);
-
-    const parser_parity_step = b.step(
-        "test-parser-parity",
-        "Run the complete corpus with cmark and pure-Zig Markdown backends",
-    );
-    const test_cmark_backend = b.addSystemCommand(&.{
-        "./build.sh",
-        "test",
-        "-Dmarkdown-parser=cmark",
-    });
-    test_cmark_backend.setCwd(b.path("."));
-    test_cmark_backend.setName("test complete corpus with cmark");
-    const test_zig_backend = b.addSystemCommand(&.{
-        "./build.sh",
-        "test",
-        "-Dmarkdown-parser=zig",
-    });
-    test_zig_backend.setCwd(b.path("."));
-    test_zig_backend.setName("test complete corpus with pure-Zig Markdown");
-    test_zig_backend.step.dependOn(&test_cmark_backend.step);
-    parser_parity_step.dependOn(&test_zig_backend.step);
 
     setupSchemaCheck(b, target, zine_mod, test_step);
     try setupSnapshotTesting(b, target, zine_exe, supermd, test_step);
