@@ -197,6 +197,12 @@ pub fn build(b: *std.Build) !void {
         "highlight",
         "Include treesitter grammars for build-time syntax highlighting (enabled by default). Disabling reduces executable size significantly.",
     ) orelse true;
+    const MarkdownParser = enum { cmark, zig };
+    const markdown_parser = b.option(
+        MarkdownParser,
+        "markdown-parser",
+        "Select the temporary Markdown parser backend",
+    ) orelse .cmark;
 
     const zine_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
@@ -233,9 +239,11 @@ pub fn build(b: *std.Build) !void {
             \\pub const tsan = {};
             \\pub const enable_treesitter = {};
             \\pub const version = "{s}";
+            \\pub const MarkdownParser = enum {{ cmark, zig }};
+            \\pub const markdown_parser: MarkdownParser = .{s};
             \\pub const log_scope_levels: []const std.log.ScopeLevel = &.{{
             \\
-        , .{ tsan, highlight, version });
+        , .{ tsan, highlight, version, @tagName(markdown_parser) });
 
         for (scopes) |l| try options.contents.print(b.allocator,
             \\.{{.scope = .{f}, .level = .debug}},
@@ -398,14 +406,29 @@ pub fn build(b: *std.Build) !void {
         .root_module = semantic_markdown_module,
     });
     const run_semantic_markdown_tests = b.addRunArtifact(semantic_markdown_tests);
+    const markdown_backend_module = b.createModule(.{
+        .root_source_file = b.path("src/markdown/Backend.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    markdown_backend_module.addImport("options", options);
+    markdown_backend_module.addImport("supermd", supermd);
+    markdown_backend_module.addImport("scripty", scripty);
+    markdown_backend_module.addImport("superhtml", superhtml);
+    const markdown_backend_tests = b.addTest(.{
+        .root_module = markdown_backend_module,
+    });
+    const run_markdown_backend_tests = b.addRunArtifact(markdown_backend_tests);
     const test_markdown_step = b.step(
         "test-markdown",
         "Run the vendored Zig Markdown tests",
     );
     test_markdown_step.dependOn(&run_markdown_tests.step);
     test_markdown_step.dependOn(&run_semantic_markdown_tests.step);
+    test_markdown_step.dependOn(&run_markdown_backend_tests.step);
     test_step.dependOn(&run_markdown_tests.step);
     test_step.dependOn(&run_semantic_markdown_tests.step);
+    test_step.dependOn(&run_markdown_backend_tests.step);
 
     setupSchemaCheck(b, target, zine_mod, test_step);
     try setupSnapshotTesting(b, target, zine_exe, supermd, test_step);
