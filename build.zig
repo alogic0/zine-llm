@@ -390,7 +390,6 @@ pub fn build(b: *std.Build) !void {
     zine_mod.addImport("options", options);
     zine_mod.addImport("tracy", tracy.module("tracy"));
     zine_mod.addImport("mime", mime.module("mime"));
-    zine_mod.addImport("wuffs", wuffs.module("wuffs"));
     if (highlight) {
         zine_mod.addImport("syntax", syntax.module("syntax"));
         zine_mod.addImport("treez", treez);
@@ -894,11 +893,6 @@ fn setupReleaseStep(
             .optimize = optimize,
         });
 
-        const wuffs = b.dependency("wuffs", .{
-            .target = target,
-            .optimize = optimize,
-        });
-
         const treez = ts.module("treez");
 
         const mime = b.dependency("mime", .{
@@ -947,7 +941,6 @@ fn setupReleaseStep(
         zine_exe_release.root_module.addImport("treez", treez);
         zine_exe_release.root_module.addImport("tracy", tracy.module("tracy"));
         zine_exe_release.root_module.addImport("mime", mime.module("mime"));
-        zine_exe_release.root_module.addImport("wuffs", wuffs.module("wuffs"));
 
         switch (target.result.os.tag) {
             else => @panic("target must be added to build.zig"),

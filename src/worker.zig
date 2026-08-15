@@ -24,7 +24,7 @@ const Template = @import("Template.zig");
 const highlight = @import("highlight.zig");
 const main = @import("main.zig");
 const gpa = main.gpa;
-const wuffs = @import("wuffs.zig");
+const image_dimensions_file = @import("image_dimensions_file.zig");
 const Channel = @import("channel.zig").Channel;
 
 const log = std.log.scoped(.worker);
@@ -769,9 +769,8 @@ fn analyzeContent(
                                         });
 
                                         if (autosize and directive.kind == .image and directive.kind.image.size == null) {
-                                            wuffs.setImageSize(
+                                            setImageSize(
                                                 io,
-                                                scratch,
                                                 directive,
                                                 variant.content_dir,
                                                 bytes,
@@ -815,9 +814,8 @@ fn analyzeContent(
                                     };
 
                                     if (autosize and directive.kind == .image and directive.kind.image.size == null) {
-                                        wuffs.setImageSize(
+                                        setImageSize(
                                             io,
-                                            scratch,
                                             directive,
                                             b.site_assets_dir,
                                             sa.ref,
@@ -854,9 +852,8 @@ fn analyzeContent(
                         };
 
                         if (autosize and directive.kind == .image and directive.kind.image.size == null) {
-                            wuffs.setImageSize(
+                            setImageSize(
                                 io,
-                                scratch,
                                 directive,
                                 b.site_assets_dir,
                                 asset.input_path,
@@ -883,6 +880,24 @@ fn analyzeContent(
             },
         }
     }
+}
+
+fn setImageSize(
+    io: Io,
+    directive: *markdown_backend.Directive,
+    base_dir: Io.Dir,
+    image_path: []const u8,
+) void {
+    log.debug("calculating image size for '{s}'", .{image_path});
+    const result = image_dimensions_file.probeFile(io, base_dir, image_path) catch |err| {
+        log.debug("unable to determine image size for '{s}': {}", .{ image_path, err });
+        return;
+    };
+    log.debug("computed image size for '{s}': {any}", .{ image_path, result });
+    directive.kind.image.size = .{
+        .w = @intCast(result.dimensions.width),
+        .h = @intCast(result.dimensions.height),
+    };
 }
 
 pub const RenderJobKind = union(enum) { main, alternative: u32 };
