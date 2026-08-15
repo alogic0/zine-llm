@@ -477,6 +477,29 @@ pub fn build(b: *std.Build) !void {
     test_image_dimensions_step.dependOn(&run_image_dimensions_tests.step);
     test_image_dimensions_step.dependOn(&run_image_dimensions_property_tests.step);
     test_image_dimensions_step.dependOn(&run_image_dimensions_file_tests.step);
+    const test_image_dimensions_modes_step = b.step(
+        "test-image-dimensions-modes",
+        "Run image-dimension parser tests in debug, safe, fast, and small modes",
+    );
+    for ([_]std.builtin.OptimizeMode{ .debug, .safe, .fast, .small }) |mode| {
+        const mode_parser = b.createModule(.{
+            .root_source_file = b.path("src/image_dimensions.zig"),
+            .target = target,
+            .optimize = mode,
+        });
+        const mode_test_module = b.createModule(.{
+            .root_source_file = b.path("src/image_dimensions_test.zig"),
+            .target = target,
+            .optimize = mode,
+        });
+        mode_test_module.addImport("image_dimensions", mode_parser);
+        const mode_tests = b.addTest(.{ .root_module = mode_test_module });
+        mode_tests.name = b.fmt("image-dimension-tests-{s}", .{@tagName(mode)});
+        const run_mode_tests = b.addRunArtifact(mode_tests);
+        run_mode_tests.setName(b.fmt("test image dimensions in {s} mode", .{@tagName(mode)}));
+        test_image_dimensions_modes_step.dependOn(&run_mode_tests.step);
+    }
+    test_image_dimensions_step.dependOn(test_image_dimensions_modes_step);
     test_step.dependOn(&run_image_dimensions_tests.step);
     test_step.dependOn(&run_image_dimensions_property_tests.step);
     test_step.dependOn(&run_image_dimensions_file_tests.step);
