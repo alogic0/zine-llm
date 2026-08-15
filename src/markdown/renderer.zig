@@ -172,6 +172,13 @@ pub fn Renderer(comptime Context: type) type {
                     }
                     try writer.writeAll("</em>");
                 },
+                .strikethrough => {
+                    try writer.writeAll("<del>");
+                    for (doc.extraChildren(data.container.children)) |child| {
+                        try r.renderFn(r, doc, child, writer);
+                    }
+                    try writer.writeAll("</del>");
+                },
                 .code_span => {
                     const content = doc.string(data.text.content);
                     try writer.print("<code>{f}</code>", .{fmtHtml(content)});
@@ -223,7 +230,7 @@ pub fn renderInlineNodeText(
                 try renderInlineNodeText(doc, child, writer);
             }
         },
-        .emphasis => {
+        .emphasis, .strikethrough => {
             for (doc.extraChildren(data.container.children)) |child| {
                 try renderInlineNodeText(doc, child, writer);
             }

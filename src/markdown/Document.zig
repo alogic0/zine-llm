@@ -65,6 +65,8 @@ pub const Node = struct {
         strong,
         /// Data is `container`.
         emphasis,
+        /// Data is `container`.
+        strikethrough,
         /// Data is `text`.
         code_span,
         /// Data is `text`.

@@ -921,6 +921,13 @@ test "soft breaks and raw HTML" {
     );
 }
 
+test "GFM strikethrough" {
+    try testRender(
+        "~~deleted~~ and ~~with *emphasis*~~ and ~literal~\n",
+        "<p><del>deleted</del> and <del>with <em>emphasis</em></del> and ~literal~</p>\n",
+    );
+}
+
 test "images" {
     try testRender(
         \\![Alt text](https://example.com/image.png)

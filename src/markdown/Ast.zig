@@ -98,6 +98,7 @@ pub fn Contract(comptime Directive: type) type {
                     .paragraph,
                     .strong,
                     .emphasis,
+                    .strikethrough,
                     => store.document.extraChildren(data.container.children),
                     .list => store.document.extraChildren(data.list.children),
                     .list_item => store.document.extraChildren(data.list_item.children),
@@ -273,6 +274,7 @@ pub fn Contract(comptime Directive: type) type {
                     .image => .IMAGE,
                     .strong => .STRONG,
                     .emphasis => .EMPH,
+                    .strikethrough => .STRIKETHROUGH,
                     .code_span => .CODE,
                     .text => .TEXT,
                     .line_break => .LINEBREAK,
@@ -552,6 +554,7 @@ pub fn Contract(comptime Directive: type) type {
                     .image,
                     .strong,
                     .emphasis,
+                    .strikethrough,
                     => true,
                     .code_block,
                     .thematic_break,
@@ -731,6 +734,16 @@ test "raw HTML nodes retain literal content and ranges" {
     const html_inline = findType(ast.root(), .HTML_INLINE).?;
     try std.testing.expectEqualStrings("<i>", html_inline.literal().?);
     try expectRange(html_inline, 27, 30, 5, 8, 5, 10);
+}
+
+test "strikethrough nodes retain children and source ranges" {
+    var ast = try parseTestAst("before ~~gone *now*~~ after\n");
+    defer ast.deinit();
+
+    const strike = findType(ast.root(), .STRIKETHROUGH).?;
+    try expectRange(strike, 7, 21, 1, 8, 1, 21);
+    try std.testing.expectEqualStrings("gone now", try strike.renderPlaintext());
+    try std.testing.expectEqual(NodeType.EMPH, strike.firstChild().?.nextSibling().?.nodeType());
 }
 
 test "source ranges cover nested blocks and fenced code" {

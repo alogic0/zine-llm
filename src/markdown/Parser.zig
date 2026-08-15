@@ -1089,6 +1089,8 @@ const InlineParser = struct {
             link,
             /// Data is `none`.
             image,
+            /// Data is `none`.
+            strikethrough,
         };
 
         const Data = union {
@@ -1148,6 +1150,7 @@ const InlineParser = struct {
                 ']' => try ip.parseLink(),
                 '<' => if (!try ip.parseHtml()) try ip.parseAutolink(),
                 '*', '_' => try ip.parseEmphasis(),
+                '~' => try ip.parseStrikethrough(),
                 '`' => try ip.parseCodeSpan(),
                 'h' => if (ip.pos == 0 or isPreTextAutolink(ip.content[ip.pos - 1])) {
                     try ip.parseTextAutolink();
@@ -1523,6 +1526,39 @@ const InlineParser = struct {
                 .start = start,
             });
         }
+    }
+
+    fn parseStrikethrough(ip: *InlineParser) !void {
+        if (ip.pos + 1 >= ip.content.len or ip.content[ip.pos + 1] != '~') return;
+
+        var i = ip.pending_inlines.items.len;
+        while (i > 0) {
+            i -= 1;
+            if (ip.pending_inlines.items[i].tag == .strikethrough) break;
+        } else {
+            try ip.pending_inlines.append(ip.parent.allocator, .{
+                .tag = .strikethrough,
+                .data = .{ .none = {} },
+                .start = ip.pos,
+            });
+            ip.pos += 1;
+            return;
+        }
+
+        const opener = ip.pending_inlines.items[i];
+        ip.pending_inlines.shrinkRetainingCapacity(i);
+        const end = ip.pos + 2;
+        const children = try ip.encodeChildren(opener.start + 2, ip.pos);
+        const node = try ip.parent.addNode(.{
+            .tag = .strikethrough,
+            .data = .{ .container = .{ .children = children } },
+        }, ip.sourceSpan(opener.start, end));
+        try ip.completed_inlines.append(ip.parent.allocator, .{
+            .node = node,
+            .start = opener.start,
+            .len = end - opener.start,
+        });
+        ip.pos += 1;
     }
 
     /// Encodes emphasis specified by a run of `run_len` emphasis characters,
