@@ -170,10 +170,6 @@ pub fn Renderer(comptime Context: type) type {
                     }
                     try writer.writeAll("</a>");
                 },
-                .autolink => {
-                    const target = doc.string(data.text.content);
-                    try writer.print("<a href=\"{0f}\">{0f}</a>", .{fmtHtml(target)});
-                },
                 .image => {
                     const target = doc.string(data.link.target);
                     try writer.print("<img src=\"{f}\" alt=\"", .{fmtHtml(target)});
@@ -267,7 +263,7 @@ pub fn renderInlineNodeText(
                 try renderInlineNodeText(doc, child, writer);
             }
         },
-        .autolink, .code_span, .text, .html_inline, .footnote_reference => {
+        .code_span, .text, .html_inline, .footnote_reference => {
             const content = doc.string(data.text.content);
             try writer.print("{f}", .{fmtHtml(content)});
         },

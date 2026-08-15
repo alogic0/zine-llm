@@ -59,8 +59,6 @@ pub const Node = struct {
         // Inlines
         /// Data is `link`.
         link,
-        /// Data is `text`.
-        autolink,
         /// Data is `link`.
         image,
         /// Data is `container`.

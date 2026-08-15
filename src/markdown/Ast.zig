@@ -109,7 +109,6 @@ pub fn Contract(comptime Directive: type) type {
                     .code_block,
                     .thematic_break,
                     .html_block,
-                    .autolink,
                     .code_span,
                     .text,
                     .line_break,
@@ -273,7 +272,6 @@ pub fn Contract(comptime Directive: type) type {
                     .html_block => .HTML_BLOCK,
                     .footnote_definition => .FOOTNOTE_DEFINITION,
                     .link => .LINK,
-                    .autolink => .LINK,
                     .image => .IMAGE,
                     .strong => .STRONG,
                     .emphasis => .EMPH,
@@ -290,7 +288,7 @@ pub fn Contract(comptime Directive: type) type {
             pub fn literal(node: Node) ?[]const u8 {
                 const data = node.store.syntaxData(node.index);
                 return switch (node.store.syntaxTag(node.index)) {
-                    .autolink, .code_span, .text, .html_inline, .html_block, .footnote_reference => node.store.document.string(data.text.content),
+                    .code_span, .text, .html_inline, .html_block, .footnote_reference => node.store.document.string(data.text.content),
                     .code_block => node.store.document.string(data.code_block.content),
                     else => null,
                 };
@@ -300,7 +298,6 @@ pub fn Contract(comptime Directive: type) type {
                 const data = node.store.syntaxData(node.index);
                 return switch (node.store.syntaxTag(node.index)) {
                     .link, .image => node.store.document.string(data.link.target),
-                    .autolink => node.store.document.string(data.text.content),
                     else => null,
                 };
             }
@@ -515,7 +512,7 @@ pub fn Contract(comptime Directive: type) type {
                     if (event.dir != .enter) continue;
                     const current = event.node;
                     switch (current.store.syntaxTag(current.index)) {
-                        .autolink, .code_span, .text, .code_block, .html_inline, .html_block, .footnote_reference => {
+                        .code_span, .text, .code_block, .html_inline, .html_block, .footnote_reference => {
                             output.writer.writeAll(current.literal().?) catch return error.OutOfMemory;
                         },
                         .line_break, .soft_break => output.writer.writeByte('\n') catch return error.OutOfMemory,
@@ -582,7 +579,6 @@ pub fn Contract(comptime Directive: type) type {
                     .code_block,
                     .thematic_break,
                     .html_block,
-                    .autolink,
                     .code_span,
                     .text,
                     .line_break,

@@ -1614,6 +1614,27 @@ const InlineParser = struct {
         return @fromBackingInt(@intCast(string_top));
     }
 
+    fn encodeAutolink(
+        ip: *InlineParser,
+        link_start: usize,
+        link_end: usize,
+        text_start: usize,
+        text_end: usize,
+    ) !Node.Index {
+        const target = try ip.parent.addString(ip.content[text_start..text_end]);
+        const text = try ip.parent.addNode(.{
+            .tag = .text,
+            .data = .{ .text = .{ .content = target } },
+        }, ip.sourceSpan(text_start, text_end));
+        return ip.parent.addNode(.{
+            .tag = .link,
+            .data = .{ .link = .{
+                .target = target,
+                .children = try ip.parent.addExtraChildren(&.{text}),
+            } },
+        }, ip.sourceSpan(link_start, link_end));
+    }
+
     /// Parses an autolink, starting at the opening `<`. `ip.pos` is left at the
     /// closing `>`, or remains unchanged at the opening `<` if there is none.
     fn parseAutolink(ip: *InlineParser) !void {
@@ -1639,13 +1660,12 @@ const InlineParser = struct {
                     '<', ' ', '\t', '\n' => break, // Not allowed in autolinks
                     '>' => {
                         // Backslash escapes are not recognized in autolink targets.
-                        const target = try ip.parent.addString(ip.content[start + 1 .. ip.pos]);
-                        const node = try ip.parent.addNode(.{
-                            .tag = .autolink,
-                            .data = .{ .text = .{
-                                .content = target,
-                            } },
-                        }, ip.sourceSpan(start, ip.pos + 1));
+                        const node = try ip.encodeAutolink(
+                            start,
+                            ip.pos + 1,
+                            start + 1,
+                            ip.pos,
+                        );
                         try ip.completed_inlines.append(ip.parent.allocator, .{
                             .node = node,
                             .start = start,
@@ -1735,13 +1755,7 @@ const InlineParser = struct {
                     return;
                 }
 
-                const target = try ip.parent.addString(ip.content[start..ip.pos]);
-                const node = try ip.parent.addNode(.{
-                    .tag = .autolink,
-                    .data = .{ .text = .{
-                        .content = target,
-                    } },
-                }, ip.sourceSpan(start, ip.pos));
+                const node = try ip.encodeAutolink(start, ip.pos, start, ip.pos);
                 try ip.completed_inlines.append(ip.parent.allocator, .{
                     .node = node,
                     .start = start,
