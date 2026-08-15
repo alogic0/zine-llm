@@ -395,6 +395,27 @@ pub fn build(b: *std.Build) !void {
         .root_module = semantic_markdown_module,
     });
     const run_semantic_markdown_tests = b.addRunArtifact(semantic_markdown_tests);
+    const markdown_concurrency_module = b.createModule(.{
+        .root_source_file = b.path("src/markdown_concurrency_test.zig"),
+        .target = target,
+        .optimize = .debug,
+    });
+    markdown_concurrency_module.addImport("supermd", supermd);
+    markdown_concurrency_module.addImport("scripty", scripty);
+    markdown_concurrency_module.addImport("superhtml", superhtml);
+    markdown_concurrency_module.addImport("fixtures", b.createModule(.{
+        .root_source_file = b.path("build/markdown_benchmark_fixtures.zig"),
+    }));
+    const markdown_concurrency_tests = b.addTest(.{
+        .root_module = markdown_concurrency_module,
+    });
+    const run_markdown_concurrency_tests = b.addRunArtifact(markdown_concurrency_tests);
+    const test_markdown_concurrency_step = b.step(
+        "test-markdown-concurrency",
+        "Stress independent Markdown parsing across worker threads",
+    );
+    test_markdown_concurrency_step.dependOn(&run_markdown_concurrency_tests.step);
+    test_step.dependOn(&run_markdown_concurrency_tests.step);
     const markdown_benchmark = b.addExecutable(.{
         .name = "markdown-benchmark",
         .root_module = b.createModule(.{
