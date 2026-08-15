@@ -284,6 +284,13 @@ Deliverable: the original parser tests pass from vendored source on Zine's pinne
 
 ### Phase 2: Define the Zine AST contract
 
+Status: implemented on `2026-08-15`. `src/markdown/Ast.zig` provides a
+directive-type-parameterized facade with stable store/index handles, relation
+and range sidecars, navigation, compatible traversal/reset behavior, node
+metadata, plain-text rendering, and audited sidecar-only mutation. Ownership,
+move safety, metadata, traversal, and mutation are covered by allocator-backed
+tests; design details are recorded in `src/markdown/AST.md`.
+
 1. Introduce the stable `Store`, `Ast`, `Node`, `Index`, `Range`, and `Iter` types.
 2. Add relation and source-range sidecars.
 3. Implement the subset of the current node facade used by Zine:
