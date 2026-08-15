@@ -377,7 +377,7 @@ pub fn build(b: *std.Build) !void {
 
     const test_step = b.step("test", "build snapshot tests and diff the results");
     setupSchemaCheck(b, target, zine_mod, test_step);
-    try setupSnapshotTesting(b, target, zine_exe, test_step);
+    try setupSnapshotTesting(b, target, zine_exe, supermd, test_step);
 
     workAroundPinnedZigModuleSerialization(b);
 }
@@ -434,6 +434,7 @@ fn setupSnapshotTesting(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
     zine_exe: *std.Build.Step.Compile,
+    supermd: *std.Build.Module,
     test_step: *std.Build.Step,
 ) !void {
     const camera = b.addExecutable(.{
@@ -458,6 +459,41 @@ fn setupSnapshotTesting(
     git_add.addDirectoryArg(b.path("tests/"));
     git_add.setName("git add tests/");
     diff.step.dependOn(&git_add.step);
+
+    const markdown_oracle = b.addExecutable(.{
+        .name = "markdown-oracle",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/markdown_oracle.zig"),
+            .target = target,
+            .optimize = .debug,
+        }),
+    });
+    markdown_oracle.root_module.addImport("supermd", supermd);
+
+    const print_oracle = b.addRunArtifact(markdown_oracle);
+    print_oracle.setCwd(b.path("."));
+    const oracle_step = b.step(
+        "markdown-oracle",
+        "Print the current cmark/SuperMD compatibility oracle",
+    );
+    oracle_step.dependOn(&print_oracle.step);
+
+    const run_oracle = b.addRunArtifact(markdown_oracle);
+    run_oracle.setCwd(b.path("."));
+    const oracle_output = run_oracle.captureStdOut(.{});
+    const update_oracle = b.addUpdateSourceFiles();
+    update_oracle.addCopyFileToSource(
+        oracle_output,
+        "tests/markdown-oracle/snapshot.txt",
+    );
+    update_oracle.step.dependOn(&run_oracle.step);
+    git_add.step.dependOn(&update_oracle.step);
+
+    const update_oracle_step = b.step(
+        "update-markdown-oracle",
+        "Update the cmark/SuperMD compatibility oracle snapshot",
+    );
+    update_oracle_step.dependOn(&update_oracle.step);
 
     // content scanning
     {

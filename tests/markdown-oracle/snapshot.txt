@@ -1,0 +1,1666 @@
+markdown-oracle-v1
+parser cmark-gfm
+options default,safe,smart,footnotes
+extensions table,strikethrough,tasklist,autolink
+
+source "tests/content-scanning/collisions/content/index.smd" markdown_start=353 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/collisions/content/nested/path/page.smd" markdown_start=367 markdown_len=1 sha256=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+event enter depth=0 tag="document" range=1:1-1:0
+event exit depth=0 tag="document" range=1:1-1:0
+html=""
+end-source
+
+source "tests/content-scanning/collisions/content/page.smd" markdown_start=348 markdown_len=1 sha256=01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+event enter depth=0 tag="document" range=1:1-1:0
+event exit depth=0 tag="document" range=1:1-1:0
+html=""
+end-source
+
+source "tests/content-scanning/collisions/content/page/index.smd" markdown_start=104 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/archive/2024/first.smd" markdown_start=195 markdown_len=12 sha256=7e838193d4b7100f43b5b07566ef4bef193cb367a2d67aa62a6f66f06e0a4b8a
+event enter depth=0 tag="document" range=1:1-1:11
+event enter depth=1 tag="paragraph" range=1:1-1:11
+event enter depth=2 tag="text" range=1:1-1:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=1:1-1:11
+event exit depth=0 tag="document" range=1:1-1:11
+html="<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/archive/2024/index.smd" markdown_start=105 markdown_len=21 sha256=35f116cbabfc7bc67468d8041c9a4c31ed5a5fb3c8c9d135e8f39a3a2639415b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2024"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2024</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/archive/2024/second/index.smd" markdown_start=127 markdown_len=12 sha256=7e838193d4b7100f43b5b07566ef4bef193cb367a2d67aa62a6f66f06e0a4b8a
+event enter depth=0 tag="document" range=1:1-1:11
+event enter depth=1 tag="paragraph" range=1:1-1:11
+event enter depth=2 tag="text" range=1:1-1:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=1:1-1:11
+event exit depth=0 tag="document" range=1:1-1:11
+html="<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/archive/2025/index.smd" markdown_start=105 markdown_len=21 sha256=3cc2cb89ed1e8670456aebe1f8f1fe2c93bc73cea5378fc737ff586e1082038b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2025"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2025</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/archive/2025/second.smd" markdown_start=127 markdown_len=26 sha256=f2ab738c835f9c2df6b6142274d4264a035069cd6a544116fbfc5b27d65737a2
+event enter depth=0 tag="document" range=1:1-1:25
+event enter depth=1 tag="paragraph" range=1:1-1:25
+event enter depth=2 tag="text" range=1:1-1:25 literal="dolor something something"
+event exit depth=1 tag="paragraph" range=1:1-1:25
+event exit depth=0 tag="document" range=1:1-1:25
+html="<p>dolor something something</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/archive/index.smd" markdown_start=138 markdown_len=9 sha256=6e1daa069e7da376bf409160dca8f47867523551e31d0f71010243316a44be57
+event enter depth=0 tag="document" range=1:1-2:7
+event enter depth=1 tag="paragraph" range=2:1-2:7
+event enter depth=2 tag="text" range=2:1-2:7 literal="Archive"
+event exit depth=1 tag="paragraph" range=2:1-2:7
+event exit depth=0 tag="document" range=1:1-2:7
+html="<p>Archive</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/index.smd" markdown_start=93 markdown_len=101 sha256=92927de1592047d58b41dcc5120d9613323856cc4488ee0341fce25a72bf805f
+event enter depth=0 tag="document" range=1:1-12:0
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=2 tag="text" range=4:3-4:4 literal="H1"
+event exit depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=2 tag="text" range=5:1-5:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=2 tag="text" range=7:4-7:5 literal="H2"
+event exit depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=2 tag="text" range=8:1-8:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=2 tag="text" range=10:5-10:6 literal="H3"
+event exit depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=1 tag="paragraph" range=11:1-11:13
+event enter depth=2 tag="text" range=11:1-11:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=11:1-11:13
+event exit depth=0 tag="document" range=1:1-12:0
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n<h1>H1</h1>\n<p>Lorem Ipsum 1</p>\n<h2>H2</h2>\n<p>Lorem Ipsum 2</p>\n<h3>H3</h3>\n<p>Lorem Ipsum 3</p>\n"
+end-source
+
+source "tests/content-scanning/forbid-subsections/content/sections.smd" markdown_start=112 markdown_len=127 sha256=340333129dff8c58694bc011b8139a235c91c478a2507f8b9a98599aec590b30
+event enter depth=0 tag="document" range=1:1-10:0
+event enter depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event enter depth=3 tag="text" range=2:4-2:5 literal="H1"
+event exit depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event exit depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=2 tag="text" range=3:1-3:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event enter depth=3 tag="text" range=5:5-5:6 literal="H2"
+event exit depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event exit depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=2 tag="text" range=6:1-6:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event enter depth=3 tag="text" range=8:6-8:7 literal="H3"
+event exit depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event exit depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=2 tag="text" range=9:1-9:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=9:1-9:13
+event exit depth=0 tag="document" range=1:1-10:0
+id name="h1" tag="heading" range=2:1-2:25
+id name="h2" tag="heading" range=5:1-5:26
+id name="h3" tag="heading" range=8:1-8:27
+html="<h1><a href=\"$section.id(&#x27;h1&#x27;)\">H1</a></h1>\n<p>Lorem Ipsum 1</p>\n<h2><a href=\"$section.id(&#x27;h2&#x27;)\">H2</a></h2>\n<p>Lorem Ipsum 2</p>\n<h3><a href=\"$section.id(&#x27;h3&#x27;)\">H3</a></h3>\n<p>Lorem Ipsum 3</p>\n"
+end-source
+
+source "tests/content-scanning/frontmatter/content/index.smd" markdown_start=466 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/frontmatter/content/validation-errors.smd" markdown_start=465 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/frontmatter/content/wrong-syntax.smd" markdown_start=464 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/page-analysis/content/code.smd" markdown_start=105 markdown_len=118 sha256=a4597a06e825653fda99b8f06c9d196fcf365cb364f226caf872eb14b991aaf1
+event enter depth=0 tag="document" range=1:1-20:3
+event enter depth=1 tag="code_block" range=2:1-4:3 literal="correct!\n" fence_info=""
+event enter depth=1 tag="code_block" range=6:1-8:3 literal="correct!\n" fence_info="=html"
+event enter depth=1 tag="code_block" range=10:1-12:3 literal="</span> wrong!\n" fence_info="=html"
+event enter depth=1 tag="code_block" range=14:1-16:3 literal="// Correct!\n" fence_info="rust"
+event enter depth=1 tag="code_block" range=18:1-20:3 literal="// correct\n" fence_info="zig"
+event exit depth=0 tag="document" range=1:1-20:3
+error kind="html" range=11:3-11:7
+diagnostic-begin
+tests/content-scanning/page-analysis/content/code.smd:17:3: [html] error: erroneous end tag
+|    </span> wrong!
+|      ^^^^
+
+diagnostic-end
+html="<pre><code>correct!\n</code></pre>\n<pre><code class=\"language-=html\">correct!\n</code></pre>\n<pre><code class=\"language-=html\">&lt;/span&gt; wrong!\n</code></pre>\n<pre><code class=\"language-rust\">// Correct!\n</code></pre>\n<pre><code class=\"language-zig\">// correct\n</code></pre>\n"
+end-source
+
+source "tests/content-scanning/page-analysis/content/date.smd" markdown_start=106 markdown_len=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+event enter depth=0 tag="document" range=1:1-0:0
+event exit depth=0 tag="document" range=1:1-0:0
+html=""
+end-source
+
+source "tests/content-scanning/page-analysis/content/heading.smd" markdown_start=120 markdown_len=78 sha256=76e8bbf17cac5898438d9da98b55a9a2b5b56bb101507d9468dd7ab77af4102a
+event enter depth=0 tag="document" range=1:1-8:15
+event enter depth=1 tag="heading" range=2:1-2:18 level=2
+event enter depth=2 tag="text" range=2:4-2:18 literal="Starting at two"
+event exit depth=1 tag="heading" range=2:1-2:18 level=2
+event enter depth=1 tag="heading" range=5:1-5:15 level=4
+event enter depth=2 tag="text" range=5:6-5:15 literal="Wrong jump"
+event exit depth=1 tag="heading" range=5:1-5:15 level=4
+event enter depth=1 tag="heading" range=6:1-6:9 level=1
+event enter depth=2 tag="text" range=6:3-6:9 literal="Another"
+event exit depth=1 tag="heading" range=6:1-6:9 level=1
+event enter depth=1 tag="heading" range=7:1-7:14 level=5
+event enter depth=2 tag="text" range=7:7-7:14 literal="One Last"
+event exit depth=1 tag="heading" range=7:1-7:14 level=5
+event enter depth=1 tag="heading" range=8:1-8:15 level=4
+event enter depth=2 tag="text" range=8:6-8:15 literal="This is ok"
+event exit depth=1 tag="heading" range=8:1-8:15 level=4
+event exit depth=0 tag="document" range=1:1-8:15
+error kind="heading_skip" range=2:1-2:18 have=2
+diagnostic-begin
+tests/content-scanning/page-analysis/content/heading.smd:8:1: error: skipped heading level
+|    ## Starting at two
+|    ^^^^^^^^^^^^^^^^^^
+| -- note: supermd documents start at heading level 1 ('#')
+| -- note: if your intent is to start the content at '<h2>', you
+|          can change how headings render in html by setting the
+|          corresponding option in your zine config file
+
+diagnostic-end
+error kind="heading_skip" range=5:1-5:15 have=4
+diagnostic-begin
+tests/content-scanning/page-analysis/content/heading.smd:11:1: error: skipped heading level
+|    #### Wrong jump
+|    ^^^^^^^^^^^^^^^
+| -- note: previous heading (level 2):
+|    ## Starting at two
+|    ^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+error kind="heading_skip" range=7:1-7:14 have=5
+diagnostic-begin
+tests/content-scanning/page-analysis/content/heading.smd:13:1: error: skipped heading level
+|    ##### One Last
+|    ^^^^^^^^^^^^^^
+| -- note: previous heading (level 1):
+|    # Another
+|    ^^^^^^^^^
+
+diagnostic-end
+html="<h2>Starting at two</h2>\n<h4>Wrong jump</h4>\n<h1>Another</h1>\n<h5>One Last</h5>\n<h4>This is ok</h4>\n"
+end-source
+
+source "tests/content-scanning/page-analysis/content/ids.smd" markdown_start=107 markdown_len=182 sha256=a13f3892fb1d28099ae7af5b8162278041b87977bc040323aac50a77c4f9c393
+event enter depth=0 tag="document" range=1:1-10:25
+event enter depth=1 tag="heading" range=2:1-2:13 level=1
+event enter depth=2 tag="text" range=2:3-2:13 literal="Unknown ids"
+event exit depth=1 tag="heading" range=2:1-2:13 level=1
+event enter depth=1 tag="paragraph" range=3:1-6:26
+event enter depth=2 tag="link" range=3:1-3:14 destination="#apple" directive="link" src_kind="self_page" ref="apple"
+event enter depth=3 tag="text" range=3:2-3:5 literal="arst"
+event exit depth=2 tag="link" range=3:1-3:14 destination="#apple" directive="link" src_kind="self_page" ref="apple"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="link" range=4:1-4:27 destination="$link.ref(\"banana\")" directive="link" src_kind="self_page" ref="banana"
+event enter depth=3 tag="text" range=4:2-4:5 literal="arst"
+event exit depth=2 tag="link" range=4:1-4:27 destination="$link.ref(\"banana\")" directive="link" src_kind="self_page" ref="banana"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="link" range=5:1-5:27 destination="$link.ref(\"orange\")" directive="link" src_kind="self_page" ref="orange"
+event enter depth=3 tag="text" range=5:2-5:5 literal="arst"
+event exit depth=2 tag="link" range=5:1-5:27 destination="$link.ref(\"orange\")" directive="link" src_kind="self_page" ref="orange"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="link" range=6:1-6:26 destination="$link.ref(\"melon\")" directive="link" src_kind="self_page" ref="melon"
+event enter depth=3 tag="text" range=6:2-6:5 literal="arst"
+event exit depth=2 tag="link" range=6:1-6:26 destination="$link.ref(\"melon\")" directive="link" src_kind="self_page" ref="melon"
+event exit depth=1 tag="paragraph" range=3:1-6:26
+event enter depth=1 tag="heading" range=8:1-8:15 level=1
+event enter depth=2 tag="text" range=8:3-8:15 literal="Duplicate ids"
+event exit depth=1 tag="heading" range=8:1-8:15 level=1
+event enter depth=1 tag="paragraph" range=9:1-10:25
+event enter depth=2 tag="link" range=9:1-9:25 destination="$text.id(\"arst\")" directive="text" directive_id="arst"
+event enter depth=3 tag="text" range=9:2-9:6 literal="arst1"
+event exit depth=2 tag="link" range=9:1-9:25 destination="$text.id(\"arst\")" directive="text" directive_id="arst"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="link" range=10:1-10:25 destination="$text.id(\"arst\")" directive="text" directive_id="arst"
+event enter depth=3 tag="text" range=10:2-10:6 literal="arst2"
+event exit depth=2 tag="link" range=10:1-10:25 destination="$text.id(\"arst\")" directive="text" directive_id="arst"
+event exit depth=1 tag="paragraph" range=9:1-10:25
+event exit depth=0 tag="document" range=1:1-10:25
+id name="arst" tag="link" range=9:1-9:25
+error kind="duplicate_id" range=10:1-10:25 id="arst"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/ids.smd:16:1: error: duplicate id 'arst'
+|    [arst2]($text.id("arst"))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^
+| -- note: first definition was on line 15 col 1:
+|    [arst1]($text.id("arst"))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+error kind="invalid_ref" range=3:1-3:14
+diagnostic-begin
+tests/content-scanning/page-analysis/content/ids.smd:9:1: error: unknown ref
+|    [arst](#apple)
+|    ^^^^^^^^^^^^^^
+
+diagnostic-end
+error kind="invalid_ref" range=4:1-4:27
+diagnostic-begin
+tests/content-scanning/page-analysis/content/ids.smd:10:1: error: unknown ref
+|    [arst]($link.ref("banana"))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+error kind="invalid_ref" range=5:1-5:27
+diagnostic-begin
+tests/content-scanning/page-analysis/content/ids.smd:11:1: error: unknown ref
+|    [arst]($link.ref("orange"))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+error kind="invalid_ref" range=6:1-6:26
+diagnostic-begin
+tests/content-scanning/page-analysis/content/ids.smd:12:1: error: unknown ref
+|    [arst]($link.ref("melon"))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+html="<h1>Unknown ids</h1>\n<p><a href=\"#apple\">arst</a>\n<a href=\"$link.ref(%22banana%22)\">arst</a>\n<a href=\"$link.ref(%22orange%22)\">arst</a>\n<a href=\"$link.ref(%22melon%22)\">arst</a></p>\n<h1>Duplicate ids</h1>\n<p><a href=\"$text.id(%22arst%22)\">arst1</a>\n<a href=\"$text.id(%22arst%22)\">arst2</a></p>\n"
+end-source
+
+source "tests/content-scanning/page-analysis/content/index.smd" markdown_start=216 markdown_len=734 sha256=12f7861bda24e509ee487a558566e74f2c0f78f94bf92d54f866e840857543cb
+event enter depth=0 tag="document" range=1:1-41:0
+event enter depth=1 tag="heading" range=2:1-2:43 level=1 directive="heading" directive_id="okref"
+event enter depth=2 tag="link" range=2:3-2:32 destination="$heading.id('okref')" directive="heading" directive_id="okref"
+event enter depth=3 tag="text" range=2:4-2:9 literal="Ok Ref"
+event exit depth=2 tag="link" range=2:3-2:32 destination="$heading.id('okref')" directive="heading" directive_id="okref"
+event enter depth=2 tag="text" range=2:33-2:43 literal=" // correct"
+event exit depth=1 tag="heading" range=2:1-2:43 level=1 directive="heading" directive_id="okref"
+event enter depth=1 tag="heading" range=4:1-4:13 level=1
+event enter depth=2 tag="text" range=4:3-4:13 literal="Wrong asset"
+event exit depth=1 tag="heading" range=4:1-4:13 level=1
+event enter depth=1 tag="paragraph" range=5:1-5:47
+event enter depth=2 tag="link" range=5:1-5:39 destination="$image.siteAsset('doesntexist.jpg')" directive="image" src_kind="site_asset" src="doesntexist.jpg"
+event exit depth=2 tag="link" range=5:1-5:39 destination="$image.siteAsset('doesntexist.jpg')" directive="image" src_kind="site_asset" src="doesntexist.jpg"
+event enter depth=2 tag="text" range=5:40-5:47 literal=" //wrong"
+event exit depth=1 tag="paragraph" range=5:1-5:47
+event enter depth=1 tag="heading" range=7:1-7:32 level=1
+event enter depth=2 tag="text" range=7:3-7:32 literal="Self page, correct alternative"
+event exit depth=1 tag="heading" range=7:1-7:32 level=1
+event enter depth=1 tag="paragraph" range=8:1-8:46
+event enter depth=2 tag="link" range=8:1-8:36 destination="$link.alternative('correct-alt')" directive="link" src_kind="self_page" alternative="correct-alt"
+event exit depth=2 tag="link" range=8:1-8:36 destination="$link.alternative('correct-alt')" directive="link" src_kind="self_page" alternative="correct-alt"
+event enter depth=2 tag="text" range=8:37-8:46 literal=" //correct"
+event exit depth=1 tag="paragraph" range=8:1-8:46
+event enter depth=1 tag="heading" range=10:1-10:30 level=1
+event enter depth=2 tag="text" range=10:3-10:30 literal="Self page, wrong alternative"
+event exit depth=1 tag="heading" range=10:1-10:30 level=1
+event enter depth=1 tag="paragraph" range=11:1-11:56
+event enter depth=2 tag="link" range=11:1-11:48 destination="$link.alternative('doesntexist-alternative')" directive="link" src_kind="self_page" alternative="doesntexist-alternative"
+event exit depth=2 tag="link" range=11:1-11:48 destination="$link.alternative('doesntexist-alternative')" directive="link" src_kind="self_page" alternative="doesntexist-alternative"
+event enter depth=2 tag="text" range=11:49-11:56 literal=" //wrong"
+event exit depth=1 tag="paragraph" range=11:1-11:56
+event enter depth=1 tag="heading" range=13:1-13:24 level=1
+event enter depth=2 tag="text" range=13:3-13:24 literal="Self page, correct ref"
+event exit depth=1 tag="heading" range=13:1-13:24 level=1
+event enter depth=1 tag="paragraph" range=14:1-14:32
+event enter depth=2 tag="link" range=14:1-14:22 destination="$link.ref('okref')" directive="link" src_kind="self_page" ref="okref"
+event exit depth=2 tag="link" range=14:1-14:22 destination="$link.ref('okref')" directive="link" src_kind="self_page" ref="okref"
+event enter depth=2 tag="text" range=14:23-14:32 literal=" //correct"
+event exit depth=1 tag="paragraph" range=14:1-14:32
+event enter depth=1 tag="heading" range=16:1-16:14 level=1
+event enter depth=2 tag="text" range=16:3-16:14 literal="Correct page"
+event exit depth=1 tag="heading" range=16:1-16:14 level=1
+event enter depth=1 tag="paragraph" range=17:1-17:33
+event enter depth=2 tag="link" range=17:1-17:23 destination="$link.page('other')" directive="link" src_kind="page" src="other" page_kind="absolute"
+event exit depth=2 tag="link" range=17:1-17:23 destination="$link.page('other')" directive="link" src_kind="page" src="other" page_kind="absolute"
+event enter depth=2 tag="text" range=17:24-17:33 literal=" //correct"
+event exit depth=1 tag="paragraph" range=17:1-17:33
+event enter depth=1 tag="heading" range=19:1-19:14 level=1
+event enter depth=2 tag="text" range=19:3-19:14 literal="Correct page"
+event exit depth=1 tag="heading" range=19:1-19:14 level=1
+event enter depth=1 tag="paragraph" range=20:1-20:32
+event enter depth=2 tag="link" range=20:1-20:22 destination="$link.sub('other')" directive="link" src_kind="page" src="other" page_kind="sub"
+event exit depth=2 tag="link" range=20:1-20:22 destination="$link.sub('other')" directive="link" src_kind="page" src="other" page_kind="sub"
+event enter depth=2 tag="text" range=20:23-20:32 literal=" //correct"
+event exit depth=1 tag="paragraph" range=20:1-20:32
+event enter depth=1 tag="heading" range=22:1-22:12 level=1
+event enter depth=2 tag="text" range=22:3-22:12 literal="Wrong page"
+event exit depth=1 tag="heading" range=22:1-22:12 level=1
+event enter depth=1 tag="paragraph" range=23:1-23:37
+event enter depth=2 tag="link" range=23:1-23:29 destination="$link.page('doesntexist')" directive="link" src_kind="page" src="doesntexist" page_kind="absolute"
+event exit depth=2 tag="link" range=23:1-23:29 destination="$link.page('doesntexist')" directive="link" src_kind="page" src="doesntexist" page_kind="absolute"
+event enter depth=2 tag="text" range=23:30-23:37 literal=" //wrong"
+event exit depth=1 tag="paragraph" range=23:1-23:37
+event enter depth=1 tag="heading" range=25:1-25:33 level=1
+event enter depth=2 tag="text" range=25:3-25:33 literal="Correct page, wrong alternative"
+event exit depth=1 tag="heading" range=25:1-25:33 level=1
+event enter depth=1 tag="paragraph" range=26:1-26:59
+event enter depth=2 tag="link" range=26:1-26:50 destination="$link.page('other').alternative('doesntexist')" directive="link" src_kind="page" src="other" page_kind="absolute" alternative="doesntexist"
+event exit depth=2 tag="link" range=26:1-26:50 destination="$link.page('other').alternative('doesntexist')" directive="link" src_kind="page" src="other" page_kind="absolute" alternative="doesntexist"
+event enter depth=2 tag="text" range=26:51-26:59 literal=" // wrong"
+event exit depth=1 tag="paragraph" range=26:1-26:59
+event enter depth=1 tag="heading" range=28:1-28:17 level=1
+event enter depth=2 tag="text" range=28:3-28:17 literal="Markdown syntax"
+event exit depth=1 tag="heading" range=28:1-28:17 level=1
+event enter depth=1 tag="paragraph" range=29:1-33:27
+event enter depth=2 tag="image" range=29:1-29:13 destination="/bad.jpg" directive="image" src_kind="site_asset" src="bad.jpg"
+event exit depth=2 tag="image" range=29:1-29:13 destination="/bad.jpg" directive="image" src_kind="site_asset" src="bad.jpg"
+event enter depth=2 tag="text" range=29:14-29:21 literal=" //wrong"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="image" range=30:1-30:14 destination="./bad.jpg" directive="image" src_kind="page_asset" src="bad.jpg"
+event exit depth=2 tag="image" range=30:1-30:14 destination="./bad.jpg" directive="image" src_kind="page_asset" src="bad.jpg"
+event enter depth=2 tag="text" range=30:15-30:22 literal=" //wrong"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="image" range=31:1-31:12 destination="bad.jpg" directive="image" src_kind="page_asset" src="bad.jpg"
+event exit depth=2 tag="image" range=31:1-31:12 destination="bad.jpg" directive="image" src_kind="page_asset" src="bad.jpg"
+event enter depth=2 tag="text" range=31:13-31:21 literal=" // wrong"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="image" range=32:1-32:17 destination="/skater.webp" directive="image" src_kind="site_asset" src="skater.webp"
+event exit depth=2 tag="image" range=32:1-32:17 destination="/skater.webp" directive="image" src_kind="site_asset" src="skater.webp"
+event enter depth=2 tag="text" range=32:18-32:28 literal=" // correct"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="image" range=33:1-33:16 destination="skater.webp" directive="image" src_kind="page_asset" src="skater.webp"
+event exit depth=2 tag="image" range=33:1-33:16 destination="skater.webp" directive="image" src_kind="page_asset" src="skater.webp"
+event enter depth=2 tag="text" range=33:17-33:27 literal=" // correct"
+event exit depth=1 tag="paragraph" range=29:1-33:27
+event exit depth=0 tag="document" range=1:1-41:0
+id name="okref" tag="heading" range=2:1-2:43
+html="<h1><a href=\"$heading.id(&#x27;okref&#x27;)\">Ok Ref</a> // correct</h1>\n<h1>Wrong asset</h1>\n<p><a href=\"$image.siteAsset(&#x27;doesntexist.jpg&#x27;)\"></a> //wrong</p>\n<h1>Self page, correct alternative</h1>\n<p><a href=\"$link.alternative(&#x27;correct-alt&#x27;)\"></a> //correct</p>\n<h1>Self page, wrong alternative</h1>\n<p><a href=\"$link.alternative(&#x27;doesntexist-alternative&#x27;)\"></a> //wrong</p>\n<h1>Self page, correct ref</h1>\n<p><a href=\"$link.ref(&#x27;okref&#x27;)\"></a> //correct</p>\n<h1>Correct page</h1>\n<p><a href=\"$link.page(&#x27;other&#x27;)\"></a> //correct</p>\n<h1>Correct page</h1>\n<p><a href=\"$link.sub(&#x27;other&#x27;)\"></a> //correct</p>\n<h1>Wrong page</h1>\n<p><a href=\"$link.page(&#x27;doesntexist&#x27;)\"></a> //wrong</p>\n<h1>Correct page, wrong alternative</h1>\n<p><a href=\"$link.page(&#x27;other&#x27;).alternative(&#x27;doesntexist&#x27;)\"></a> // wrong</p>\n<h1>Markdown syntax</h1>\n<p><img src=\"/bad.jpg\" alt=\"\" /> //wrong\n<img src=\"./bad.jpg\" alt=\"\" /> //wrong\n<img src=\"bad.jpg\" alt=\"\" /> // wrong\n<img src=\"/skater.webp\" alt=\"\" /> // correct\n<img src=\"skater.webp\" alt=\"\" /> // correct</p>\n"
+end-source
+
+source "tests/content-scanning/page-analysis/content/other.smd" markdown_start=112 markdown_len=208 sha256=df4cfacff1ee056180eface8da045b693953758b8e0dda9597d9b6b57a693ba5
+event enter depth=0 tag="document" range=1:1-15:59
+event enter depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event enter depth=3 tag="text" range=2:4-2:5 literal="H1"
+event exit depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event exit depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=2 tag="text" range=3:1-3:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event enter depth=3 tag="text" range=5:5-5:6 literal="H2"
+event exit depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event exit depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=2 tag="text" range=6:1-6:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event enter depth=3 tag="text" range=8:6-8:7 literal="H3"
+event exit depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event exit depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=2 tag="text" range=9:1-9:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=1 tag="code_block" range=12:1-13:3 literal="" fence_info="zig++ wrong"
+event enter depth=1 tag="paragraph" range=15:1-15:59
+event enter depth=2 tag="link" range=15:1-15:51 destination="$code.siteAsset('code.zig').language('zig++')" directive="code" src_kind="site_asset" src="code.zig" language="zig++"
+event exit depth=2 tag="link" range=15:1-15:51 destination="$code.siteAsset('code.zig').language('zig++')" directive="code" src_kind="site_asset" src="code.zig" language="zig++"
+event enter depth=2 tag="text" range=15:52-15:59 literal=" //wrong"
+event exit depth=1 tag="paragraph" range=15:1-15:59
+event exit depth=0 tag="document" range=1:1-15:59
+id name="h1" tag="heading" range=2:1-2:25
+id name="h2" tag="heading" range=5:1-5:26
+id name="h3" tag="heading" range=8:1-8:27
+html="<h1><a href=\"$section.id(&#x27;h1&#x27;)\">H1</a></h1>\n<p>Lorem Ipsum 1</p>\n<h2><a href=\"$section.id(&#x27;h2&#x27;)\">H2</a></h2>\n<p>Lorem Ipsum 2</p>\n<h3><a href=\"$section.id(&#x27;h3&#x27;)\">H3</a></h3>\n<p>Lorem Ipsum 3</p>\n<pre><code class=\"language-zig++\"></code></pre>\n<p><a href=\"$code.siteAsset(&#x27;code.zig&#x27;).language(&#x27;zig++&#x27;)\"></a> //wrong</p>\n"
+end-source
+
+source "tests/content-scanning/page-analysis/content/parse.smd" markdown_start=115 markdown_len=851 sha256=a17b46b4aa0e2a5f2aefcc53f79c703adc2d57718b7aa8058e5e228867aa89cd
+event enter depth=0 tag="document" range=1:1-50:0
+event enter depth=1 tag="heading" range=1:1-1:13 level=1
+event enter depth=2 tag="text" range=1:3-1:13 literal="Inline html"
+event exit depth=1 tag="heading" range=1:1-1:13 level=1
+event enter depth=1 tag="paragraph" range=2:1-2:12
+event enter depth=2 tag="html_inline" range=2:1-2:3 literal="<b>"
+event enter depth=2 tag="text" range=2:4-2:8 literal="wrong"
+event enter depth=2 tag="html_inline" range=2:9-2:12 literal="</b>"
+event exit depth=1 tag="paragraph" range=2:1-2:12
+event enter depth=1 tag="html_block" range=4:1-4:33 literal="<div>wrong block-level html</div>\n"
+event enter depth=1 tag="paragraph" range=6:1-7:32
+event enter depth=2 tag="link" range=6:1-6:22 destination="$link.page(/other)"
+event exit depth=2 tag="link" range=6:1-6:22 destination="$link.page(/other)"
+event enter depth=2 tag="text" range=6:23-6:31 literal="  //wrong"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="link" range=7:1-7:23 destination="$link.page('/other)"
+event exit depth=2 tag="link" range=7:1-7:23 destination="$link.page('/other)"
+event enter depth=2 tag="text" range=7:24-7:32 literal="  //wrong"
+event exit depth=1 tag="paragraph" range=6:1-7:32
+event enter depth=1 tag="heading" range=9:1-9:65 level=1
+event enter depth=2 tag="text" range=9:3-9:65 literal="Correct page but wrong path (no abs paths in scripty arguments)"
+event exit depth=1 tag="heading" range=9:1-9:65 level=1
+event enter depth=1 tag="paragraph" range=10:1-10:33
+event enter depth=2 tag="link" range=10:1-10:24 destination="$link.page('/other')"
+event exit depth=2 tag="link" range=10:1-10:24 destination="$link.page('/other')"
+event enter depth=2 tag="text" range=10:25-10:33 literal="  //wrong"
+event exit depth=1 tag="paragraph" range=10:1-10:33
+event enter depth=1 tag="heading" range=12:1-12:37 level=1
+event enter depth=2 tag="text" range=12:3-12:37 literal="Wrong page (the dot makes it wrong)"
+event exit depth=1 tag="heading" range=12:1-12:37 level=1
+event enter depth=1 tag="paragraph" range=13:1-13:33
+event enter depth=2 tag="link" range=13:1-13:25 destination="$link.page('./other')"
+event exit depth=2 tag="link" range=13:1-13:25 destination="$link.page('./other')"
+event enter depth=2 tag="text" range=13:26-13:33 literal=" //wrong"
+event exit depth=1 tag="paragraph" range=13:1-13:33
+event enter depth=1 tag="heading" range=15:1-15:11 level=1
+event enter depth=2 tag="text" range=15:3-15:11 literal="Bad paths"
+event exit depth=1 tag="heading" range=15:1-15:11 level=1
+event enter depth=1 tag="paragraph" range=16:1-16:38
+event enter depth=2 tag="link" range=16:1-16:26 destination="$link.page('foo//bar')"
+event exit depth=2 tag="link" range=16:1-16:26 destination="$link.page('foo//bar')"
+event enter depth=2 tag="text" range=16:27-16:38 literal=" //wrong 1/9"
+event exit depth=1 tag="paragraph" range=16:1-16:38
+event enter depth=1 tag="paragraph" range=18:1-18:39
+event enter depth=2 tag="link" range=18:1-18:27 destination="$link.page('foo/./bar')"
+event exit depth=2 tag="link" range=18:1-18:27 destination="$link.page('foo/./bar')"
+event enter depth=2 tag="text" range=18:28-18:39 literal=" //wrong 2/9"
+event exit depth=1 tag="paragraph" range=18:1-18:39
+event enter depth=1 tag="paragraph" range=20:1-20:40
+event enter depth=2 tag="link" range=20:1-20:28 destination="$link.page('foo/../bar')"
+event exit depth=2 tag="link" range=20:1-20:28 destination="$link.page('foo/../bar')"
+event enter depth=2 tag="text" range=20:29-20:40 literal=" //wrong 3/9"
+event exit depth=1 tag="paragraph" range=20:1-20:40
+event enter depth=1 tag="paragraph" range=22:1-22:35
+event enter depth=2 tag="link" range=22:1-22:23 destination="$link.page('foo/.')"
+event exit depth=2 tag="link" range=22:1-22:23 destination="$link.page('foo/.')"
+event enter depth=2 tag="text" range=22:24-22:35 literal=" //wrong 4/9"
+event exit depth=1 tag="paragraph" range=22:1-22:35
+event enter depth=1 tag="paragraph" range=24:1-24:36
+event enter depth=2 tag="link" range=24:1-24:24 destination="$link.page('foo/..')"
+event exit depth=2 tag="link" range=24:1-24:24 destination="$link.page('foo/..')"
+event enter depth=2 tag="text" range=24:25-24:36 literal=" //wrong 5/9"
+event exit depth=1 tag="paragraph" range=24:1-24:36
+event enter depth=1 tag="paragraph" range=26:1-26:42
+event enter depth=2 tag="link" range=26:1-26:30 destination="$link.page('a//foo/./bar')"
+event exit depth=2 tag="link" range=26:1-26:30 destination="$link.page('a//foo/./bar')"
+event enter depth=2 tag="text" range=26:31-26:42 literal=" //wrong 6/9"
+event exit depth=1 tag="paragraph" range=26:1-26:42
+event enter depth=1 tag="paragraph" range=28:1-28:43
+event enter depth=2 tag="link" range=28:1-28:31 destination="$link.page('a//foo/../bar')"
+event exit depth=2 tag="link" range=28:1-28:31 destination="$link.page('a//foo/../bar')"
+event enter depth=2 tag="text" range=28:32-28:43 literal=" //wrong 7/9"
+event exit depth=1 tag="paragraph" range=28:1-28:43
+event enter depth=1 tag="paragraph" range=30:1-30:38
+event enter depth=2 tag="link" range=30:1-30:26 destination="$link.page('a//foo/.')"
+event exit depth=2 tag="link" range=30:1-30:26 destination="$link.page('a//foo/.')"
+event enter depth=2 tag="text" range=30:27-30:38 literal=" //wrong 8/9"
+event exit depth=1 tag="paragraph" range=30:1-30:38
+event enter depth=1 tag="paragraph" range=32:1-32:39
+event enter depth=2 tag="link" range=32:1-32:27 destination="$link.page('a//foo/..')"
+event exit depth=2 tag="link" range=32:1-32:27 destination="$link.page('a//foo/..')"
+event enter depth=2 tag="text" range=32:28-32:39 literal=" //wrong 9/9"
+event exit depth=1 tag="paragraph" range=32:1-32:39
+event enter depth=1 tag="heading" range=34:1-34:18 level=1
+event enter depth=2 tag="text" range=34:3-34:18 literal="Invalid sections"
+event exit depth=1 tag="heading" range=34:1-34:18 level=1
+event enter depth=1 tag="heading" range=35:1-35:15 level=2
+event enter depth=2 tag="link" range=35:4-35:15 destination="$section" directive="section"
+event exit depth=2 tag="link" range=35:4-35:15 destination="$section" directive="section"
+event exit depth=1 tag="heading" range=35:1-35:15 level=2
+event enter depth=1 tag="block_quote" range=38:1-40:1
+event enter depth=2 tag="paragraph" range=38:3-38:24
+event enter depth=3 tag="link" range=38:3-38:24 destination="$section.id('foo')" directive="section" directive_id="foo"
+event exit depth=3 tag="link" range=38:3-38:24 destination="$section.id('foo')" directive="section" directive_id="foo"
+event exit depth=2 tag="paragraph" range=38:3-38:24
+event exit depth=1 tag="block_quote" range=38:1-40:1
+event enter depth=1 tag="heading" range=42:1-42:5 level=1
+event enter depth=2 tag="text" range=42:3-42:5 literal="Alt"
+event exit depth=1 tag="heading" range=42:1-42:5 level=1
+event enter depth=1 tag="paragraph" range=43:1-43:28
+event enter depth=2 tag="link" range=43:1-43:28 destination="$link.page(\"foo\")" title="arst" directive="link" src_kind="page" src="foo" page_kind="absolute"
+event exit depth=2 tag="link" range=43:1-43:28 destination="$link.page(\"foo\")" title="arst" directive="link" src_kind="page" src="foo" page_kind="absolute"
+event exit depth=1 tag="paragraph" range=43:1-43:28
+event enter depth=1 tag="heading" range=45:1-45:22 level=1
+event enter depth=2 tag="text" range=45:3-45:22 literal="Expr in image syntax"
+event exit depth=1 tag="heading" range=45:1-45:22 level=1
+event enter depth=1 tag="paragraph" range=46:1-46:10
+event enter depth=2 tag="image" range=46:1-46:10 destination="$link"
+event exit depth=2 tag="image" range=46:1-46:10 destination="$link"
+event exit depth=1 tag="paragraph" range=46:1-46:10
+event enter depth=1 tag="heading" range=48:1-48:18 level=1
+event enter depth=2 tag="text" range=48:3-48:18 literal="Empty expression"
+event exit depth=1 tag="heading" range=48:1-48:18 level=1
+event enter depth=1 tag="paragraph" range=49:1-49:8
+event enter depth=2 tag="link" range=49:1-49:8 destination=""
+event enter depth=3 tag="text" range=49:2-49:5 literal="arst"
+event exit depth=2 tag="link" range=49:1-49:8 destination=""
+event exit depth=1 tag="paragraph" range=49:1-49:8
+event exit depth=0 tag="document" range=1:1-50:0
+id name="foo" tag="block_quote" range=38:1-40:1
+error kind="inline_html" range=4:1-4:33
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:10:1: error: markdown inline html syntax is forbidden
+|    <div>wrong block-level html</div>
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| -- note: superhtml supports `=html` code blocks as an alternative
+
+diagnostic-end
+error kind="scripty" range=6:1-6:22 message="unexpected token"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:12:1: [scripty] error: unexpected token
+|    []($link.page(/other))  //wrong
+|                  ^
+
+diagnostic-end
+error kind="scripty" range=7:1-7:23 message="unexpected token"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:13:1: [scripty] error: unexpected token
+|    []($link.page('/other))  //wrong
+|                  ^^^^^^^^
+
+diagnostic-end
+error kind="scripty" range=10:1-10:24 message="path must be relative"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:16:1: [scripty] error: path must be relative
+|    []($link.page('/other'))  //wrong
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=13:1-13:25 message="'.' and '..' are not allowed in paths"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:19:1: [scripty] error: '.' and '..' are not allowed in paths
+|    []($link.page('./other')) //wrong
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=16:1-16:26 message="empty component in path"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:22:1: [scripty] error: empty component in path
+|    []($link.page('foo//bar')) //wrong 1/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=18:1-18:27 message="'.' and '..' are not allowed in paths"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:24:1: [scripty] error: '.' and '..' are not allowed in paths
+|    []($link.page('foo/./bar')) //wrong 2/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=20:1-20:28 message="'.' and '..' are not allowed in paths"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:26:1: [scripty] error: '.' and '..' are not allowed in paths
+|    []($link.page('foo/../bar')) //wrong 3/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=22:1-22:23 message="'.' and '..' are not allowed in paths"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:28:1: [scripty] error: '.' and '..' are not allowed in paths
+|    []($link.page('foo/.')) //wrong 4/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=24:1-24:24 message="'.' and '..' are not allowed in paths"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:30:1: [scripty] error: '.' and '..' are not allowed in paths
+|    []($link.page('foo/..')) //wrong 5/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=26:1-26:30 message="empty component in path"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:32:1: [scripty] error: empty component in path
+|    []($link.page('a//foo/./bar')) //wrong 6/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=28:1-28:31 message="empty component in path"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:34:1: [scripty] error: empty component in path
+|    []($link.page('a//foo/../bar')) //wrong 7/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=30:1-30:26 message="empty component in path"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:36:1: [scripty] error: empty component in path
+|    []($link.page('a//foo/.')) //wrong 8/9
+|             ^^^^
+
+diagnostic-end
+error kind="scripty" range=32:1-32:27 message="empty component in path"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:38:1: [scripty] error: empty component in path
+|    []($link.page('a//foo/..')) //wrong 9/9
+|             ^^^^
+
+diagnostic-end
+error kind="heading_section_missing_id" range=35:4-35:15
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:41:4: error: missing section id
+|    ## []($section)
+|       ^^^^^^^^^^^^
+| -- note: all heading sections must have an id
+
+diagnostic-end
+error kind="scripty" range=38:3-38:24 message="sections must be top level elements or be embedded in headings"
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:44:3: [scripty] error: sections must be top level elements or be embedded in headings
+|    > []($section.id('foo'))
+|         ^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+error kind="no_alt_in_links" range=43:1-43:28
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:49:1: error: vanilla alt text in scripted link syntax
+|    []($link.page("foo") "arst")
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| -- note: use `.alt()` to provide alt text
+
+diagnostic-end
+error kind="expression_in_image_syntax" range=46:1-46:10
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:52:1: error: scripty expression in image syntax
+|    ![]($link)
+|    ^^^^^^^^^^
+| -- note: scripty expressions go in link syntax, remove the '!'
+
+diagnostic-end
+error kind="empty_expression" range=49:1-49:8
+diagnostic-begin
+tests/content-scanning/page-analysis/content/parse.smd:55:1: error: link syntax without link or scripty expression
+|    [arst]()
+|    ^^^^^^^^
+
+diagnostic-end
+html="<h1>Inline html</h1>\n<p><!-- raw HTML omitted -->wrong<!-- raw HTML omitted --></p>\n<!-- raw HTML omitted -->\n<p><a href=\"$link.page(/other)\"></a>  //wrong\n<a href=\"$link.page(&#x27;/other)\"></a>  //wrong</p>\n<h1>Correct page but wrong path (no abs paths in scripty arguments)</h1>\n<p><a href=\"$link.page(&#x27;/other&#x27;)\"></a>  //wrong</p>\n<h1>Wrong page (the dot makes it wrong)</h1>\n<p><a href=\"$link.page(&#x27;./other&#x27;)\"></a> //wrong</p>\n<h1>Bad paths</h1>\n<p><a href=\"$link.page(&#x27;foo//bar&#x27;)\"></a> //wrong 1/9</p>\n<p><a href=\"$link.page(&#x27;foo/./bar&#x27;)\"></a> //wrong 2/9</p>\n<p><a href=\"$link.page(&#x27;foo/../bar&#x27;)\"></a> //wrong 3/9</p>\n<p><a href=\"$link.page(&#x27;foo/.&#x27;)\"></a> //wrong 4/9</p>\n<p><a href=\"$link.page(&#x27;foo/..&#x27;)\"></a> //wrong 5/9</p>\n<p><a href=\"$link.page(&#x27;a//foo/./bar&#x27;)\"></a> //wrong 6/9</p>\n<p><a href=\"$link.page(&#x27;a//foo/../bar&#x27;)\"></a> //wrong 7/9</p>\n<p><a href=\"$link.page(&#x27;a//foo/.&#x27;)\"></a> //wrong 8/9</p>\n<p><a href=\"$link.page(&#x27;a//foo/..&#x27;)\"></a> //wrong 9/9</p>\n<h1>Invalid sections</h1>\n<h2><a href=\"$section\"></a></h2>\n<blockquote>\n<p><a href=\"$section.id(&#x27;foo&#x27;)\"></a></p>\n</blockquote>\n<h1>Alt</h1>\n<p><a href=\"$link.page(%22foo%22)\" title=\"arst\"></a></p>\n<h1>Expr in image syntax</h1>\n<p><img src=\"$link\" alt=\"\" /></p>\n<h1>Empty expression</h1>\n<p><a href=\"\">arst</a></p>\n"
+end-source
+
+source "tests/content-scanning/simple/content/archive/2024/first.smd" markdown_start=126 markdown_len=12 sha256=7e838193d4b7100f43b5b07566ef4bef193cb367a2d67aa62a6f66f06e0a4b8a
+event enter depth=0 tag="document" range=1:1-1:11
+event enter depth=1 tag="paragraph" range=1:1-1:11
+event enter depth=2 tag="text" range=1:1-1:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=1:1-1:11
+event exit depth=0 tag="document" range=1:1-1:11
+html="<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/content-scanning/simple/content/archive/2024/index.smd" markdown_start=105 markdown_len=21 sha256=35f116cbabfc7bc67468d8041c9a4c31ed5a5fb3c8c9d135e8f39a3a2639415b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2024"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2024</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/content-scanning/simple/content/archive/2025/index.smd" markdown_start=105 markdown_len=21 sha256=3cc2cb89ed1e8670456aebe1f8f1fe2c93bc73cea5378fc737ff586e1082038b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2025"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2025</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/content-scanning/simple/content/archive/2025/second.smd" markdown_start=127 markdown_len=26 sha256=f2ab738c835f9c2df6b6142274d4264a035069cd6a544116fbfc5b27d65737a2
+event enter depth=0 tag="document" range=1:1-1:25
+event enter depth=1 tag="paragraph" range=1:1-1:25
+event enter depth=2 tag="text" range=1:1-1:25 literal="dolor something something"
+event exit depth=1 tag="paragraph" range=1:1-1:25
+event exit depth=0 tag="document" range=1:1-1:25
+html="<p>dolor something something</p>\n"
+end-source
+
+source "tests/content-scanning/simple/content/archive/index.smd" markdown_start=110 markdown_len=9 sha256=6e1daa069e7da376bf409160dca8f47867523551e31d0f71010243316a44be57
+event enter depth=0 tag="document" range=1:1-2:7
+event enter depth=1 tag="paragraph" range=2:1-2:7
+event enter depth=2 tag="text" range=2:1-2:7 literal="Archive"
+event exit depth=1 tag="paragraph" range=2:1-2:7
+event exit depth=0 tag="document" range=1:1-2:7
+html="<p>Archive</p>\n"
+end-source
+
+source "tests/content-scanning/simple/content/index.smd" markdown_start=93 markdown_len=101 sha256=92927de1592047d58b41dcc5120d9613323856cc4488ee0341fce25a72bf805f
+event enter depth=0 tag="document" range=1:1-12:0
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=2 tag="text" range=4:3-4:4 literal="H1"
+event exit depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=2 tag="text" range=5:1-5:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=2 tag="text" range=7:4-7:5 literal="H2"
+event exit depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=2 tag="text" range=8:1-8:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=2 tag="text" range=10:5-10:6 literal="H3"
+event exit depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=1 tag="paragraph" range=11:1-11:13
+event enter depth=2 tag="text" range=11:1-11:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=11:1-11:13
+event exit depth=0 tag="document" range=1:1-12:0
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n<h1>H1</h1>\n<p>Lorem Ipsum 1</p>\n<h2>H2</h2>\n<p>Lorem Ipsum 2</p>\n<h3>H3</h3>\n<p>Lorem Ipsum 3</p>\n"
+end-source
+
+source "tests/content-scanning/simple/content/sections.smd" markdown_start=112 markdown_len=127 sha256=340333129dff8c58694bc011b8139a235c91c478a2507f8b9a98599aec590b30
+event enter depth=0 tag="document" range=1:1-10:0
+event enter depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event enter depth=3 tag="text" range=2:4-2:5 literal="H1"
+event exit depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event exit depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=2 tag="text" range=3:1-3:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event enter depth=3 tag="text" range=5:5-5:6 literal="H2"
+event exit depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event exit depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=2 tag="text" range=6:1-6:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event enter depth=3 tag="text" range=8:6-8:7 literal="H3"
+event exit depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event exit depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=2 tag="text" range=9:1-9:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=9:1-9:13
+event exit depth=0 tag="document" range=1:1-10:0
+id name="h1" tag="heading" range=2:1-2:25
+id name="h2" tag="heading" range=5:1-5:26
+id name="h3" tag="heading" range=8:1-8:27
+html="<h1><a href=\"$section.id(&#x27;h1&#x27;)\">H1</a></h1>\n<p>Lorem Ipsum 1</p>\n<h2><a href=\"$section.id(&#x27;h2&#x27;)\">H2</a></h2>\n<p>Lorem Ipsum 2</p>\n<h3><a href=\"$section.id(&#x27;h3&#x27;)\">H3</a></h3>\n<p>Lorem Ipsum 3</p>\n"
+end-source
+
+source "tests/content-scanning/templates/content/another.smd" markdown_start=118 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/templates/content/badextend.smd" markdown_start=109 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/templates/content/badhtml.smd" markdown_start=107 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/templates/content/badshtml.smd" markdown_start=108 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/templates/content/index.smd" markdown_start=109 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/content-scanning/templates/content/page.smd" markdown_start=104 markdown_len=36 sha256=a0ae2a99cd86a3e155672d9cb1f7962a62c8d57662fe36817cbe78d603adbab8
+event enter depth=0 tag="document" range=1:1-1:35
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event exit depth=0 tag="document" range=1:1-1:35
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n"
+end-source
+
+source "tests/drafts/simple/content/archive/2024/first.smd" markdown_start=125 markdown_len=12 sha256=7e838193d4b7100f43b5b07566ef4bef193cb367a2d67aa62a6f66f06e0a4b8a
+event enter depth=0 tag="document" range=1:1-1:11
+event enter depth=1 tag="paragraph" range=1:1-1:11
+event enter depth=2 tag="text" range=1:1-1:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=1:1-1:11
+event exit depth=0 tag="document" range=1:1-1:11
+html="<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/drafts/simple/content/archive/2024/index.smd" markdown_start=105 markdown_len=21 sha256=35f116cbabfc7bc67468d8041c9a4c31ed5a5fb3c8c9d135e8f39a3a2639415b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2024"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2024</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/drafts/simple/content/archive/2025/index.smd" markdown_start=105 markdown_len=21 sha256=3cc2cb89ed1e8670456aebe1f8f1fe2c93bc73cea5378fc737ff586e1082038b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2025"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2025</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/drafts/simple/content/archive/2025/second.smd" markdown_start=127 markdown_len=26 sha256=f2ab738c835f9c2df6b6142274d4264a035069cd6a544116fbfc5b27d65737a2
+event enter depth=0 tag="document" range=1:1-1:25
+event enter depth=1 tag="paragraph" range=1:1-1:25
+event enter depth=2 tag="text" range=1:1-1:25 literal="dolor something something"
+event exit depth=1 tag="paragraph" range=1:1-1:25
+event exit depth=0 tag="document" range=1:1-1:25
+html="<p>dolor something something</p>\n"
+end-source
+
+source "tests/drafts/simple/content/archive/index.smd" markdown_start=109 markdown_len=9 sha256=6e1daa069e7da376bf409160dca8f47867523551e31d0f71010243316a44be57
+event enter depth=0 tag="document" range=1:1-2:7
+event enter depth=1 tag="paragraph" range=2:1-2:7
+event enter depth=2 tag="text" range=2:1-2:7 literal="Archive"
+event exit depth=1 tag="paragraph" range=2:1-2:7
+event exit depth=0 tag="document" range=1:1-2:7
+html="<p>Archive</p>\n"
+end-source
+
+source "tests/drafts/simple/content/index.smd" markdown_start=109 markdown_len=101 sha256=92927de1592047d58b41dcc5120d9613323856cc4488ee0341fce25a72bf805f
+event enter depth=0 tag="document" range=1:1-12:0
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=2 tag="text" range=4:3-4:4 literal="H1"
+event exit depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=2 tag="text" range=5:1-5:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=2 tag="text" range=7:4-7:5 literal="H2"
+event exit depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=2 tag="text" range=8:1-8:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=2 tag="text" range=10:5-10:6 literal="H3"
+event exit depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=1 tag="paragraph" range=11:1-11:13
+event enter depth=2 tag="text" range=11:1-11:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=11:1-11:13
+event exit depth=0 tag="document" range=1:1-12:0
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n<h1>H1</h1>\n<p>Lorem Ipsum 1</p>\n<h2>H2</h2>\n<p>Lorem Ipsum 2</p>\n<h3>H3</h3>\n<p>Lorem Ipsum 3</p>\n"
+end-source
+
+source "tests/drafts/simple/content/sections.smd" markdown_start=112 markdown_len=189 sha256=3db3d294b6252d9f60a1a3f52ae9992d41d6d9e7043b223ed656650ed58b4e36
+event enter depth=0 tag="document" range=1:1-13:37
+event enter depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event enter depth=3 tag="text" range=2:4-2:5 literal="H1"
+event exit depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event exit depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=2 tag="text" range=3:1-3:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event enter depth=3 tag="text" range=5:5-5:6 literal="H2"
+event exit depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event exit depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=2 tag="text" range=6:1-6:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event enter depth=3 tag="text" range=8:6-8:7 literal="H3"
+event exit depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event exit depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=2 tag="text" range=9:1-9:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=1 tag="paragraph" range=11:1-11:22
+event enter depth=2 tag="text" range=11:1-11:18 literal="This is a footnote"
+event enter depth=2 tag="<unknown>" range=11:19-11:22 literal="1" reference_index=1
+event exit depth=2 tag="<unknown>" range=11:19-11:22 literal="1" reference_index=1
+event exit depth=1 tag="paragraph" range=11:1-11:22
+event enter depth=1 tag="<unknown>" range=13:7-13:37 literal="1" reference_count=1
+event enter depth=2 tag="paragraph" range=13:7-13:37
+event enter depth=3 tag="text" range=13:7-13:37 literal="That should not break this page"
+event exit depth=2 tag="paragraph" range=13:7-13:37
+event exit depth=1 tag="<unknown>" range=13:7-13:37 literal="1" reference_count=1
+event exit depth=0 tag="document" range=1:1-13:37
+id name="h1" tag="heading" range=2:1-2:25
+id name="h2" tag="heading" range=5:1-5:26
+id name="h3" tag="heading" range=8:1-8:27
+id name="fn-1" tag="<unknown>" range=13:7-13:37
+id name="fn-1-ref-1" tag="<unknown>" range=11:19-11:22
+footnote name="1" definition_id="fn-1" reference_ids=["fn-1-ref-1"]
+html="<h1><a href=\"$section.id(&#x27;h1&#x27;)\">H1</a></h1>\n<p>Lorem Ipsum 1</p>\n<h2><a href=\"$section.id(&#x27;h2&#x27;)\">H2</a></h2>\n<p>Lorem Ipsum 2</p>\n<h3><a href=\"$section.id(&#x27;h3&#x27;)\">H3</a></h3>\n<p>Lorem Ipsum 3</p>\n<p>This is a footnote<sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1\" data-footnote-ref>1</a></sup></p>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-1\">\n<p>That should not break this page <a href=\"#fnref-1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n</li>\n</ol>\n</section>\n"
+end-source
+
+source "tests/markdown-oracle/fixtures/commonmark.md" markdown_start=0 markdown_len=318 sha256=4762c92026632735b9e84f357a5a8c164850e65e2917917895288a5eb9696901
+event enter depth=0 tag="document" range=1:1-24:39
+event enter depth=1 tag="heading" range=1:1-1:13 level=1
+event enter depth=2 tag="text" range=1:3-1:13 literal="ATX heading"
+event exit depth=1 tag="heading" range=1:1-1:13 level=1
+event enter depth=1 tag="paragraph" range=3:1-3:66
+event enter depth=2 tag="text" range=3:1-3:15 literal="Paragraph with "
+event enter depth=2 tag="emph" range=3:16-3:25
+event enter depth=3 tag="text" range=3:17-3:24 literal="emphasis"
+event exit depth=2 tag="emph" range=3:16-3:25
+event enter depth=2 tag="text" range=3:26-3:27 literal=", "
+event enter depth=2 tag="strong" range=3:28-3:46
+event enter depth=3 tag="text" range=3:30-3:44 literal="strong emphasis"
+event exit depth=2 tag="strong" range=3:28-3:46
+event enter depth=2 tag="text" range=3:47-3:52 literal=", and "
+event enter depth=2 tag="code" range=3:54-3:64 literal="inline code"
+event enter depth=2 tag="text" range=3:66-3:66 literal="."
+event exit depth=1 tag="paragraph" range=3:1-3:66
+event enter depth=1 tag="heading" range=5:1-7:0 level=2
+event enter depth=2 tag="text" range=5:1-5:14 literal="Setext heading"
+event exit depth=1 tag="heading" range=5:1-7:0 level=2
+event enter depth=1 tag="block_quote" range=8:1-11:15
+event enter depth=2 tag="paragraph" range=8:3-8:13
+event enter depth=3 tag="text" range=8:3-8:13 literal="Block quote"
+event exit depth=2 tag="paragraph" range=8:3-8:13
+event enter depth=2 tag="list" range=10:3-11:15 list=ul tight=true
+event enter depth=3 tag="item" range=10:3-10:15
+event enter depth=4 tag="paragraph" range=10:5-10:15
+event enter depth=5 tag="text" range=10:5-10:15 literal="nested item"
+event exit depth=4 tag="paragraph" range=10:5-10:15
+event exit depth=3 tag="item" range=10:3-10:15
+event enter depth=3 tag="item" range=11:3-11:15
+event enter depth=4 tag="paragraph" range=11:5-11:15
+event enter depth=5 tag="text" range=11:5-11:15 literal="second item"
+event exit depth=4 tag="paragraph" range=11:5-11:15
+event exit depth=3 tag="item" range=11:3-11:15
+event exit depth=2 tag="list" range=10:3-11:15 list=ul tight=true
+event exit depth=1 tag="block_quote" range=8:1-11:15
+event enter depth=1 tag="list" range=13:1-15:0 list=ol tight=true
+event enter depth=2 tag="item" range=13:1-13:10
+event enter depth=3 tag="paragraph" range=13:4-13:10
+event enter depth=4 tag="text" range=13:4-13:10 literal="ordered"
+event exit depth=3 tag="paragraph" range=13:4-13:10
+event exit depth=2 tag="item" range=13:1-13:10
+event enter depth=2 tag="item" range=14:1-15:0
+event enter depth=3 tag="paragraph" range=14:4-14:7
+event enter depth=4 tag="text" range=14:4-14:7 literal="list"
+event exit depth=3 tag="paragraph" range=14:4-14:7
+event exit depth=2 tag="item" range=14:1-15:0
+event exit depth=1 tag="list" range=13:1-15:0 list=ol tight=true
+event enter depth=1 tag="thematic_break" range=16:1-17:0
+event enter depth=1 tag="code_block" range=18:1-20:3 literal="const answer = 42;\n" fence_info="zig"
+event enter depth=1 tag="paragraph" range=22:1-22:57
+event enter depth=2 tag="text" range=22:1-22:10 literal="Reference "
+event enter depth=2 tag="link" range=22:11-22:24 destination="https://example.com" title="Example" directive="link" src_kind="url" src="https://example.com" new=false
+event enter depth=3 tag="text" range=22:12-22:15 literal="link"
+event exit depth=2 tag="link" range=22:11-22:24 destination="https://example.com" title="Example" directive="link" src_kind="url" src="https://example.com" new=false
+event enter depth=2 tag="text" range=22:25-22:29 literal=" and "
+event enter depth=2 tag="image" range=22:30-22:56 destination="image.png" title="title" directive="image" src_kind="page_asset" src="image.png" alt="title"
+event enter depth=3 tag="text" range=22:32-22:36 literal="image"
+event exit depth=2 tag="image" range=22:30-22:56 destination="image.png" title="title" directive="image" src_kind="page_asset" src="image.png" alt="title"
+event enter depth=2 tag="text" range=22:57-22:57 literal="."
+event exit depth=1 tag="paragraph" range=22:1-22:57
+event exit depth=0 tag="document" range=1:1-24:39
+error kind="no_alt_in_links" range=22:11-22:24
+diagnostic-begin
+tests/markdown-oracle/fixtures/commonmark.md:22:11: error: vanilla alt text in scripted link syntax
+|    Reference [link][target] and ![image](image.png "title").
+|              ^^^^^^^^^^^^^^
+| -- note: use `.alt()` to provide alt text
+
+diagnostic-end
+html="<h1>ATX heading</h1>\n<p>Paragraph with <em>emphasis</em>, <strong>strong emphasis</strong>, and <code>inline code</code>.</p>\n<h2>Setext heading</h2>\n<blockquote>\n<p>Block quote</p>\n<ul>\n<li>nested item</li>\n<li>second item</li>\n</ul>\n</blockquote>\n<ol>\n<li>ordered</li>\n<li>list</li>\n</ol>\n<hr />\n<pre><code class=\"language-zig\">const answer = 42;\n</code></pre>\n<p>Reference <a href=\"https://example.com\" title=\"Example\">link</a> and <img src=\"image.png\" alt=\"image\" title=\"title\" />.</p>\n"
+end-source
+
+source "tests/markdown-oracle/fixtures/diagnostics.md" markdown_start=0 markdown_len=310 sha256=aec9f229bf58efdf9415938641461942e762be29eb800bdd65888a3efae59fda
+event enter depth=0 tag="document" range=1:1-17:9
+event enter depth=1 tag="heading" range=1:1-1:22 level=2
+event enter depth=2 tag="text" range=1:4-1:22 literal="Starts at level two"
+event exit depth=1 tag="heading" range=1:1-1:22 level=2
+event enter depth=1 tag="paragraph" range=3:1-3:38
+event enter depth=2 tag="html_inline" range=3:1-3:6 literal="<span>"
+event enter depth=2 tag="text" range=3:7-3:31 literal="Inline HTML is forbidden."
+event enter depth=2 tag="html_inline" range=3:32-3:38 literal="</span>"
+event exit depth=1 tag="paragraph" range=3:1-3:38
+event enter depth=1 tag="html_block" range=5:1-5:35 literal="<div>Block HTML is forbidden.</div>\n"
+event enter depth=1 tag="heading" range=7:1-7:35 level=1 directive="heading" directive_id="duplicate"
+event enter depth=2 tag="link" range=7:3-7:35 destination="$heading.id('duplicate')" directive="heading" directive_id="duplicate"
+event enter depth=3 tag="text" range=7:4-7:8 literal="First"
+event exit depth=2 tag="link" range=7:3-7:35 destination="$heading.id('duplicate')" directive="heading" directive_id="duplicate"
+event exit depth=1 tag="heading" range=7:1-7:35 level=1 directive="heading" directive_id="duplicate"
+event enter depth=1 tag="heading" range=9:1-9:36 level=1 directive="heading" directive_id="duplicate"
+event enter depth=2 tag="link" range=9:3-9:36 destination="$heading.id('duplicate')" directive="heading" directive_id="duplicate"
+event enter depth=3 tag="text" range=9:4-9:9 literal="Second"
+event exit depth=2 tag="link" range=9:3-9:36 destination="$heading.id('duplicate')" directive="heading" directive_id="duplicate"
+event exit depth=1 tag="heading" range=9:1-9:36 level=1 directive="heading" directive_id="duplicate"
+event enter depth=1 tag="paragraph" range=11:1-11:36
+event enter depth=2 tag="link" range=11:1-11:36 destination="#does-not-exist" directive="link" src_kind="self_page" ref="does-not-exist"
+event enter depth=3 tag="text" range=11:2-11:18 literal="Missing reference"
+event exit depth=2 tag="link" range=11:1-11:36 destination="#does-not-exist" directive="link" src_kind="self_page" ref="does-not-exist"
+event exit depth=1 tag="paragraph" range=11:1-11:36
+event enter depth=1 tag="paragraph" range=13:1-13:52
+event enter depth=2 tag="link" range=13:1-13:52 destination="$link.url('https://example.com')" title="title" directive="link" src_kind="url" src="https://example.com"
+event enter depth=3 tag="text" range=13:2-13:9 literal="Alt text"
+event exit depth=2 tag="link" range=13:1-13:52 destination="$link.url('https://example.com')" title="title" directive="link" src_kind="url" src="https://example.com"
+event exit depth=1 tag="paragraph" range=13:1-13:52
+event enter depth=1 tag="paragraph" range=15:1-15:30
+event enter depth=2 tag="image" range=15:1-15:30 destination="$image.asset('wrong.png')"
+event exit depth=2 tag="image" range=15:1-15:30 destination="$image.asset('wrong.png')"
+event exit depth=1 tag="paragraph" range=15:1-15:30
+event enter depth=1 tag="paragraph" range=17:1-17:9
+event enter depth=2 tag="link" range=17:1-17:9 destination=""
+event enter depth=3 tag="text" range=17:2-17:6 literal="Empty"
+event exit depth=2 tag="link" range=17:1-17:9 destination=""
+event exit depth=1 tag="paragraph" range=17:1-17:9
+event exit depth=0 tag="document" range=1:1-17:9
+id name="duplicate" tag="heading" range=7:1-7:35
+error kind="heading_skip" range=1:1-1:22 have=2
+diagnostic-begin
+tests/markdown-oracle/fixtures/diagnostics.md:1:1: error: skipped heading level
+|    ## Starts at level two
+|    ^^^^^^^^^^^^^^^^^^^^^^
+| -- note: supermd documents start at heading level 1 ('#')
+| -- note: if your intent is to start the content at '<h2>', you
+|          can change how headings render in html by setting the
+|          corresponding option in your zine config file
+
+diagnostic-end
+error kind="inline_html" range=5:1-5:35
+diagnostic-begin
+tests/markdown-oracle/fixtures/diagnostics.md:5:1: error: markdown inline html syntax is forbidden
+|    <div>Block HTML is forbidden.</div>
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| -- note: superhtml supports `=html` code blocks as an alternative
+
+diagnostic-end
+error kind="duplicate_id" range=9:1-9:36 id="duplicate"
+diagnostic-begin
+tests/markdown-oracle/fixtures/diagnostics.md:9:1: error: duplicate id 'duplicate'
+|    # [Second]($heading.id('duplicate'))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| -- note: first definition was on line 7 col 1:
+|    # [First]($heading.id('duplicate'))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+error kind="no_alt_in_links" range=13:1-13:52
+diagnostic-begin
+tests/markdown-oracle/fixtures/diagnostics.md:13:1: error: vanilla alt text in scripted link syntax
+|    [Alt text]($link.url('https://example.com') "title")
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| -- note: use `.alt()` to provide alt text
+
+diagnostic-end
+error kind="expression_in_image_syntax" range=15:1-15:30
+diagnostic-begin
+tests/markdown-oracle/fixtures/diagnostics.md:15:1: error: scripty expression in image syntax
+|    ![]($image.asset('wrong.png'))
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| -- note: scripty expressions go in link syntax, remove the '!'
+
+diagnostic-end
+error kind="empty_expression" range=17:1-17:9
+diagnostic-begin
+tests/markdown-oracle/fixtures/diagnostics.md:17:1: error: link syntax without link or scripty expression
+|    [Empty]()
+|    ^^^^^^^^^
+
+diagnostic-end
+error kind="invalid_ref" range=11:1-11:36
+diagnostic-begin
+tests/markdown-oracle/fixtures/diagnostics.md:11:1: error: unknown ref
+|    [Missing reference](#does-not-exist)
+|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+diagnostic-end
+html="<h2>Starts at level two</h2>\n<p><!-- raw HTML omitted -->Inline HTML is forbidden.<!-- raw HTML omitted --></p>\n<!-- raw HTML omitted -->\n<h1><a href=\"$heading.id(&#x27;duplicate&#x27;)\">First</a></h1>\n<h1><a href=\"$heading.id(&#x27;duplicate&#x27;)\">Second</a></h1>\n<p><a href=\"#does-not-exist\">Missing reference</a></p>\n<p><a href=\"$link.url(&#x27;https://example.com&#x27;)\" title=\"title\">Alt text</a></p>\n<p><img src=\"$image.asset(&#x27;wrong.png&#x27;)\" alt=\"\" /></p>\n<p><a href=\"\">Empty</a></p>\n"
+end-source
+
+source "tests/markdown-oracle/fixtures/gfm.md" markdown_start=0 markdown_len=309 sha256=d8c554e4b5fc9df5dbb20a722207e9f7185cd0db373ab34b2dd66b231aeeb9e2
+event enter depth=0 tag="document" range=1:1-18:3
+event enter depth=1 tag="heading" range=1:1-1:16 level=1
+event enter depth=2 tag="text" range=1:3-1:16 literal="GFM extensions"
+event exit depth=1 tag="heading" range=1:1-1:16 level=1
+event enter depth=1 tag="table" range=3:1-5:25 alignments=[108,99,114]
+event enter depth=2 tag="table_header" range=3:1-3:25
+event enter depth=3 tag="table_cell" range=3:2-3:7
+event enter depth=4 tag="text" range=3:3-3:6 literal="left"
+event exit depth=3 tag="table_cell" range=3:2-3:7
+event enter depth=3 tag="table_cell" range=3:9-3:16
+event enter depth=4 tag="text" range=3:10-3:15 literal="center"
+event exit depth=3 tag="table_cell" range=3:9-3:16
+event enter depth=3 tag="table_cell" range=3:18-3:24
+event enter depth=4 tag="text" range=3:19-3:23 literal="right"
+event exit depth=3 tag="table_cell" range=3:18-3:24
+event exit depth=2 tag="table_header" range=3:1-3:25
+event enter depth=2 tag="table_row" range=5:1-5:25 header=false
+event enter depth=3 tag="table_cell" range=5:2-5:7
+event enter depth=4 tag="text" range=5:3-5:5 literal="one"
+event exit depth=3 tag="table_cell" range=5:2-5:7
+event enter depth=3 tag="table_cell" range=5:9-5:16
+event enter depth=4 tag="text" range=5:10-5:12 literal="two"
+event exit depth=3 tag="table_cell" range=5:9-5:16
+event enter depth=3 tag="table_cell" range=5:18-5:24
+event enter depth=4 tag="text" range=5:19-5:23 literal="three"
+event exit depth=3 tag="table_cell" range=5:18-5:24
+event exit depth=2 tag="table_row" range=5:1-5:25 header=false
+event exit depth=1 tag="table" range=3:1-5:25 alignments=[108,99,114]
+event enter depth=1 tag="list" range=7:1-9:0 list=ul tight=true
+event enter depth=2 tag="tasklist" range=7:1-7:13
+event enter depth=3 tag="paragraph" range=7:7-7:13
+event enter depth=4 tag="text" range=7:7-7:13 literal="pending"
+event exit depth=3 tag="paragraph" range=7:7-7:13
+event exit depth=2 tag="tasklist" range=7:1-7:13
+event enter depth=2 tag="tasklist" range=8:1-9:0
+event enter depth=3 tag="paragraph" range=8:7-8:14
+event enter depth=4 tag="text" range=8:7-8:14 literal="complete"
+event exit depth=3 tag="paragraph" range=8:7-8:14
+event exit depth=2 tag="tasklist" range=8:1-9:0
+event exit depth=1 tag="list" range=7:1-9:0 list=ul tight=true
+event enter depth=1 tag="paragraph" range=10:1-10:59
+event enter depth=2 tag="text" range=10:1-10:8 literal="This is "
+event enter depth=2 tag="strikethrough" range=10:9-10:19
+event enter depth=3 tag="text" range=10:11-10:17 literal="deleted"
+event exit depth=2 tag="strikethrough" range=10:9-10:19
+event enter depth=2 tag="text" range=10:20-10:29 literal=" and "
+event enter depth=2 tag="link" range=10:24-10:43 destination="https://example.com" directive="link" src_kind="url" src="https://example.com" new=false
+event enter depth=3 tag="text" range=10:24-10:43 literal="https://example.com"
+event exit depth=2 tag="link" range=10:24-10:43 destination="https://example.com" directive="link" src_kind="url" src="https://example.com" new=false
+event enter depth=2 tag="text" range=10:44-10:59 literal=" is an autolink."
+event exit depth=1 tag="paragraph" range=10:1-10:59
+event enter depth=1 tag="paragraph" range=14:1-14:53
+event enter depth=2 tag="text" range=14:1-14:15 literal="First reference"
+event enter depth=2 tag="<unknown>" range=14:16-14:22 literal="1" reference_index=1
+event exit depth=2 tag="<unknown>" range=14:16-14:22 literal="1" reference_index=1
+event enter depth=2 tag="text" range=14:23-14:45 literal=" and repeated reference"
+event enter depth=2 tag="<unknown>" range=14:46-14:52 literal="1" reference_index=2
+event exit depth=2 tag="<unknown>" range=14:46-14:52 literal="1" reference_index=2
+event enter depth=2 tag="text" range=14:53-14:53 literal="."
+event exit depth=1 tag="paragraph" range=14:1-14:53
+event enter depth=1 tag="code_block" range=16:1-18:3 literal="tilde fence\n" fence_info="text"
+event enter depth=1 tag="<unknown>" range=12:10-13:0 literal="note" reference_count=2
+event enter depth=2 tag="paragraph" range=12:10-12:40
+event enter depth=3 tag="text" range=12:10-12:25 literal="A footnote with "
+event enter depth=3 tag="strong" range=12:26-12:39
+event enter depth=4 tag="text" range=12:28-12:37 literal="formatting"
+event exit depth=3 tag="strong" range=12:26-12:39
+event enter depth=3 tag="text" range=12:40-12:40 literal="."
+event exit depth=2 tag="paragraph" range=12:10-12:40
+event exit depth=1 tag="<unknown>" range=12:10-13:0 literal="note" reference_count=2
+event exit depth=0 tag="document" range=1:1-18:3
+id name="fn-1" tag="<unknown>" range=12:10-13:0
+id name="fn-1-ref-1" tag="<unknown>" range=14:16-14:22
+id name="fn-1-ref-2" tag="<unknown>" range=14:46-14:52
+footnote name="1" definition_id="fn-1" reference_ids=["fn-1-ref-1","fn-1-ref-2"]
+html="<h1>GFM extensions</h1>\n<table>\n<thead>\n<tr>\n<th align=\"left\">left</th>\n<th align=\"center\">center</th>\n<th align=\"right\">right</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">one</td>\n<td align=\"center\">two</td>\n<td align=\"right\">three</td>\n</tr>\n</tbody>\n</table>\n<ul>\n<li><input type=\"checkbox\" disabled=\"\" /> pending</li>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> complete</li>\n</ul>\n<p>This is <del>deleted</del> and <a href=\"https://example.com\">https://example.com</a> is an autolink.</p>\n<p>First reference<sup class=\"footnote-ref\"><a href=\"#fn-note\" id=\"fnref-note\" data-footnote-ref>1</a></sup> and repeated reference<sup class=\"footnote-ref\"><a href=\"#fn-note\" id=\"fnref-note-2\" data-footnote-ref>1</a></sup>.</p>\n<pre><code class=\"language-text\">tilde fence\n</code></pre>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-note\">\n<p>A footnote with <strong>formatting</strong>. <a href=\"#fnref-note\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a> <a href=\"#fnref-note-2\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1-2\" aria-label=\"Back to reference 1-2\">↩<sup class=\"footnote-ref\">2</sup></a></p>\n</li>\n</ol>\n</section>\n"
+end-source
+
+source "tests/markdown-oracle/fixtures/supermd.md" markdown_start=0 markdown_len=469 sha256=afca4db4d6fae0771b9abbbb404b90a50b8c224a81f771f27ff32f1ff283458f
+event enter depth=0 tag="document" range=1:1-14:42
+event enter depth=1 tag="heading" range=1:1-1:73 level=1
+event enter depth=2 tag="text" range=1:3-1:73 literal="[Overview]($section.id(‘overview’).attrs(‘hero’).title(‘Main section’))"
+event exit depth=1 tag="heading" range=1:1-1:73 level=1
+event enter depth=1 tag="paragraph" range=3:1-3:62
+event enter depth=2 tag="text" range=3:1-3:15 literal="Paragraph with "
+event enter depth=2 tag="link" range=3:16-3:61 destination="$text.id('intro').attrs('lead')" directive="text" directive_id="intro" attrs=["lead"]
+event enter depth=3 tag="text" range=3:17-3:27 literal="styled text"
+event exit depth=2 tag="link" range=3:16-3:61 destination="$text.id('intro').attrs('lead')" directive="text" directive_id="intro" attrs=["lead"]
+event enter depth=2 tag="text" range=3:62-3:62 literal="."
+event exit depth=1 tag="paragraph" range=3:1-3:62
+event enter depth=1 tag="block_quote" range=5:1-6:23 directive="block" directive_id="details" collapsible=true
+event enter depth=2 tag="heading" range=5:3-5:53 level=1
+event enter depth=3 tag="link" range=5:5-5:53 destination="$block.id('details').collapsible(true)" directive="block" directive_id="details" collapsible=true
+event enter depth=4 tag="text" range=5:6-5:12 literal="Details"
+event exit depth=3 tag="link" range=5:5-5:53 destination="$block.id('details').collapsible(true)" directive="block" directive_id="details" collapsible=true
+event exit depth=2 tag="heading" range=5:3-5:53 level=1
+event enter depth=2 tag="paragraph" range=6:3-6:23
+event enter depth=3 tag="text" range=6:3-6:23 literal="Nested block content."
+event exit depth=2 tag="paragraph" range=6:3-6:23
+event exit depth=1 tag="block_quote" range=5:1-6:23 directive="block" directive_id="details" collapsible=true
+event enter depth=1 tag="paragraph" range=8:1-8:59
+event enter depth=2 tag="link" range=8:1-8:59 destination="$link.url('https://example.com').new(true)" directive="link" src_kind="url" src="https://example.com" new=true
+event enter depth=3 tag="text" range=8:2-8:14 literal="External link"
+event exit depth=2 tag="link" range=8:1-8:59 destination="$link.url('https://example.com').new(true)" directive="link" src_kind="url" src="https://example.com" new=true
+event exit depth=1 tag="paragraph" range=8:1-8:59
+event enter depth=1 tag="paragraph" range=10:1-10:76
+event enter depth=2 tag="text" range=10:1-10:76 literal="[Image caption]($image.asset(‘image.png’).alt(‘Example image’).size(640, 0))"
+event exit depth=1 tag="paragraph" range=10:1-10:76
+event enter depth=1 tag="paragraph" range=12:1-12:67
+event enter depth=2 tag="text" range=12:1-12:67 literal="[Code caption]($code.asset(‘main.zig’).language(‘zig’).lines(1, 3))"
+event exit depth=1 tag="paragraph" range=12:1-12:67
+event enter depth=1 tag="paragraph" range=14:1-14:42
+event enter depth=2 tag="text" range=14:1-14:7 literal="Inline "
+event enter depth=2 tag="link" range=14:8-14:30 destination="$mathtex" directive="mathtex" formula="x^2 + y^2"
+event exit depth=2 tag="link" range=14:8-14:30 destination="$mathtex" directive="mathtex" formula="x^2 + y^2"
+event enter depth=2 tag="text" range=14:31-14:42 literal=" expression."
+event exit depth=1 tag="paragraph" range=14:1-14:42
+event exit depth=0 tag="document" range=1:1-14:42
+id name="intro" tag="link" range=3:16-3:61
+id name="details" tag="block_quote" range=5:1-6:23
+html="<h1>[Overview]($section.id(‘overview’).attrs(‘hero’).title(‘Main section’))</h1>\n<p>Paragraph with <a href=\"$text.id(&#x27;intro&#x27;).attrs(&#x27;lead&#x27;)\">styled text</a>.</p>\n<blockquote>\n<h1><a href=\"$block.id(&#x27;details&#x27;).collapsible(true)\">Details</a></h1>\n<p>Nested block content.</p>\n</blockquote>\n<p><a href=\"$link.url(&#x27;https://example.com&#x27;).new(true)\">External link</a></p>\n<p>[Image caption]($image.asset(‘image.png’).alt(‘Example image’).size(640, 0))</p>\n<p>[Code caption]($code.asset(‘main.zig’).language(‘zig’).lines(1, 3))</p>\n<p>Inline <a href=\"$mathtex\"></a> expression.</p>\n"
+end-source
+
+source "tests/rendering/multi/content/de-DE/about.smd" markdown_start=106 markdown_len=22 sha256=683b1c876709836ff3b7da472fe0a61b2baa93ef0cd5ce6ba6e25c69bbaabcda
+event enter depth=0 tag="document" range=1:1-2:20
+event enter depth=1 tag="heading" range=2:1-2:20 level=1
+event enter depth=2 tag="text" range=2:3-2:20 literal="About Page (en-US)"
+event exit depth=1 tag="heading" range=2:1-2:20 level=1
+event exit depth=0 tag="document" range=1:1-2:20
+html="<h1>About Page (en-US)</h1>\n"
+end-source
+
+source "tests/rendering/multi/content/de-DE/contact-us.smd" markdown_start=149 markdown_len=22 sha256=39c3571ff7b27bbeffa3caa506d40ebfe32855f7b9139d22819aae53a397fe31
+event enter depth=0 tag="document" range=1:1-2:20
+event enter depth=1 tag="heading" range=2:1-2:20 level=1
+event enter depth=2 tag="text" range=2:3-2:20 literal="Contact us (de-DE)"
+event exit depth=1 tag="heading" range=2:1-2:20 level=1
+event exit depth=0 tag="document" range=1:1-2:20
+html="<h1>Contact us (de-DE)</h1>\n"
+end-source
+
+source "tests/rendering/multi/content/de-DE/index.smd" markdown_start=109 markdown_len=16 sha256=3fcd6fb83cdc3184a541840b3fc63a71a6ac8961a21da72dd393929938c13e95
+event enter depth=0 tag="document" range=1:1-2:14
+event enter depth=1 tag="heading" range=2:1-2:14 level=1
+event enter depth=2 tag="text" range=2:3-2:14 literal="Home (en-US)"
+event exit depth=1 tag="heading" range=2:1-2:14 level=1
+event exit depth=0 tag="document" range=1:1-2:14
+html="<h1>Home (en-US)</h1>\n"
+end-source
+
+source "tests/rendering/multi/content/en-US/about.smd" markdown_start=106 markdown_len=22 sha256=683b1c876709836ff3b7da472fe0a61b2baa93ef0cd5ce6ba6e25c69bbaabcda
+event enter depth=0 tag="document" range=1:1-2:20
+event enter depth=1 tag="heading" range=2:1-2:20 level=1
+event enter depth=2 tag="text" range=2:3-2:20 literal="About Page (en-US)"
+event exit depth=1 tag="heading" range=2:1-2:20 level=1
+event exit depth=0 tag="document" range=1:1-2:20
+html="<h1>About Page (en-US)</h1>\n"
+end-source
+
+source "tests/rendering/multi/content/en-US/contact-us.smd" markdown_start=149 markdown_len=22 sha256=ba8c6f1107afa1e190ee3504cec20ad43ae997416473c1cf9b8cdebfdd5253c3
+event enter depth=0 tag="document" range=1:1-2:20
+event enter depth=1 tag="heading" range=2:1-2:20 level=1
+event enter depth=2 tag="text" range=2:3-2:20 literal="Contact us (en-US)"
+event exit depth=1 tag="heading" range=2:1-2:20 level=1
+event exit depth=0 tag="document" range=1:1-2:20
+html="<h1>Contact us (en-US)</h1>\n"
+end-source
+
+source "tests/rendering/multi/content/en-US/index.smd" markdown_start=109 markdown_len=16 sha256=3fcd6fb83cdc3184a541840b3fc63a71a6ac8961a21da72dd393929938c13e95
+event enter depth=0 tag="document" range=1:1-2:14
+event enter depth=1 tag="heading" range=2:1-2:14 level=1
+event enter depth=2 tag="text" range=2:3-2:14 literal="Home (en-US)"
+event exit depth=1 tag="heading" range=2:1-2:14 level=1
+event exit depth=0 tag="document" range=1:1-2:14
+html="<h1>Home (en-US)</h1>\n"
+end-source
+
+source "tests/rendering/multi/content/it-IT/contattaci.smd" markdown_start=133 markdown_len=22 sha256=9561015b6faea603eeed856f6ec6109d821a456719bcf410aab24c07e3740c85
+event enter depth=0 tag="document" range=1:1-2:20
+event enter depth=1 tag="heading" range=2:1-2:20 level=1
+event enter depth=2 tag="text" range=2:3-2:20 literal="Contattaci (it-IT)"
+event exit depth=1 tag="heading" range=2:1-2:20 level=1
+event exit depth=0 tag="document" range=1:1-2:20
+html="<h1>Contattaci (it-IT)</h1>\n"
+end-source
+
+source "tests/rendering/multi/content/it-IT/index.smd" markdown_start=109 markdown_len=16 sha256=2bee57c56cfa22a8c2df2b047c57a6fd851c199bb6c6c9a844eeb5bc21b21eb1
+event enter depth=0 tag="document" range=1:1-2:14
+event enter depth=1 tag="heading" range=2:1-2:14 level=1
+event enter depth=2 tag="text" range=2:3-2:14 literal="Home (it-IT)"
+event exit depth=1 tag="heading" range=2:1-2:14 level=1
+event exit depth=0 tag="document" range=1:1-2:14
+html="<h1>Home (it-IT)</h1>\n"
+end-source
+
+source "tests/rendering/scripty/content/array.smd" markdown_start=129 markdown_len=0 sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+event enter depth=0 tag="document" range=1:1-0:0
+event exit depth=0 tag="document" range=1:1-0:0
+html=""
+end-source
+
+source "tests/rendering/scripty/content/index.smd" markdown_start=93 markdown_len=175 sha256=120b62969d2c37d562050fdb77a1123285450ed43b965217e30e3f612daca4f1
+event enter depth=0 tag="document" range=1:1-5:54
+event enter depth=1 tag="paragraph" range=2:1-2:42
+event enter depth=2 tag="text" range=2:1-2:42 literal="This site contains tests for scripty code."
+event exit depth=1 tag="paragraph" range=2:1-2:42
+event enter depth=1 tag="paragraph" range=4:1-5:54
+event enter depth=2 tag="text" range=4:1-4:75 literal="Each page corresponds to a definition in Zig code (eg Page, String, Arrray)"
+event enter depth=2 tag="softbreak" range=0:0-0:0
+event enter depth=2 tag="text" range=5:1-5:54 literal="and should test all builtin functions defined therein."
+event exit depth=1 tag="paragraph" range=4:1-5:54
+event exit depth=0 tag="document" range=1:1-5:54
+html="<p>This site contains tests for scripty code.</p>\n<p>Each page corresponds to a definition in Zig code (eg Page, String, Arrray)\nand should test all builtin functions defined therein.</p>\n"
+end-source
+
+source "tests/rendering/simple/content/archive/2024/first.smd" markdown_start=126 markdown_len=12 sha256=7e838193d4b7100f43b5b07566ef4bef193cb367a2d67aa62a6f66f06e0a4b8a
+event enter depth=0 tag="document" range=1:1-1:11
+event enter depth=1 tag="paragraph" range=1:1-1:11
+event enter depth=2 tag="text" range=1:1-1:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=1:1-1:11
+event exit depth=0 tag="document" range=1:1-1:11
+html="<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/rendering/simple/content/archive/2024/index.smd" markdown_start=105 markdown_len=21 sha256=35f116cbabfc7bc67468d8041c9a4c31ed5a5fb3c8c9d135e8f39a3a2639415b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2024"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2024</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/rendering/simple/content/archive/2025/index.smd" markdown_start=105 markdown_len=21 sha256=3cc2cb89ed1e8670456aebe1f8f1fe2c93bc73cea5378fc737ff586e1082038b
+event enter depth=0 tag="document" range=1:1-4:11
+event enter depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=2 tag="text" range=2:3-2:6 literal="2025"
+event exit depth=1 tag="heading" range=2:1-2:6 level=1
+event enter depth=1 tag="paragraph" range=4:1-4:11
+event enter depth=2 tag="text" range=4:1-4:11 literal="Lorem ipsum"
+event exit depth=1 tag="paragraph" range=4:1-4:11
+event exit depth=0 tag="document" range=1:1-4:11
+html="<h1>2025</h1>\n<p>Lorem ipsum</p>\n"
+end-source
+
+source "tests/rendering/simple/content/archive/2025/second.smd" markdown_start=127 markdown_len=26 sha256=f2ab738c835f9c2df6b6142274d4264a035069cd6a544116fbfc5b27d65737a2
+event enter depth=0 tag="document" range=1:1-1:25
+event enter depth=1 tag="paragraph" range=1:1-1:25
+event enter depth=2 tag="text" range=1:1-1:25 literal="dolor something something"
+event exit depth=1 tag="paragraph" range=1:1-1:25
+event exit depth=0 tag="document" range=1:1-1:25
+html="<p>dolor something something</p>\n"
+end-source
+
+source "tests/rendering/simple/content/archive/index.smd" markdown_start=110 markdown_len=9 sha256=6e1daa069e7da376bf409160dca8f47867523551e31d0f71010243316a44be57
+event enter depth=0 tag="document" range=1:1-2:7
+event enter depth=1 tag="paragraph" range=2:1-2:7
+event enter depth=2 tag="text" range=2:1-2:7 literal="Archive"
+event exit depth=1 tag="paragraph" range=2:1-2:7
+event exit depth=0 tag="document" range=1:1-2:7
+html="<p>Archive</p>\n"
+end-source
+
+source "tests/rendering/simple/content/context.smd" markdown_start=110 markdown_len=57 sha256=3b5110063eefb9027e00f538258bcceecc48831d8e3c725eac0fbacc2a961cd5
+event enter depth=0 tag="document" range=1:1-2:55
+event enter depth=1 tag="paragraph" range=2:1-2:55
+event enter depth=2 tag="text" range=2:1-2:19 literal="This is a test for "
+event enter depth=2 tag="html_inline" range=2:20-2:24 literal="<ctx>"
+event enter depth=2 tag="text" range=2:25-2:55 literal=", see the corresponding layout."
+event exit depth=1 tag="paragraph" range=2:1-2:55
+event exit depth=0 tag="document" range=1:1-2:55
+html="<p>This is a test for <!-- raw HTML omitted -->, see the corresponding layout.</p>\n"
+end-source
+
+source "tests/rendering/simple/content/index.smd" markdown_start=93 markdown_len=101 sha256=92927de1592047d58b41dcc5120d9613323856cc4488ee0341fce25a72bf805f
+event enter depth=0 tag="document" range=1:1-12:0
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=2 tag="text" range=4:3-4:4 literal="H1"
+event exit depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=2 tag="text" range=5:1-5:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=2 tag="text" range=7:4-7:5 literal="H2"
+event exit depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=2 tag="text" range=8:1-8:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=2 tag="text" range=10:5-10:6 literal="H3"
+event exit depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=1 tag="paragraph" range=11:1-11:13
+event enter depth=2 tag="text" range=11:1-11:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=11:1-11:13
+event exit depth=0 tag="document" range=1:1-12:0
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n<h1>H1</h1>\n<p>Lorem Ipsum 1</p>\n<h2>H2</h2>\n<p>Lorem Ipsum 2</p>\n<h3>H3</h3>\n<p>Lorem Ipsum 3</p>\n"
+end-source
+
+source "tests/rendering/simple/content/nested/aliases.smd" markdown_start=283 markdown_len=111 sha256=38aefef48d82c791b1aa1ddba6f9cf4b616bba71bcd5f80922e67520116dd650
+event enter depth=0 tag="document" range=1:1-11:13
+event enter depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=2 tag="text" range=1:1-1:5 literal="Your "
+event enter depth=2 tag="strong" range=1:6-1:16
+event enter depth=3 tag="text" range=1:8-1:14 literal="SuperMD"
+event exit depth=2 tag="strong" range=1:6-1:16
+event enter depth=2 tag="text" range=1:17-1:35 literal=" content goes here."
+event exit depth=1 tag="paragraph" range=1:1-1:35
+event enter depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=2 tag="text" range=4:3-4:4 literal="H1"
+event exit depth=1 tag="heading" range=4:1-4:4 level=1
+event enter depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=2 tag="text" range=5:1-5:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=5:1-5:13
+event enter depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=2 tag="text" range=7:4-7:5 literal="H2"
+event exit depth=1 tag="heading" range=7:1-7:5 level=2
+event enter depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=2 tag="text" range=8:1-8:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=8:1-8:13
+event enter depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=2 tag="text" range=10:5-10:6 literal="H3"
+event exit depth=1 tag="heading" range=10:1-10:6 level=3
+event enter depth=1 tag="paragraph" range=11:1-11:13
+event enter depth=2 tag="text" range=11:1-11:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=11:1-11:13
+event exit depth=0 tag="document" range=1:1-11:13
+html="<p>Your <strong>SuperMD</strong> content goes here.</p>\n<h1>H1</h1>\n<p>Lorem Ipsum 1</p>\n<h2>H2</h2>\n<p>Lorem Ipsum 2</p>\n<h3>H3</h3>\n<p>Lorem Ipsum 3</p>\n"
+end-source
+
+source "tests/rendering/simple/content/sections.smd" markdown_start=112 markdown_len=189 sha256=3db3d294b6252d9f60a1a3f52ae9992d41d6d9e7043b223ed656650ed58b4e36
+event enter depth=0 tag="document" range=1:1-13:37
+event enter depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event enter depth=3 tag="text" range=2:4-2:5 literal="H1"
+event exit depth=2 tag="link" range=2:3-2:25 destination="$section.id('h1')" directive="link" attrs=[] src_kind="url" src="" ref="h1"
+event exit depth=1 tag="heading" range=2:1-2:25 level=1 directive="section" directive_id="h1"
+event enter depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=2 tag="text" range=3:1-3:13 literal="Lorem Ipsum 1"
+event exit depth=1 tag="paragraph" range=3:1-3:13
+event enter depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event enter depth=3 tag="text" range=5:5-5:6 literal="H2"
+event exit depth=2 tag="link" range=5:4-5:26 destination="$section.id('h2')" directive="link" attrs=[] src_kind="url" src="" ref="h2"
+event exit depth=1 tag="heading" range=5:1-5:26 level=2 directive="section" directive_id="h2"
+event enter depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=2 tag="text" range=6:1-6:13 literal="Lorem Ipsum 2"
+event exit depth=1 tag="paragraph" range=6:1-6:13
+event enter depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event enter depth=3 tag="text" range=8:6-8:7 literal="H3"
+event exit depth=2 tag="link" range=8:5-8:27 destination="$section.id('h3')" directive="link" attrs=[] src_kind="url" src="" ref="h3"
+event exit depth=1 tag="heading" range=8:1-8:27 level=3 directive="section" directive_id="h3"
+event enter depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=2 tag="text" range=9:1-9:13 literal="Lorem Ipsum 3"
+event exit depth=1 tag="paragraph" range=9:1-9:13
+event enter depth=1 tag="paragraph" range=11:1-11:22
+event enter depth=2 tag="text" range=11:1-11:18 literal="This is a footnote"
+event enter depth=2 tag="<unknown>" range=11:19-11:22 literal="1" reference_index=1
+event exit depth=2 tag="<unknown>" range=11:19-11:22 literal="1" reference_index=1
+event exit depth=1 tag="paragraph" range=11:1-11:22
+event enter depth=1 tag="<unknown>" range=13:7-13:37 literal="1" reference_count=1
+event enter depth=2 tag="paragraph" range=13:7-13:37
+event enter depth=3 tag="text" range=13:7-13:37 literal="That should not break this page"
+event exit depth=2 tag="paragraph" range=13:7-13:37
+event exit depth=1 tag="<unknown>" range=13:7-13:37 literal="1" reference_count=1
+event exit depth=0 tag="document" range=1:1-13:37
+id name="h1" tag="heading" range=2:1-2:25
+id name="h2" tag="heading" range=5:1-5:26
+id name="h3" tag="heading" range=8:1-8:27
+id name="fn-1" tag="<unknown>" range=13:7-13:37
+id name="fn-1-ref-1" tag="<unknown>" range=11:19-11:22
+footnote name="1" definition_id="fn-1" reference_ids=["fn-1-ref-1"]
+html="<h1><a href=\"$section.id(&#x27;h1&#x27;)\">H1</a></h1>\n<p>Lorem Ipsum 1</p>\n<h2><a href=\"$section.id(&#x27;h2&#x27;)\">H2</a></h2>\n<p>Lorem Ipsum 2</p>\n<h3><a href=\"$section.id(&#x27;h3&#x27;)\">H3</a></h3>\n<p>Lorem Ipsum 3</p>\n<p>This is a footnote<sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1\" data-footnote-ref>1</a></sup></p>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-1\">\n<p>That should not break this page <a href=\"#fnref-1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n</li>\n</ol>\n</section>\n"
+end-source
+
+source "tests/rendering/simple/content/syntax.smd" markdown_start=109 markdown_len=1277 sha256=9f705522abed4f419763309ee45c4ebe1e329d36825ac59f6d37366b2712121f
+event enter depth=0 tag="document" range=1:1-57:3
+event enter depth=1 tag="heading" range=2:1-2:32 level=1 directive="section" directive_id="zig"
+event enter depth=2 tag="link" range=2:3-2:32 destination="$section.id('zig')" directive="link" attrs=[] src_kind="url" src="" ref="zig"
+event enter depth=3 tag="text" range=2:4-2:11 literal="Zig Code"
+event exit depth=2 tag="link" range=2:3-2:32 destination="$section.id('zig')" directive="link" attrs=[] src_kind="url" src="" ref="zig"
+event exit depth=1 tag="heading" range=2:1-2:32 level=1 directive="section" directive_id="zig"
+event enter depth=1 tag="code_block" range=3:1-18:3 literal="const Sample = struct {\n    a: i32,\n    b: i32,\n};\n\npub extern \"sampleLibrary\" fn SampleFunction(\n    arg1: i32,\n    arg2: *Sample,\n) callconv(WINAPI) BOOL;\n\npub inline fn main() anyerror!void {\n    var sample = Sample{ .a = 1, .b = 2 };\n    SampleFunction(1, &sample);\n}\n" fence_info="zig"
+event enter depth=1 tag="heading" range=20:1-20:34 level=1 directive="section" directive_id="rust"
+event enter depth=2 tag="link" range=20:3-20:34 destination="$section.id('rust')" directive="link" attrs=[] src_kind="url" src="" ref="rust"
+event enter depth=3 tag="text" range=20:4-20:12 literal="Rust Code"
+event exit depth=2 tag="link" range=20:3-20:34 destination="$section.id('rust')" directive="link" attrs=[] src_kind="url" src="" ref="rust"
+event exit depth=1 tag="heading" range=20:1-20:34 level=1 directive="section" directive_id="rust"
+event enter depth=1 tag="code_block" range=21:1-45:3 literal="#[derive(Debug, Clone, PartialEq)]\npub struct ComplexData<'a, T: 'a + Display> {\n    #[serde(rename = \"identifier\")]\n    id: &'a str,\n    #[serde(skip_serializing_if = \"Option::is_none\")]\n    metadata: Option<HashMap<String, T>>,\n    #[serde(default)]\n    references: Vec<&'a RefCell<T>>,\n    timestamp: SystemTime,\n    data: Box<dyn Iterator<Item = T> + 'a>,\n}\n\nimpl<'a, T: Display> ComplexData<'a, T> {\n    pub fn new(id: &'a str) -> Result<Self, Box<dyn Error + 'a>> {\n        Ok(Self {\n            id,\n            metadata: None,\n            references: Vec::new(),\n            timestamp: SystemTime::now(),\n            data: Box::new(std::iter::empty()),\n        })\n    }\n}\n" fence_info="rust"
+event enter depth=1 tag="code_block" range=47:1-57:3 literal="[user@hostname ~]$ cat hello\nThis is the contents of\na hello world file!\nsymbols in $ the middle of lines\ndo not cause # highlighting to happen\n$ true\n[root ~]# true\n# echo 'i am running as root'\ni am running as root\n" fence_info="console"
+event exit depth=0 tag="document" range=1:1-57:3
+id name="zig" tag="heading" range=2:1-2:32
+id name="rust" tag="heading" range=20:1-20:34
+html="<h1><a href=\"$section.id(&#x27;zig&#x27;)\">Zig Code</a></h1>\n<pre><code class=\"language-zig\">const Sample = struct {\n    a: i32,\n    b: i32,\n};\n\npub extern &quot;sampleLibrary&quot; fn SampleFunction(\n    arg1: i32,\n    arg2: *Sample,\n) callconv(WINAPI) BOOL;\n\npub inline fn main() anyerror!void {\n    var sample = Sample{ .a = 1, .b = 2 };\n    SampleFunction(1, &amp;sample);\n}\n</code></pre>\n<h1><a href=\"$section.id(&#x27;rust&#x27;)\">Rust Code</a></h1>\n<pre><code class=\"language-rust\">#[derive(Debug, Clone, PartialEq)]\npub struct ComplexData&lt;'a, T: 'a + Display&gt; {\n    #[serde(rename = &quot;identifier&quot;)]\n    id: &amp;'a str,\n    #[serde(skip_serializing_if = &quot;Option::is_none&quot;)]\n    metadata: Option&lt;HashMap&lt;String, T&gt;&gt;,\n    #[serde(default)]\n    references: Vec&lt;&amp;'a RefCell&lt;T&gt;&gt;,\n    timestamp: SystemTime,\n    data: Box&lt;dyn Iterator&lt;Item = T&gt; + 'a&gt;,\n}\n\nimpl&lt;'a, T: Display&gt; ComplexData&lt;'a, T&gt; {\n    pub fn new(id: &amp;'a str) -&gt; Result&lt;Self, Box&lt;dyn Error + 'a&gt;&gt; {\n        Ok(Self {\n            id,\n            metadata: None,\n            references: Vec::new(),\n            timestamp: SystemTime::now(),\n            data: Box::new(std::iter::empty()),\n        })\n    }\n}\n</code></pre>\n<pre><code class=\"language-console\">[user@hostname ~]$ cat hello\nThis is the contents of\na hello world file!\nsymbols in $ the middle of lines\ndo not cause # highlighting to happen\n$ true\n[root ~]# true\n# echo 'i am running as root'\ni am running as root\n</code></pre>\n"
+end-source

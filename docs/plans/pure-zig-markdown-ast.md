@@ -231,6 +231,12 @@ The Zig parser preserves `$...` link targets, but angle-bracket destinations cur
 
 ### Phase 0: Capture the compatibility baseline
 
+Status: implemented on `2026-08-15`. Provenance is recorded in
+`src/markdown/UPSTREAM.md`; the reproducible compatibility runner, focused
+fixtures, and generated baseline live in `tests/markdown-oracle/`. The
+unmodified source import required by step 3 remains the first Phase 1 change
+and must be kept separate from adaptation work.
+
 1. Record the exact provenance of the four Zig `0.17.0-dev.1756+613c03321` source files:
    - Zig version.
    - Upstream repository commit when available.
