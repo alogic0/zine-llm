@@ -20,7 +20,12 @@ pub const Options = struct {
 };
 
 pub const Destination = struct {
+    /// Exact parser value, including optional angle delimiters.
     raw: []const u8,
+    /// Value passed to shorthand handling and Scripty.
+    value: []const u8,
+    /// Range of the original link/image syntax used for diagnostics.
+    range: SyntaxAst.Range,
     syntax: Syntax,
 
     pub const Syntax = enum {
@@ -100,12 +105,22 @@ const Analyzer = struct {
             else => return,
         };
         const raw = node.link() orelse return;
+        const value = normalizeDestination(raw);
         try analyzer.destinations.put(analyzer.allocator, node.index, .{
             .raw = raw,
-            .syntax = classifyDestination(raw, is_image),
+            .value = value,
+            .range = node.range(),
+            .syntax = classifyDestination(value, is_image),
         });
     }
 };
+
+fn normalizeDestination(raw: []const u8) []const u8 {
+    if (raw.len >= 2 and raw[0] == '<' and raw[raw.len - 1] == '>') {
+        return raw[1 .. raw.len - 1];
+    }
+    return raw;
+}
 
 fn classifyDestination(raw: []const u8, is_image: bool) Destination.Syntax {
     if (raw.len == 0) return .empty;
@@ -170,4 +185,20 @@ test "semantic analysis recognizes link and image destination forms" {
     for (expected, ast.destinations.values()) |want, found| {
         try std.testing.expectEqual(want, found.syntax);
     }
+}
+
+test "angle destinations are normalized without losing diagnostic ranges" {
+    const source = "before [section](<$section.id('intro')>) after\n";
+    var ast = try Ast.init(std.testing.allocator, source, .{});
+    defer ast.deinit();
+
+    const destination = ast.destinations.values()[0];
+    try std.testing.expectEqualStrings("<$section.id('intro')>", destination.raw);
+    try std.testing.expectEqualStrings("$section.id('intro')", destination.value);
+    try std.testing.expectEqual(Destination.Syntax.expression, destination.syntax);
+    try std.testing.expect(destination.range.isKnown());
+    try std.testing.expectEqualStrings(
+        "[section](<$section.id('intro')>)",
+        source[destination.range.start_byte..destination.range.end_byte],
+    );
 }
