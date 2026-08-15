@@ -11,6 +11,9 @@ and then with the pure-Zig parser and semantic pass. Both runs must reproduce
 the same committed snapshots. Running sequentially is intentional because the
 two backends write to the same snapshot locations.
 
+The normal `./build.sh test` gate uses the pure-Zig backend. Use
+`-Dmarkdown-parser=cmark` only for temporary migration comparison.
+
 The corpus includes every `tests/**/*.smd` content file plus the focused
 Markdown and semantic fixtures. Together the gates compare:
 

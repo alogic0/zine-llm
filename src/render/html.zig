@@ -61,7 +61,7 @@ pub fn html(
         //     @tagName(ev.dir),
         // }) catch unreachable);
 
-        log.debug("node ({}, {s}, {?s}) = {} {s} same={}", .{
+        log.debug("node ({}, {s}, {?s}) = {} {s} different={}", .{
             node_is_section,
             if (node.getDirective()) |d| @tagName(d.kind) else "<>",
             if (node.getDirective()) |d| d.id else null,

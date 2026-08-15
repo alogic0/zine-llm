@@ -202,7 +202,7 @@ pub fn build(b: *std.Build) !void {
         MarkdownParser,
         "markdown-parser",
         "Select the temporary Markdown parser backend",
-    ) orelse .cmark;
+    ) orelse .zig;
 
     const zine_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),

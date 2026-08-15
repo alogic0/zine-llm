@@ -362,6 +362,14 @@ Deliverable: pure-Zig `Ast.init()` produces the semantic data currently consumed
 
 ### Phase 6: Integrate behind a temporary parser switch
 
+Status: complete. `-Dmarkdown-parser=zig|cmark` selects the temporary backend,
+with pure Zig now the default. `zig build test-parser-parity` runs the complete
+repository corpus through both implementations sequentially and requires the
+same committed render, semantic-index, footnote, page-analysis, and diagnostic
+snapshots. All discrepancies found during integration are fixed and classified
+in `tests/markdown-parity/DIFFERENCES.md`; no unexplained or accepted output
+differences remain.
+
 1. Add a temporary build/test option selecting `cmark` or `zig` parsing.
 2. Keep both implementations available only during migration.
 3. Run the complete content corpus through both parsers.
