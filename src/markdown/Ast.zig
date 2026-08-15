@@ -841,6 +841,47 @@ test "footnote definitions and references expose labels and ranges" {
     try std.testing.expectEqualStrings("Footnote body.", try definition.renderPlaintext());
 }
 
+test "undefined footnote references become literal text with their original range" {
+    var ast = try parseTestAst("Before[^missing] after.\n");
+    defer ast.deinit();
+
+    try std.testing.expect(findType(ast.root(), .FOOTNOTE_REFERENCE) == null);
+    const paragraph = findType(ast.root(), .PARAGRAPH).?;
+    const literal = paragraph.firstChild().?.nextSibling().?;
+    try std.testing.expectEqual(NodeType.TEXT, literal.nodeType());
+    try std.testing.expectEqualStrings("[^missing]", literal.literal().?);
+    try expectRange(literal, 6, 16, 1, 7, 1, 16);
+}
+
+test "forward footnote references use the definition's canonical label" {
+    var ast = try parseTestAst("Before[^Note].\n\n[^note]: Body.\n");
+    defer ast.deinit();
+
+    const reference = findType(ast.root(), .FOOTNOTE_REFERENCE).?;
+    const definition = findType(ast.root(), .FOOTNOTE_DEFINITION).?;
+    try std.testing.expectEqualStrings("note", reference.footnoteLabel().?);
+    try std.testing.expectEqualStrings("note", definition.footnoteLabel().?);
+    try expectRange(reference, 6, 13, 1, 7, 1, 13);
+}
+
+test "streamed forward footnote references resolve at end of input" {
+    var parser = try Parser.init(std.testing.allocator);
+    defer parser.deinit();
+
+    try parser.feedLine("Before[^Note].", 0, 1);
+    try parser.feedLine("", 15, 1);
+    try parser.feedLine("[^note]: Body.", 16, 0);
+
+    var document = try parser.endInput();
+    errdefer document.deinit(std.testing.allocator);
+    var ast = try TestContract.Ast.init(std.testing.allocator, &document);
+    defer ast.deinit();
+
+    const reference = findType(ast.root(), .FOOTNOTE_REFERENCE).?;
+    try std.testing.expectEqualStrings("note", reference.footnoteLabel().?);
+    try expectRange(reference, 6, 13, 1, 7, 1, 13);
+}
+
 test "tilde fenced code retains info and full fence range" {
     var ast = try parseTestAst("~~~zig\ncode\n~~~~\n");
     defer ast.deinit();

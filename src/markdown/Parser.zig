@@ -400,6 +400,8 @@ pub fn endInput(p: *Parser) Allocator.Error!Document {
     // block.
     assert(p.scratch_string.items.len == 0);
 
+    try p.resolveFootnoteReferences();
+
     const children = try p.addExtraChildren(@ptrCast(p.scratch_extra.items));
     p.nodes.items(.data)[0] = .{ .container = .{ .children = children } };
     const root_end = if (p.scratch_extra.items.len > 0)
@@ -839,6 +841,68 @@ fn string(p: Parser, index: StringIndex) []const u8 {
     const start: usize = @backingInt(index);
     const end = mem.findScalarPos(u8, p.string_bytes.items, start, 0).?;
     return p.string_bytes.items[start..end];
+}
+
+const FootnoteDefinitionContext = struct {
+    parser: *const Parser,
+
+    pub fn hash(context: @This(), label: StringIndex) u64 {
+        var hasher = std.hash.Wyhash.init(0);
+        for (context.parser.string(label)) |byte| {
+            const folded = std.ascii.toLower(byte);
+            hasher.update(&.{folded});
+        }
+        return hasher.final();
+    }
+
+    pub fn eql(context: @This(), a: StringIndex, b: StringIndex) bool {
+        return std.ascii.eqlIgnoreCase(
+            context.parser.string(a),
+            context.parser.string(b),
+        );
+    }
+};
+
+const FootnoteDefinitionMap = std.HashMapUnmanaged(
+    StringIndex,
+    StringIndex,
+    FootnoteDefinitionContext,
+    std.hash_map.default_max_load_percentage,
+);
+
+fn resolveFootnoteReferences(p: *Parser) Allocator.Error!void {
+    var definitions: FootnoteDefinitionMap = .empty;
+    defer definitions.deinit(p.allocator);
+
+    const context: FootnoteDefinitionContext = .{ .parser = p };
+    for (p.nodes.items(.tag), p.nodes.items(.data)) |tag, data| {
+        if (tag != .footnote_definition) continue;
+        const label = data.footnote_definition.label;
+        const result = try definitions.getOrPutContext(p.allocator, label, context);
+        if (!result.found_existing) result.value_ptr.* = label;
+    }
+
+    for (p.nodes.items(.tag), p.nodes.items(.data)) |*tag, *data| {
+        if (tag.* != .footnote_reference) continue;
+
+        const label = data.text.content;
+        if (definitions.getContext(label, context)) |canonical_label| {
+            data.text.content = canonical_label;
+            continue;
+        }
+
+        const label_bytes = p.string(label);
+        p.scratch_string.clearRetainingCapacity();
+        try p.scratch_string.ensureUnusedCapacity(p.allocator, label_bytes.len + 3);
+        p.scratch_string.appendSliceAssumeCapacity("[^");
+        p.scratch_string.appendSliceAssumeCapacity(label_bytes);
+        p.scratch_string.appendAssumeCapacity(']');
+        const literal = try p.addString(p.scratch_string.items);
+
+        tag.* = .text;
+        data.* = .{ .text = .{ .content = literal } };
+    }
+    p.scratch_string.clearRetainingCapacity();
 }
 
 fn scanReferenceDefinitions(p: *Parser, source: []const u8) !void {
