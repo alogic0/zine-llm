@@ -112,18 +112,80 @@ const Analyzer = struct {
         };
         const raw = node.link() orelse return;
         const value = normalizeDestination(raw);
-        try analyzer.destinations.put(analyzer.allocator, node.index, .{
+        const destination: Destination = .{
             .raw = raw,
             .value = value,
             .range = node.range(),
             .syntax = classifyDestination(value, is_image),
-        });
-        if (!is_image and classifyDestination(value, false) == .expression) {
-            try analyzer.evaluate(node, value);
-        }
+        };
+        try analyzer.destinations.put(analyzer.allocator, node.index, destination);
+        try analyzer.attach(node, destination);
     }
 
-    fn evaluate(analyzer: *Analyzer, node: Node, source: []const u8) !void {
+    fn attach(analyzer: *Analyzer, node: Node, destination: Destination) !void {
+        if (destination.syntax == .expression) {
+            const directive = try analyzer.evaluate(node, destination.value) orelse return;
+            _ = try node.setDirective(analyzer.allocator, directive, false);
+            return;
+        }
+
+        var directive: supermd.Directive = switch (destination.syntax) {
+            .self_fragment => .{ .kind = .{ .link = .{
+                .ref = destination.value[1..],
+                .src = .{ .self_page = null },
+            } } },
+            .absolute_page => absolute: {
+                var parts = std.mem.splitScalar(u8, destination.value[1..], '#');
+                const path = stripTrailingSlash(parts.first());
+                const ref = parts.next();
+                break :absolute .{ .kind = .{ .link = .{
+                    .ref = ref,
+                    .src = .{ .page = .{
+                        .ref = path,
+                        .kind = .absolute,
+                    } },
+                } } };
+            },
+            .subpage => subpage: {
+                const path_start: usize = @min(2, destination.value.len);
+                var parts = std.mem.tokenizeScalar(u8, destination.value[path_start..], '#');
+                const path = stripTrailingSlash(parts.next() orelse "");
+                const ref = parts.next();
+                break :subpage .{ .kind = .{ .link = .{
+                    .ref = ref,
+                    .src = .{ .page = .{
+                        .ref = path,
+                        .kind = .sub,
+                    } },
+                } } };
+            },
+            .mail, .url => .{ .kind = .{ .link = .{
+                .src = .{ .url = destination.value },
+                .new = analyzer.options.auto_target_blank,
+            } } },
+            .relative_page => .{ .kind = .{ .link = .{ .src = .{ .page = .{
+                .ref = destination.value,
+                .kind = .sibling,
+            } } } } },
+            .site_asset => .{ .kind = .{ .image = .{
+                .src = .{ .site_asset = .{ .ref = destination.value[1..] } },
+                .alt = node.title(),
+            } } },
+            .page_asset => .{ .kind = .{ .image = .{
+                .src = .{ .page_asset = .{ .ref = if (std.mem.startsWith(
+                    u8,
+                    destination.value,
+                    "./",
+                )) destination.value[2..] else destination.value } },
+                .alt = node.title(),
+            } } },
+            .empty, .expression_image => return,
+            .expression => unreachable,
+        };
+        _ = try node.setDirective(analyzer.allocator, &directive, true);
+    }
+
+    fn evaluate(analyzer: *Analyzer, node: Node, source: []const u8) !?*supermd.Directive {
         var context: supermd.Content = .{};
         const result = try analyzer.vm.run(analyzer.allocator, &context, source, .{});
         switch (result.value) {
@@ -133,11 +195,16 @@ const Analyzer = struct {
                 const stored = try analyzer.allocator.create(supermd.Directive);
                 stored.* = directive.*;
                 try analyzer.evaluated.put(analyzer.allocator, node.index, stored);
+                return stored;
             },
-            else => {},
+            else => return null,
         }
     }
 };
+
+fn stripTrailingSlash(path: []const u8) []const u8 {
+    return if (path.len > 0 and path[path.len - 1] == '/') path[0 .. path.len - 1] else path;
+}
 
 fn normalizeDestination(raw: []const u8) []const u8 {
     if (raw.len >= 2 and raw[0] == '<' and raw[raw.len - 1] == '>') {
@@ -240,4 +307,33 @@ test "Scripty expressions use the existing SuperMD context" {
     try std.testing.expectEqualStrings("intro", directive.id.?);
     try std.testing.expectEqualStrings("wide", directive.attrs.?[0]);
     try std.testing.expect(directive.kind == .heading);
+    try std.testing.expect(ast.destinations.keys()[0] == ast.root().firstChild().?.firstChild().?.index);
+    try std.testing.expect(ast.root().firstChild().?.firstChild().?.getDirective() == directive);
+}
+
+test "semantic directives are attached through AST sidecars" {
+    var ast = try Ast.init(
+        std.testing.allocator,
+        "[#](#intro) [page](/guide/) ![logo](./logo.svg)\n",
+        .{ .auto_target_blank = true },
+    );
+    defer ast.deinit();
+
+    const paragraph = ast.root().firstChild().?;
+    const fragment = paragraph.firstChild().?;
+    const page = fragment.nextSibling().?.nextSibling().?;
+    const image = page.nextSibling().?.nextSibling().?;
+
+    try std.testing.expectEqualStrings(
+        "intro",
+        fragment.getDirective().?.kind.link.ref.?,
+    );
+    try std.testing.expectEqualStrings(
+        "guide",
+        page.getDirective().?.kind.link.src.?.page.ref,
+    );
+    try std.testing.expectEqualStrings(
+        "logo.svg",
+        image.getDirective().?.kind.image.src.?.page_asset.ref,
+    );
 }
