@@ -2,7 +2,6 @@ const std = @import("std");
 const scripty = @import("scripty");
 const ziggy = @import("ziggy");
 const utils = @import("context/utils.zig");
-const Node = @import("Node.zig");
 const Signature = @import("doctypes.zig").Signature;
 const Allocator = std.mem.Allocator;
 
@@ -115,7 +114,7 @@ pub const Directive = struct {
         // },
     };
 
-    pub fn validate(d: *Directive, gpa: Allocator, ctx: Node) !?Value {
+    pub fn validate(d: *Directive, gpa: Allocator, ctx: anytype) !?Value {
         switch (d.kind) {
             inline else => |v| {
                 const T = @TypeOf(v);
@@ -321,7 +320,7 @@ pub const Section = struct {
         \\that can be rendered individually by a template.
     ;
 
-    pub fn validate(gpa: Allocator, _: *Directive, ctx: Node) !?Value {
+    pub fn validate(gpa: Allocator, _: *Directive, ctx: anytype) !?Value {
         const parent = ctx.parent().?;
 
         // A section must be placed either:
@@ -333,7 +332,7 @@ pub const Section = struct {
                     .err = "top-level section definitions cannot embed any text",
                 };
 
-                const not_first = parent.firstChild().?.n != ctx.n;
+                const not_first = !parent.firstChild().?.eql(ctx);
 
                 const not_top_level = if (parent.parent()) |gp|
                     gp.nodeType() != .DOCUMENT
@@ -381,7 +380,7 @@ pub const Text = struct {
         \\```
     ;
 
-    pub fn validate(_: Allocator, _: *Directive, ctx: Node) !?Value {
+    pub fn validate(_: Allocator, _: *Directive, ctx: anytype) !?Value {
         const err: Value = .{
             .err = "text directive must contain some text between square brackets",
         };
@@ -430,7 +429,7 @@ pub const Mathtex = struct {
         \\The Zine sample site shows a basic setup that uses Temml.
     ;
 
-    pub fn validate(_: Allocator, d: *Directive, ctx: Node) !?Value {
+    pub fn validate(_: Allocator, d: *Directive, ctx: anytype) !?Value {
         const err: Value = .{
             .err = "mathtex directive must contain a LaTeX math formula enclosed in backtics",
         };
@@ -463,7 +462,7 @@ pub const Heading = struct {
         \\```
     ;
 
-    pub fn validate(_: Allocator, _: *Directive, ctx: Node) !?Value {
+    pub fn validate(_: Allocator, _: *Directive, ctx: anytype) !?Value {
         const parent = ctx.parent().?;
 
         // A heading directive must be placed directly under a md heading
@@ -560,7 +559,7 @@ pub const Block = struct {
         \\
     ;
 
-    pub fn validate(gpa: Allocator, _: *Directive, ctx: Node) !?Value {
+    pub fn validate(gpa: Allocator, _: *Directive, ctx: anytype) !?Value {
         const parent = ctx.parent().?;
 
         // A block directive must be placed either:
@@ -792,7 +791,7 @@ pub const Link = struct {
     pub const description =
         \\A link.
     ;
-    pub fn validate(_: Allocator, d: *Directive, _: Node) !?Value {
+    pub fn validate(_: Allocator, d: *Directive, _: anytype) !?Value {
         const self = &d.kind.link;
         if (self.ref != null or self.alternative != null) {
             if (self.src == null) {

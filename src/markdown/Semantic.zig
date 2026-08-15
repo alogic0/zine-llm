@@ -8,6 +8,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const supermd = @import("supermd");
+const scripty = @import("scripty");
+const ScriptyVM = scripty.VM(supermd.Value);
 const SyntaxAst = @import("Ast.zig");
 const Document = @import("Document.zig");
 const Parser = @import("Parser.zig");
@@ -48,6 +50,7 @@ pub const Ast = struct {
     md: Markdown.Ast,
     options: Options,
     destinations: std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, Destination) = .{},
+    evaluated: std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, *supermd.Directive) = .{},
 
     pub fn init(gpa: Allocator, source: []const u8, options: Options) !Ast {
         var parser = try Parser.init(gpa);
@@ -67,6 +70,7 @@ pub const Ast = struct {
             .allocator = result.md.allocator(),
             .options = options,
             .destinations = &result.destinations,
+            .evaluated = &result.evaluated,
         };
         try analyzer.run(result.md.root());
         return result;
@@ -86,6 +90,8 @@ const Analyzer = struct {
     allocator: Allocator,
     options: Options,
     destinations: *std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, Destination),
+    evaluated: *std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, *supermd.Directive),
+    vm: ScriptyVM = .{},
 
     fn run(analyzer: *Analyzer, root: Node) !void {
         _ = analyzer.options;
@@ -112,6 +118,24 @@ const Analyzer = struct {
             .range = node.range(),
             .syntax = classifyDestination(value, is_image),
         });
+        if (!is_image and classifyDestination(value, false) == .expression) {
+            try analyzer.evaluate(node, value);
+        }
+    }
+
+    fn evaluate(analyzer: *Analyzer, node: Node, source: []const u8) !void {
+        var context: supermd.Content = .{};
+        const result = try analyzer.vm.run(analyzer.allocator, &context, source, .{});
+        switch (result.value) {
+            .directive => |directive| {
+                // Scripty returns a pointer into the per-expression Content
+                // value. Preserve the evaluated directive in the AST arena.
+                const stored = try analyzer.allocator.create(supermd.Directive);
+                stored.* = directive.*;
+                try analyzer.evaluated.put(analyzer.allocator, node.index, stored);
+            },
+            else => {},
+        }
     }
 };
 
@@ -201,4 +225,19 @@ test "angle destinations are normalized without losing diagnostic ranges" {
         "[section](<$section.id('intro')>)",
         source[destination.range.start_byte..destination.range.end_byte],
     );
+}
+
+test "Scripty expressions use the existing SuperMD context" {
+    var ast = try Ast.init(
+        std.testing.allocator,
+        "[intro](<$heading.id('intro').attrs('wide')>)\n",
+        .{},
+    );
+    defer ast.deinit();
+
+    try std.testing.expectEqual(@as(usize, 1), ast.evaluated.count());
+    const directive = ast.evaluated.values()[0];
+    try std.testing.expectEqualStrings("intro", directive.id.?);
+    try std.testing.expectEqualStrings("wide", directive.attrs.?[0]);
+    try std.testing.expect(directive.kind == .heading);
 }

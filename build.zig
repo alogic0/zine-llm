@@ -392,6 +392,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     semantic_markdown_module.addImport("supermd", supermd);
+    semantic_markdown_module.addImport("scripty", scripty);
     const semantic_markdown_tests = b.addTest(.{
         .root_module = semantic_markdown_module,
     });

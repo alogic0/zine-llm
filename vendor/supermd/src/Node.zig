@@ -8,6 +8,10 @@ const Directive = supermd.Directive;
 
 n: *c.cmark_node,
 
+pub fn eql(node: Node, other: Node) bool {
+    return node.n == other.n;
+}
+
 // pub fn deinit(n: Node) void {
 //     c.cmark_node_free(n.n);
 // }
