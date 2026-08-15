@@ -37,8 +37,6 @@ var wg: @import("hacks/WaitGroup.zig") = undefined;
 var threads: []std.Thread = &.{};
 
 pub var started = false;
-pub threadlocal var cmark: supermd.Ast.CmarkParser = undefined;
-pub const extensions: [*]supermd.c.cmark_llist = undefined;
 
 pub const Job = union(enum) {
     template_parse: struct {
@@ -97,22 +95,16 @@ pub fn start(io: Io) void {
 
     wg = .{ .io = io };
 
-    supermd.c.cmark_gfm_core_extensions_ensure_registered();
-
-    if (builtin.single_threaded) {
-        cmark = supermd.Ast.CmarkParser.default();
-        return;
-    }
+    if (builtin.single_threaded) return;
 
     const thread_count = @max(1, std.Thread.getCpuCount() catch 1);
     threads = gpa.alloc(std.Thread, thread_count) catch fatal.oom();
 
     for (0..thread_count) |idx| {
-        const _cmark = supermd.Ast.CmarkParser.default();
         threads[idx] = std.Thread.spawn(
             .{ .allocator = gpa },
             workerFn,
-            .{ io, _cmark },
+            .{io},
         ) catch |err| fatal.msg("error: unable to spawn thread pool: {s}\n", .{
             @errorName(err),
         });
@@ -151,11 +143,7 @@ pub fn wait() void {
     wg.reset();
 }
 
-fn workerFn(
-    io: Io,
-    _cmark: supermd.Ast.CmarkParser,
-) void {
-    cmark = _cmark;
+fn workerFn(io: Io) void {
     var arena_state = std.heap.ArenaAllocator.init(gpa);
     const arena = arena_state.allocator();
     while (runOneJob(io, arena, ch.get(io) catch return)) {
@@ -170,10 +158,7 @@ inline fn runOneJob(
     job: Job,
 ) bool {
     switch (job) {
-        .leave => {
-            supermd.c.cmark_parser_free(cmark.parser);
-            return false;
-        },
+        .leave => return false,
         .template_parse => |tp| tp.template.parse(
             io,
             gpa,
