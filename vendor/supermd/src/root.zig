@@ -1,9 +1,3 @@
-pub extern fn cmark_list_syntax_extensions([*c]c.cmark_mem) [*c]c.cmark_llist;
-pub const c = @import("c");
-
-pub const Ast = @import("Ast.zig");
-pub const Node = @import("Node.zig");
-
 pub const context = @import("context.zig");
 pub const Value = context.Value;
 pub const Content = context.Content;
@@ -107,5 +101,5 @@ pub const Span = struct {
 };
 
 test {
-    _ = Ast;
+    _ = context;
 }

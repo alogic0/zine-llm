@@ -262,10 +262,8 @@ pub fn build(b: *std.Build) !void {
     const supermd = b.dependency("supermd", .{
         .target = target,
         .optimize = optimize,
-        .tracy = enable_tracy,
     }).module("supermd");
     supermd.addImport("scripty", scripty);
-    supermd.addImport("superhtml", superhtml);
     supermd.addImport("ziggy", ziggy);
 
     const zeit = b.dependency("zeit", .{
@@ -699,10 +697,8 @@ fn setupReleaseStep(
         const supermd = b.dependency("supermd", .{
             .target = target,
             .optimize = optimize,
-            .tracy = false,
         }).module("supermd");
         supermd.addImport("scripty", scripty);
-        supermd.addImport("superhtml", superhtml);
         supermd.addImport("ziggy", ziggy);
 
         const zeit = b.dependency("zeit", .{
