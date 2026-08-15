@@ -367,11 +367,13 @@ const Analyzer = struct {
         while (iterator.next()) |event| {
             if (event.dir != .enter) continue;
             switch (event.node.nodeType()) {
-                .FOOTNOTE_DEFINITION => try definitions.put(
-                    analyzer.allocator,
-                    event.node.footnoteLabel().?,
-                    event.node,
-                ),
+                .FOOTNOTE_DEFINITION => {
+                    const result = try definitions.getOrPut(
+                        analyzer.allocator,
+                        event.node.footnoteLabel().?,
+                    );
+                    if (!result.found_existing) result.value_ptr.* = event.node;
+                },
                 .FOOTNOTE_REFERENCE => {
                     const count = try counts.getOrPutValue(
                         analyzer.allocator,
@@ -794,6 +796,71 @@ test "semantic analysis builds IDs, references, sections, and footnotes" {
     try std.testing.expectEqualStrings("fn-1", footnote.def_id);
     try std.testing.expectEqual(@as(usize, 2), footnote.ref_ids.len);
     try std.testing.expect(footnote.node.nodeType() == .FOOTNOTE_DEFINITION);
+}
+
+test "footnote metadata follows reference order and keeps the first definition" {
+    const source =
+        "Beta[^B], alpha[^a], beta again[^b].\n\n" ++
+        "[^a]: Alpha.\n\n" ++
+        "[^b]: First beta.\n\n" ++
+        "[^b]: Duplicate beta.\n\n" ++
+        "[^unused]: Unused.\n";
+    var ast = try Ast.init(std.testing.allocator, source, .{});
+    defer ast.deinit();
+
+    try std.testing.expectEqual(@as(usize, 2), ast.footnotes.count());
+    try std.testing.expectEqualStrings("b", ast.footnotes.keys()[0]);
+    try std.testing.expectEqualStrings("a", ast.footnotes.keys()[1]);
+    try std.testing.expect(ast.footnotes.get("unused") == null);
+
+    const beta = ast.footnotes.get("b").?;
+    try std.testing.expectEqualStrings("fn-1", beta.def_id);
+    try std.testing.expectEqual(@as(usize, 2), beta.ref_ids.len);
+    try std.testing.expectEqualStrings("fn-1-ref-1", beta.ref_ids[0]);
+    try std.testing.expectEqualStrings("fn-1-ref-2", beta.ref_ids[1]);
+    try std.testing.expectEqualStrings("First beta.", try beta.node.renderPlaintext());
+    try std.testing.expectEqual(@as(i32, 2), beta.node.footnoteDefCount());
+
+    const alpha = ast.footnotes.get("a").?;
+    try std.testing.expectEqualStrings("fn-2", alpha.def_id);
+    try std.testing.expectEqual(@as(usize, 1), alpha.ref_ids.len);
+    try std.testing.expectEqualStrings("fn-2-ref-1", alpha.ref_ids[0]);
+    try std.testing.expectEqual(@as(i32, 1), alpha.node.footnoteDefCount());
+
+    var references: [3]Node = undefined;
+    var reference_count: usize = 0;
+    var duplicate_definition: ?Node = null;
+    var unused_definition: ?Node = null;
+    var iterator = Markdown.Iter.init(ast.root());
+    defer iterator.deinit();
+    while (iterator.next()) |event| {
+        if (event.dir != .enter) continue;
+        switch (event.node.nodeType()) {
+            .FOOTNOTE_REFERENCE => {
+                references[reference_count] = event.node;
+                reference_count += 1;
+            },
+            .FOOTNOTE_DEFINITION => {
+                const plaintext = try event.node.renderPlaintext();
+                if (std.mem.eql(u8, plaintext, "Duplicate beta.")) {
+                    duplicate_definition = event.node;
+                } else if (std.mem.eql(u8, plaintext, "Unused.")) {
+                    unused_definition = event.node;
+                }
+            },
+            else => {},
+        }
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), reference_count);
+    try std.testing.expect(references[0].parentFootnoteDef().?.eql(beta.node));
+    try std.testing.expect(references[1].parentFootnoteDef().?.eql(alpha.node));
+    try std.testing.expect(references[2].parentFootnoteDef().?.eql(beta.node));
+    try std.testing.expectEqual(@as(i32, 1), references[0].footnoteRefIx());
+    try std.testing.expectEqual(@as(i32, 1), references[1].footnoteRefIx());
+    try std.testing.expectEqual(@as(i32, 2), references[2].footnoteRefIx());
+    try std.testing.expectEqual(@as(i32, 0), duplicate_definition.?.footnoteDefCount());
+    try std.testing.expectEqual(@as(i32, 0), unused_definition.?.footnoteDefCount());
 }
 
 test "semantic validation errors retain pure parser ranges" {
