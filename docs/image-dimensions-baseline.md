@@ -77,6 +77,26 @@ The next migration slice turns these source observations into an executable
 Wuffs oracle for PNG, JPEG, GIF, WebP, and BMP before production behavior is
 changed.
 
+## Accepted parser differences
+
+Differential and mutation tests record these intentional differences between
+the legacy configuration decoder and the replacement metadata parser:
+
+- PNG dimensions become available after the validated IHDR fields; the Zig
+  parser deliberately does not validate the IHDR checksum or require an IDAT
+  header because it does not decode pixels.
+- GIF dimensions come from the complete logical screen descriptor and do not
+  require the first image descriptor.
+- The Zig parser supports direct lossy `VP8 ` and extended `VP8X` WebP in
+  addition to the simple lossless `VP8L` accepted by the legacy path.
+- SVG intrinsic sizing and direct static AVIF primary-item sizing are new.
+- AVIF sequences and derived grid primary items are rejected rather than
+  guessed; grid support requires validating its item data and references.
+- Netpbm, NIE, QOI, TGA, and WBMP are outside the replacement contract.
+
+For the overlapping PNG, GIF, JPEG, BMP, and lossless WebP cases, generated
+positive dimensions must agree exactly with Wuffs.
+
 ## Build baseline
 
 A clean local-cache host check used the existing global dependency cache:

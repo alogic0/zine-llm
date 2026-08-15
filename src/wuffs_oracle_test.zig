@@ -142,3 +142,50 @@ test "Zig adds static AVIF dimensions" {
     try std.testing.expectEqual(fixtures.width, result.dimensions.width);
     try std.testing.expectEqual(fixtures.height, result.dimensions.height);
 }
+
+fn expectSameDimensions(bytes: []const u8) !void {
+    const old = try legacy.parseImageSize(std.testing.allocator, bytes);
+    const new = try image_dimensions.parse(bytes);
+    try std.testing.expectEqual(old.w, new.dimensions.width);
+    try std.testing.expectEqual(old.h, new.dimensions.height);
+}
+
+test "generated retained dimensions match Wuffs" {
+    inline for (.{ @as(u16, 1), 2, 255, 1024, std.math.maxInt(u16) }) |dimension| {
+        var png = fixtures.png;
+        std.mem.writeInt(u32, png[16..20], dimension, .big);
+        std.mem.writeInt(u32, png[20..24], dimension, .big);
+        std.mem.writeInt(u32, png[29..33], std.hash.Crc32.hash(png[12..29]), .big);
+        try expectSameDimensions(&png);
+
+        var gif = fixtures.gif;
+        std.mem.writeInt(u16, gif[6..8], dimension, .little);
+        std.mem.writeInt(u16, gif[8..10], dimension, .little);
+        std.mem.writeInt(u16, gif[18..20], dimension, .little);
+        std.mem.writeInt(u16, gif[20..22], dimension, .little);
+        try expectSameDimensions(&gif);
+
+        var jpeg = fixtures.jpeg;
+        std.mem.writeInt(u16, jpeg[7..9], dimension, .big);
+        std.mem.writeInt(u16, jpeg[9..11], dimension, .big);
+        try expectSameDimensions(&jpeg);
+
+        var bmp_info = fixtures.bmp_info;
+        std.mem.writeInt(i32, bmp_info[18..22], dimension, .little);
+        std.mem.writeInt(i32, bmp_info[22..26], dimension, .little);
+        try expectSameDimensions(&bmp_info);
+
+        var bmp_core = fixtures.bmp_core;
+        std.mem.writeInt(u16, bmp_core[18..20], dimension, .little);
+        std.mem.writeInt(u16, bmp_core[20..22], dimension, .little);
+        try expectSameDimensions(&bmp_core);
+    }
+
+    inline for (.{ @as(u14, 1), 2, 255, 1024, std.math.maxInt(u14) }) |dimension| {
+        var webp = fixtures.webp_vp8l;
+        const dimension_bits: u32 = @as(u32, dimension - 1) |
+            (@as(u32, dimension - 1) << 14);
+        std.mem.writeInt(u32, webp[21..25], dimension_bits, .little);
+        try expectSameDimensions(&webp);
+    }
+}
