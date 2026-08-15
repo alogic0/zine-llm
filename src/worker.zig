@@ -855,7 +855,7 @@ fn analyzeContent(
                             setImageSize(
                                 io,
                                 directive,
-                                b.site_assets_dir,
+                                b.base_dir,
                                 asset.input_path,
                             );
                         }

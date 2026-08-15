@@ -768,6 +768,11 @@ fn setupSnapshotTesting(
             run_zine.addArg("release");
             run_zine.addArg("--force");
             run_zine.addArg("--output=snapshot");
+            if (std.mem.eql(u8, entry.name, "image-autosize")) {
+                run_zine.addArg("--build-asset=generated");
+                run_zine.addArg("build-assets/build.svg");
+                run_zine.addArg("--install=generated.svg");
+            }
             run_zine.setCwd(b.path(src_path));
             run_zine.has_side_effects = true;
             run_zine.step.dependOn(&remove_snapshot.step);

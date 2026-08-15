@@ -1,0 +1,14 @@
+---
+.title = "Image autosize",
+.date = .date("2026-08-15T00:00:00"),
+.layout = "index.shtml",
+---
+[Page]($image.asset('page.svg'))
+
+[Site]($image.siteAsset('site.svg'))
+
+[Build]($image.buildAsset('generated'))
+
+[Explicit]($image.asset('explicit.svg').size(9,7))
+
+[Broken]($image.siteAsset('broken.img'))
