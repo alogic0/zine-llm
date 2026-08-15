@@ -2352,3 +2352,22 @@ fn isPunctuation(c: u8) bool {
         else => false,
     };
 }
+
+fn exerciseAllocationFailures(allocator: Allocator) !void {
+    const source = "# Heading\n";
+
+    var parser = try Parser.init(allocator);
+    defer parser.deinit();
+    try parser.feed(source);
+
+    var document = try parser.endInput();
+    defer document.deinit(allocator);
+}
+
+test "parser allocation failures clean up initialized state" {
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        exerciseAllocationFailures,
+        .{},
+    );
+}

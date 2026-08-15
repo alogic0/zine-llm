@@ -914,3 +914,29 @@ test "link titles are separated before Scripty evaluation" {
         source[ast.errors[0].main.start_byte..ast.errors[0].main.end_byte],
     );
 }
+
+fn exerciseAllocationFailures(allocator: Allocator, source: []const u8) !void {
+    var ast = try Ast.init(allocator, source, .{});
+    defer ast.deinit();
+}
+
+test "semantic allocation failures clean up owned syntax and sidecars" {
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        exerciseAllocationFailures,
+        .{"# Heading\n\nPlain paragraph.\n"},
+    );
+
+    const rich_source =
+        "# [Section]($section.id('intro').attrs('wide'))\n" ++
+        "See [the section](#intro) and a repeated note[^n][^n].\n\n" ++
+        "[^n]: Footnote with **formatting**.\n\n" ++
+        "```=html\n" ++
+        "<div><span>unfinished</div>\n" ++
+        "```\n";
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        exerciseAllocationFailures,
+        .{rich_source},
+    );
+}
