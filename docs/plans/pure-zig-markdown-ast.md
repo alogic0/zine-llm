@@ -309,6 +309,8 @@ Deliverable: Zine-facing code can be compiled against the new node facade in iso
 
 ### Phase 3: Add source tracking
 
+Status: complete.
+
 1. Change `feedLine` to know the line's absolute starting offset.
 2. Carry source positions through pending block records and inline tokens.
 3. Emit a range for every node.

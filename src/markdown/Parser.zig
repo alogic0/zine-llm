@@ -30,13 +30,22 @@ const ExtraIndex = Document.ExtraIndex;
 const ExtraData = Document.ExtraData;
 const StringIndex = Document.StringIndex;
 const ArrayList = std.ArrayList;
+const Source = @import("Source.zig");
 
 nodes: Node.List = .{},
 extra: ArrayList(u32) = .empty,
 scratch_extra: ArrayList(u32) = .empty,
 string_bytes: ArrayList(u8) = .empty,
 scratch_string: ArrayList(u8) = .empty,
+scratch_source_spans: ArrayList(Source.Span) = .empty,
 pending_blocks: ArrayList(Block) = .empty,
+spans: ArrayList(Source.Span) = .empty,
+line_starts: ArrayList(u32) = .empty,
+source_len: u32 = 0,
+current_line: []const u8 = "",
+current_line_start: u32 = 0,
+current_line_end: u32 = 0,
+current_line_ending_len: u2 = 0,
 allocator: Allocator,
 
 const Parser = @This();
@@ -52,6 +61,7 @@ const Block = struct {
     data: Data,
     extra_start: usize,
     string_start: usize,
+    source_span: Source.Span,
 
     const Tag = enum {
         /// Data is `list`.
@@ -182,6 +192,7 @@ pub fn init(allocator: Allocator) Allocator.Error!Parser {
         .tag = .root,
         .data = undefined,
     });
+    try p.spans.append(allocator, .{ .start = 0, .end = 0 });
     try p.string_bytes.append(allocator, 0);
     return p;
 }
@@ -192,13 +203,25 @@ pub fn deinit(p: *Parser) void {
     p.scratch_extra.deinit(p.allocator);
     p.string_bytes.deinit(p.allocator);
     p.scratch_string.deinit(p.allocator);
+    p.scratch_source_spans.deinit(p.allocator);
     p.pending_blocks.deinit(p.allocator);
+    p.spans.deinit(p.allocator);
+    p.line_starts.deinit(p.allocator);
     p.* = undefined;
 }
 
-/// Accepts a single line of content. `line` should not have a trailing line
-/// ending character.
-pub fn feedLine(p: *Parser, line: []const u8) Allocator.Error!void {
+/// Accepts a single line of content at its absolute source byte offset. `line`
+/// excludes its line ending; `line_ending_len` is 0, 1 (LF), or 2 (CRLF).
+pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: u2) Allocator.Error!void {
+    assert(line_ending_len <= 2);
+    assert(p.line_starts.items.len == 0 or line_start >= p.line_starts.items[p.line_starts.items.len - 1]);
+    try p.line_starts.append(p.allocator, line_start);
+    p.current_line = line;
+    p.current_line_start = line_start;
+    p.current_line_ending_len = line_ending_len;
+    p.current_line_end = line_start + @as(u32, @intCast(line.len)) + line_ending_len;
+    p.source_len = @max(p.source_len, p.current_line_end);
+
     var rest_line = line;
     const first_unmatched = for (p.pending_blocks.items, 0..) |b, i| {
         if (b.match(rest_line)) |rest| {
@@ -208,10 +231,17 @@ pub fn feedLine(p: *Parser, line: []const u8) Allocator.Error!void {
         }
     } else p.pending_blocks.items.len;
 
+    for (p.pending_blocks.items[0..first_unmatched]) |*block| {
+        block.source_span.end = p.currentContentEnd();
+    }
+
     const in_code_block = p.pending_blocks.items.len > 0 and
         p.pending_blocks.last().?.tag == .code_block;
     const code_block_end = in_code_block and
         first_unmatched + 1 == p.pending_blocks.items.len;
+    if (code_block_end) {
+        p.pending_blocks.items[p.pending_blocks.items.len - 1].source_span.end = p.currentContentEnd();
+    }
     // New blocks cannot be started if we are actively inside a code block or
     // are just closing one (to avoid interpreting the closing ``` as a new code
     // block start).
@@ -227,6 +257,7 @@ pub fn feedLine(p: *Parser, line: []const u8) Allocator.Error!void {
         p.pending_blocks.items.len > 0 and
         p.pending_blocks.last().?.tag == .paragraph)
     {
+        for (p.pending_blocks.items) |*block| block.source_span.end = p.currentContentEnd();
         try p.addScratchStringLine(mem.trimStart(u8, rest_line, " \t"));
         return;
     }
@@ -283,6 +314,7 @@ pub fn feedLine(p: *Parser, line: []const u8) Allocator.Error!void {
                     .tag = .paragraph,
                     .data = .{ .none = {} },
                     .rest = undefined,
+                    .source_start = p.sourceOffset(rest_line_trimmed),
                 });
                 try p.addScratchStringLine(rest_line_trimmed);
             }
@@ -297,6 +329,24 @@ pub fn feedLine(p: *Parser, line: []const u8) Allocator.Error!void {
     }
 }
 
+/// Feeds a complete source buffer while preserving LF/CRLF byte widths.
+pub fn feed(p: *Parser, source: []const u8) Allocator.Error!void {
+    var line_start: usize = 0;
+    var pos: usize = 0;
+    while (pos < source.len) : (pos += 1) {
+        if (source[pos] != '\n') continue;
+        const has_cr = pos > line_start and source[pos - 1] == '\r';
+        const content_end = pos - @intFromBool(has_cr);
+        try p.feedLine(
+            source[line_start..content_end],
+            @intCast(line_start),
+            if (has_cr) 2 else 1,
+        );
+        line_start = pos + 1;
+    }
+    try p.feedLine(source[line_start..], @intCast(line_start), 0);
+}
+
 /// Completes processing of the input and returns the parsed document.
 pub fn endInput(p: *Parser) Allocator.Error!Document {
     while (p.pending_blocks.items.len > 0) {
@@ -308,16 +358,26 @@ pub fn endInput(p: *Parser) Allocator.Error!Document {
 
     const children = try p.addExtraChildren(@ptrCast(p.scratch_extra.items));
     p.nodes.items(.data)[0] = .{ .container = .{ .children = children } };
+    const root_end = if (p.scratch_extra.items.len > 0)
+        p.spans.items[p.scratch_extra.items[p.scratch_extra.items.len - 1]].end
+    else
+        0;
+    p.spans.items[0] = .{ .start = 0, .end = root_end };
     p.scratch_string.items.len = 0;
     p.scratch_extra.items.len = 0;
 
     try p.extra.shrinkToLen(p.allocator);
     try p.string_bytes.shrinkToLen(p.allocator);
+    try p.spans.shrinkToLen(p.allocator);
+    try p.line_starts.shrinkToLen(p.allocator);
 
     return .{
         .nodes = p.nodes.toOwnedSlice(),
         .extra = p.extra.toOwnedSliceAssert(),
         .string_bytes = p.string_bytes.toOwnedSliceAssert(),
+        .spans = p.spans.toOwnedSliceAssert(),
+        .line_starts = p.line_starts.toOwnedSliceAssert(),
+        .source_len = p.source_len,
     };
 }
 
@@ -326,6 +386,7 @@ const BlockStart = struct {
     tag: Tag,
     data: Data,
     rest: []const u8,
+    source_start: u32,
 
     const Tag = enum {
         /// Data is `list_item`.
@@ -412,6 +473,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
             } },
             .string_start = p.scratch_string.items.len,
             .extra_start = p.scratch_extra.items.len,
+            .source_span = .{ .start = block_start.source_start, .end = p.currentContentEnd() },
         });
     }
 
@@ -426,6 +488,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
                 } },
                 .string_start = p.scratch_string.items.len,
                 .extra_start = p.scratch_extra.items.len,
+                .source_span = .{ .start = block_start.source_start, .end = p.currentContentEnd() },
             });
         }
 
@@ -477,6 +540,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
         .data = data,
         .string_start = p.scratch_string.items.len,
         .extra_start = p.scratch_extra.items.len,
+        .source_span = .{ .start = block_start.source_start, .end = p.currentContentEnd() },
     });
 
     if (tag == .table_row) {
@@ -488,7 +552,8 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
         const column_alignments = table.column_alignments_buffer[0..table.column_alignments_len];
         const table_row = &block_start.data.table_row;
         for (table_row.cells_buffer[0..table_row.cells_len], 0..) |cell_content, i| {
-            const cell_children = try p.parseInlines(cell_content);
+            const cell_start = p.sourceOffset(cell_content);
+            const cell_children = try p.parseInlinesAt(cell_content, cell_start);
             const alignment = if (i < column_alignments.len) column_alignments[i] else .unset;
             const cell = try p.addNode(.{
                 .tag = .table_cell,
@@ -499,7 +564,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
                     },
                     .children = cell_children,
                 } },
-            });
+            }, .{ .start = cell_start, .end = cell_start + @as(u32, @intCast(cell_content.len)) });
             try p.addScratchExtraNode(cell);
         }
     }
@@ -507,6 +572,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
 
 fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
     const unindented = mem.trimStart(u8, line, " \t");
+    const source_start = p.sourceOffset(unindented);
     const indent = line.len - unindented.len;
     if (isThematicBreak(line)) {
         // Thematic breaks take precedence over list items.
@@ -514,6 +580,7 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
             .tag = .thematic_break,
             .data = .{ .none = {} },
             .rest = "",
+            .source_start = source_start,
         };
     } else if (startListItem(unindented)) |list_item| {
         return .{
@@ -524,6 +591,7 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
                 .continuation_indent = indent + list_item.marker_len,
             } },
             .rest = list_item.rest,
+            .source_start = source_start,
         };
     } else if (startTableRow(unindented)) |table_row| {
         return .{
@@ -533,6 +601,7 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
                 .cells_len = table_row.cells_len,
             } },
             .rest = "",
+            .source_start = source_start,
         };
     } else if (startHeading(unindented)) |heading| {
         return .{
@@ -541,6 +610,7 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
                 .level = heading.level,
             } },
             .rest = heading.rest,
+            .source_start = source_start,
         };
     } else if (try p.startCodeBlock(unindented)) |code_block| {
         return .{
@@ -551,12 +621,14 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
                 .indent = indent,
             } },
             .rest = "",
+            .source_start = source_start,
         };
     } else if (startBlockquote(unindented)) |rest| {
         return .{
             .tag = .blockquote,
             .data = .{ .none = {} },
             .rest = rest,
+            .source_start = source_start,
         };
     } else {
         return null;
@@ -852,7 +924,7 @@ fn closeLastBlock(p: *Parser) !void {
                     },
                     .children = children,
                 } },
-            });
+            }, b.source_span);
         },
         .list_item => list_item: {
             assert(b.string_start == p.scratch_string.items.len);
@@ -863,7 +935,7 @@ fn closeLastBlock(p: *Parser) !void {
                     .tight = true,
                     .children = children,
                 } },
-            });
+            }, b.source_span);
         },
         .table => table: {
             assert(b.string_start == p.scratch_string.items.len);
@@ -873,7 +945,7 @@ fn closeLastBlock(p: *Parser) !void {
                 .data = .{ .container = .{
                     .children = children,
                 } },
-            });
+            }, b.source_span);
         },
         .table_row => table_row: {
             assert(b.string_start == p.scratch_string.items.len);
@@ -883,17 +955,20 @@ fn closeLastBlock(p: *Parser) !void {
                 .data = .{ .container = .{
                     .children = children,
                 } },
-            });
+            }, b.source_span);
         },
         .heading => heading: {
-            const children = try p.parseInlines(p.scratch_string.items[b.string_start..]);
+            const children = try p.parseInlines(
+                p.scratch_string.items[b.string_start..],
+                p.scratch_source_spans.items[b.string_start..],
+            );
             break :heading try p.addNode(.{
                 .tag = .heading,
                 .data = .{ .heading = .{
                     .level = b.data.heading.level,
                     .children = children,
                 } },
-            });
+            }, b.source_span);
         },
         .code_block => code_block: {
             const content = try p.addString(p.scratch_string.items[b.string_start..]);
@@ -903,7 +978,7 @@ fn closeLastBlock(p: *Parser) !void {
                     .tag = b.data.code_block.tag,
                     .content = content,
                 } },
-            });
+            }, b.source_span);
         },
         .blockquote => blockquote: {
             assert(b.string_start == p.scratch_string.items.len);
@@ -913,23 +988,27 @@ fn closeLastBlock(p: *Parser) !void {
                 .data = .{ .container = .{
                     .children = children,
                 } },
-            });
+            }, b.source_span);
         },
         .paragraph => paragraph: {
-            const children = try p.parseInlines(p.scratch_string.items[b.string_start..]);
+            const children = try p.parseInlines(
+                p.scratch_string.items[b.string_start..],
+                p.scratch_source_spans.items[b.string_start..],
+            );
             break :paragraph try p.addNode(.{
                 .tag = .paragraph,
                 .data = .{ .container = .{
                     .children = children,
                 } },
-            });
+            }, b.source_span);
         },
         .thematic_break => try p.addNode(.{
             .tag = .thematic_break,
             .data = .{ .none = {} },
-        }),
+        }, b.source_span),
     };
     p.scratch_string.items.len = b.string_start;
+    p.scratch_source_spans.items.len = b.string_start;
     p.scratch_extra.items.len = b.extra_start;
     try p.addScratchExtraNode(node);
 }
@@ -937,6 +1016,7 @@ fn closeLastBlock(p: *Parser) !void {
 const InlineParser = struct {
     parent: *Parser,
     content: []const u8,
+    source_spans: []const Source.Span,
     pos: usize = 0,
     pending_inlines: ArrayList(PendingInline) = .empty,
     completed_inlines: ArrayList(CompletedInline) = .empty,
@@ -973,6 +1053,21 @@ const InlineParser = struct {
     fn deinit(ip: *InlineParser) void {
         ip.pending_inlines.deinit(ip.parent.allocator);
         ip.completed_inlines.deinit(ip.parent.allocator);
+    }
+
+    fn sourceSpan(ip: InlineParser, start: usize, end: usize) Source.Span {
+        assert(start <= end and end <= ip.source_spans.len);
+        if (start < end) return .{
+            .start = ip.source_spans[start].start,
+            .end = ip.source_spans[end - 1].end,
+        };
+        const offset = if (start < ip.source_spans.len)
+            ip.source_spans[start].start
+        else if (ip.source_spans.len > 0)
+            ip.source_spans[ip.source_spans.len - 1].end
+        else
+            0;
+        return .{ .start = offset, .end = offset };
     }
 
     /// Parses all of `ip.content`, returning the children of the node
@@ -1063,7 +1158,7 @@ const InlineParser = struct {
                 .target = target,
                 .children = children,
             } },
-        });
+        }, ip.sourceSpan(opener.start, ip.pos + 1));
         try ip.completed_inlines.append(ip.parent.allocator, .{
             .node = link,
             .start = opener.start,
@@ -1121,7 +1216,7 @@ const InlineParser = struct {
                             .data = .{ .text = .{
                                 .content = target,
                             } },
-                        });
+                        }, ip.sourceSpan(start, ip.pos + 1));
                         try ip.completed_inlines.append(ip.parent.allocator, .{
                             .node = node,
                             .start = start,
@@ -1217,7 +1312,7 @@ const InlineParser = struct {
                     .data = .{ .text = .{
                         .content = target,
                     } },
-                });
+                }, ip.sourceSpan(start, ip.pos));
                 try ip.completed_inlines.append(ip.parent.allocator, .{
                     .node = node,
                     .start = start,
@@ -1328,32 +1423,33 @@ const InlineParser = struct {
     /// emphasis.
     fn encodeEmphasis(ip: *InlineParser, start: usize, end: usize, run_len: usize) !Node.Index {
         const children = try ip.encodeChildren(start, end);
+        const source_span = ip.sourceSpan(start - run_len, end + run_len);
         var inner = switch (run_len % 3) {
             1 => try ip.parent.addNode(.{
                 .tag = .emphasis,
                 .data = .{ .container = .{
                     .children = children,
                 } },
-            }),
+            }, source_span),
             2 => try ip.parent.addNode(.{
                 .tag = .strong,
                 .data = .{ .container = .{
                     .children = children,
                 } },
-            }),
+            }, source_span),
             0 => strong_emphasis: {
                 const strong = try ip.parent.addNode(.{
                     .tag = .strong,
                     .data = .{ .container = .{
                         .children = children,
                     } },
-                });
+                }, source_span);
                 break :strong_emphasis try ip.parent.addNode(.{
                     .tag = .emphasis,
                     .data = .{ .container = .{
                         .children = try ip.parent.addExtraChildren(&.{strong}),
                     } },
-                });
+                }, source_span);
             },
             else => unreachable,
         };
@@ -1365,13 +1461,13 @@ const InlineParser = struct {
                 .data = .{ .container = .{
                     .children = try ip.parent.addExtraChildren(&.{inner}),
                 } },
-            });
+            }, source_span);
             inner = try ip.parent.addNode(.{
                 .tag = .emphasis,
                 .data = .{ .container = .{
                     .children = try ip.parent.addExtraChildren(&.{strong}),
                 } },
-            });
+            }, source_span);
         }
 
         return inner;
@@ -1410,7 +1506,7 @@ const InlineParser = struct {
             .data = .{ .text = .{
                 .content = try ip.parent.addString(content),
             } },
-        });
+        }, ip.sourceSpan(opener_start, ip.pos));
         try ip.completed_inlines.append(ip.parent.allocator, .{
             .node = text,
             .start = opener_start,
@@ -1468,11 +1564,14 @@ const InlineParser = struct {
 
         var string_start = string_top;
         var text_iter: TextIterator = .{ .content = ip.content[start..end] };
+        var text_source_start = start;
         while (text_iter.next()) |content| {
+            const raw_end = start + text_iter.pos;
             switch (content) {
                 .char => |c| try ip.parent.string_bytes.append(ip.parent.allocator, c),
                 .text => |s| try ip.parent.string_bytes.appendSlice(ip.parent.allocator, s),
                 .line_break => {
+                    const raw_start = raw_end - 2;
                     if (ip.parent.string_bytes.items.len > string_start) {
                         try ip.parent.string_bytes.append(ip.parent.allocator, 0);
                         try ip.parent.addScratchExtraNode(try ip.parent.addNode(.{
@@ -1480,13 +1579,14 @@ const InlineParser = struct {
                             .data = .{ .text = .{
                                 .content = @fromBackingInt(@intCast(string_start)),
                             } },
-                        }));
+                        }, ip.sourceSpan(text_source_start, raw_start)));
                         string_start = ip.parent.string_bytes.items.len;
                     }
                     try ip.parent.addScratchExtraNode(try ip.parent.addNode(.{
                         .tag = .line_break,
                         .data = .{ .none = {} },
-                    }));
+                    }, ip.sourceSpan(raw_start, raw_end)));
+                    text_source_start = raw_end;
                 },
             }
         }
@@ -1497,7 +1597,7 @@ const InlineParser = struct {
                 .data = .{ .text = .{
                     .content = @fromBackingInt(@intCast(string_start)),
                 } },
-            }));
+            }, ip.sourceSpan(text_source_start, end)));
         }
     }
 
@@ -1564,13 +1664,28 @@ const InlineParser = struct {
     };
 };
 
-fn parseInlines(p: *Parser, content: []const u8) !ExtraIndex {
+fn parseInlines(p: *Parser, content: []const u8, source_spans: []const Source.Span) !ExtraIndex {
+    assert(content.len == source_spans.len);
+    const trimmed = mem.trim(u8, content, " \t\n");
+    const trim_start = @intFromPtr(trimmed.ptr) - @intFromPtr(content.ptr);
     var ip: InlineParser = .{
         .parent = p,
-        .content = mem.trim(u8, content, " \t\n"),
+        .content = trimmed,
+        .source_spans = source_spans[trim_start..][0..trimmed.len],
     };
     defer ip.deinit();
     return try ip.parse();
+}
+
+fn parseInlinesAt(p: *Parser, content: []const u8, source_start: u32) !ExtraIndex {
+    var source_spans: ArrayList(Source.Span) = .empty;
+    defer source_spans.deinit(p.allocator);
+    try source_spans.ensureTotalCapacity(p.allocator, content.len);
+    for (0..content.len) |i| {
+        const start = source_start + @as(u32, @intCast(i));
+        source_spans.appendAssumeCapacity(.{ .start = start, .end = start + 1 });
+    }
+    return p.parseInlines(content, source_spans.items);
 }
 
 pub fn extraData(p: Parser, comptime T: type, index: ExtraIndex) ExtraData(T) {
@@ -1592,9 +1707,11 @@ pub fn extraChildren(p: Parser, index: ExtraIndex) []const Node.Index {
     return @ptrCast(p.extra.items[children.end..][0..children.data.len]);
 }
 
-fn addNode(p: *Parser, node: Node) !Node.Index {
+fn addNode(p: *Parser, node: Node, source_span: Source.Span) !Node.Index {
     const index: Node.Index = @fromBackingInt(@intCast(@as(u32, @intCast(p.nodes.len))));
     try p.nodes.append(p.allocator, node);
+    errdefer _ = p.nodes.pop();
+    try p.spans.append(p.allocator, source_span);
     return index;
 }
 
@@ -1622,8 +1739,34 @@ fn addScratchExtraNode(p: *Parser, node: Node.Index) !void {
 
 fn addScratchStringLine(p: *Parser, line: []const u8) !void {
     try p.scratch_string.ensureUnusedCapacity(p.allocator, line.len + 1);
+    try p.scratch_source_spans.ensureUnusedCapacity(p.allocator, line.len + 1);
     p.scratch_string.appendSliceAssumeCapacity(line);
+    const source_start = p.sourceOffset(line);
+    for (0..line.len) |i| {
+        const start = source_start + @as(u32, @intCast(i));
+        p.scratch_source_spans.appendAssumeCapacity(.{ .start = start, .end = start + 1 });
+    }
     p.scratch_string.appendAssumeCapacity('\n');
+    const ending_start = p.current_line_end - p.current_line_ending_len;
+    p.scratch_source_spans.appendAssumeCapacity(.{
+        .start = ending_start,
+        .end = p.current_line_end,
+    });
+}
+
+fn sourceOffset(p: Parser, slice: []const u8) u32 {
+    const slice_ptr = @intFromPtr(slice.ptr);
+    const line_ptr = @intFromPtr(p.current_line.ptr);
+    if (slice.len == 0 and (slice_ptr < line_ptr or slice_ptr > line_ptr + p.current_line.len)) {
+        return p.current_line_end - p.current_line_ending_len;
+    }
+    const byte_offset = slice_ptr - line_ptr;
+    assert(byte_offset <= p.current_line.len);
+    return p.current_line_start + @as(u32, @intCast(byte_offset));
+}
+
+fn currentContentEnd(p: Parser) u32 {
+    return p.current_line_end - p.current_line_ending_len;
 }
 
 fn isBlank(line: []const u8) bool {

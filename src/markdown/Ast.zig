@@ -9,27 +9,12 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Document = @import("Document.zig");
 const Parser = @import("Parser.zig");
+const Source = @import("Source.zig");
 
 pub const Index = Document.Node.Index;
 
-pub const Position = struct {
-    row: u32 = 0,
-    col: u32 = 0,
-};
-
-pub const Range = struct {
-    start: Position = .{},
-    end: Position = .{},
-    start_byte: u32 = unknown_offset,
-    end_byte: u32 = unknown_offset,
-
-    pub const unknown_offset = std.math.maxInt(u32);
-    pub const unknown: Range = .{};
-
-    pub fn isKnown(range: Range) bool {
-        return range.start_byte != unknown_offset and range.end_byte != unknown_offset;
-    }
-};
+pub const Position = Source.Position;
+pub const Range = Source.Range;
 
 pub const Relation = struct {
     parent: ?Index = null,
@@ -206,7 +191,9 @@ pub fn Contract(comptime Directive: type) type {
                 const store = try arena_allocator.create(Store);
                 const relations = try arena_allocator.alloc(Relation, document.nodes.len);
                 const metadata = try arena_allocator.alloc(Metadata, document.nodes.len);
-                for (metadata) |*entry| entry.* = .{};
+                for (metadata, 0..) |*entry, node_int| entry.* = .{
+                    .range = document.range(@fromBackingInt(@intCast(node_int))),
+                };
 
                 store.* = .{
                     .document = document.*,
@@ -645,8 +632,7 @@ fn parseTestAst(input: []const u8) !TestContract.Ast {
     var parser = try Parser.init(std.testing.allocator);
     defer parser.deinit();
 
-    var lines = std.mem.splitScalar(u8, input, '\n');
-    while (lines.next()) |line| try parser.feedLine(line);
+    try parser.feed(input);
     var document = try parser.endInput();
     errdefer document.deinit(std.testing.allocator);
     return TestContract.Ast.init(std.testing.allocator, &document);
@@ -658,6 +644,89 @@ fn findType(root: TestContract.Node, node_type: NodeType) ?TestContract.Node {
         if (node.nodeType() == node_type) return node;
     }
     return null;
+}
+
+fn expectRange(
+    node: TestContract.Node,
+    start_byte: u32,
+    end_byte: u32,
+    start_row: u32,
+    start_col: u32,
+    end_row: u32,
+    end_col: u32,
+) !void {
+    try std.testing.expectEqualDeep(Range{
+        .start = .{ .row = start_row, .col = start_col },
+        .end = .{ .row = end_row, .col = end_col },
+        .start_byte = start_byte,
+        .end_byte = end_byte,
+    }, node.range());
+}
+
+test "source ranges match the existing SuperMD diagnostic oracle" {
+    var ast = try parseTestAst("Your **SuperMD** content goes here.\n");
+    defer ast.deinit();
+
+    const root = ast.root();
+    const paragraph = root.firstChild().?;
+    const first_text = paragraph.firstChild().?;
+    const strong = first_text.nextSibling().?;
+    const strong_text = strong.firstChild().?;
+    const last_text = strong.nextSibling().?;
+
+    try expectRange(root, 0, 35, 1, 1, 1, 35);
+    try expectRange(paragraph, 0, 35, 1, 1, 1, 35);
+    try expectRange(first_text, 0, 5, 1, 1, 1, 5);
+    try expectRange(strong, 5, 16, 1, 6, 1, 16);
+    try expectRange(strong_text, 7, 14, 1, 8, 1, 14);
+    try expectRange(last_text, 16, 35, 1, 17, 1, 35);
+}
+
+test "source ranges preserve UTF-8 byte columns, CRLF, and escapes" {
+    var ast = try parseTestAst("# h\xC3\xA9 \\*x\r\n");
+    defer ast.deinit();
+
+    const heading = ast.root().firstChild().?;
+    const text_node = heading.firstChild().?;
+    try expectRange(heading, 0, 9, 1, 1, 1, 9);
+    try expectRange(text_node, 2, 9, 1, 3, 1, 9);
+    try std.testing.expectEqualStrings("h\xC3\xA9 *x", try heading.renderPlaintext());
+}
+
+test "source ranges cross CRLF in multiline links" {
+    var ast = try parseTestAst("[one\r\n two](url)\r\n");
+    defer ast.deinit();
+
+    const paragraph = ast.root().firstChild().?;
+    const link = paragraph.firstChild().?;
+    const text_node = link.firstChild().?;
+    try expectRange(paragraph, 0, 16, 1, 1, 2, 10);
+    try expectRange(link, 0, 16, 1, 1, 2, 10);
+    try expectRange(text_node, 1, 10, 1, 2, 2, 4);
+}
+
+test "source ranges cover nested blocks and fenced code" {
+    const source = "> - item\r\n>   continued\r\n\r\n```zig\r\nconst \xCF\x80 = 1;\r\n```\r\n";
+    var ast = try parseTestAst(source);
+    defer ast.deinit();
+
+    const root = ast.root();
+    const blockquote = root.firstChild().?;
+    const list = blockquote.firstChild().?;
+    const item = list.firstChild().?;
+    const paragraph = item.firstChild().?;
+    const code = blockquote.nextSibling().?;
+
+    try expectRange(blockquote, 0, 23, 1, 1, 2, 13);
+    try expectRange(list, 2, 23, 1, 3, 2, 13);
+    try expectRange(item, 2, 23, 1, 3, 2, 13);
+    try expectRange(paragraph, 4, 23, 1, 5, 2, 13);
+    try expectRange(code, 27, 53, 4, 1, 6, 3);
+
+    var current: ?TestContract.Node = root;
+    while (current) |node| : (current = node.next(root)) {
+        try std.testing.expect(node.range().isKnown());
+    }
 }
 
 test "stable handles preserve navigation and metadata when Ast moves" {

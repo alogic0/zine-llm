@@ -130,6 +130,7 @@ const testing = std.testing;
 pub const Document = @import("markdown/Document.zig");
 pub const Parser = @import("markdown/Parser.zig");
 pub const Ast = @import("markdown/Ast.zig");
+pub const Source = @import("markdown/Source.zig");
 pub const Renderer = @import("markdown/renderer.zig").Renderer;
 pub const renderNodeInlineText = @import("markdown/renderer.zig").renderNodeInlineText;
 pub const fmtHtml = @import("markdown/renderer.zig").fmtHtml;
@@ -152,10 +153,13 @@ fn mainImpl() !void {
 
     var stdin_buffer: [1024]u8 = undefined;
     var stdin_reader = std.fs.File.stdin().reader(&stdin_buffer);
+    var source_offset: u32 = 0;
 
     while (stdin_reader.takeDelimiterExclusive('\n')) |line| {
         const trimmed = std.mem.trimEnd(u8, line, '\r');
-        try parser.feedLine(trimmed);
+        const ending_len: u2 = if (trimmed.len == line.len) 1 else 2;
+        try parser.feedLine(trimmed, source_offset, ending_len);
+        source_offset += @as(u32, @intCast(line.len)) + 1;
     } else |err| switch (err) {
         error.EndOfStream => {},
         else => |e| return e,
@@ -1117,10 +1121,7 @@ fn testRender(input: []const u8, expected: []const u8) !void {
     var parser = try Parser.init(testing.allocator);
     defer parser.deinit();
 
-    var lines = std.mem.splitScalar(u8, input, '\n');
-    while (lines.next()) |line| {
-        try parser.feedLine(line);
-    }
+    try parser.feed(input);
     var doc = try parser.endInput();
     defer doc.deinit(testing.allocator);
 

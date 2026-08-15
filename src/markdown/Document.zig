@@ -5,10 +5,14 @@ const builtin = @import("builtin");
 const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
 const Renderer = @import("renderer.zig").Renderer;
+const Source = @import("Source.zig");
 
 nodes: Node.List.Slice,
 extra: []u32,
 string_bytes: []u8,
+spans: []Source.Span,
+line_starts: []u32,
+source_len: u32,
 
 const Document = @This();
 
@@ -156,7 +160,20 @@ pub fn deinit(doc: *Document, allocator: Allocator) void {
     doc.nodes.deinit(allocator);
     allocator.free(doc.extra);
     allocator.free(doc.string_bytes);
+    allocator.free(doc.spans);
+    allocator.free(doc.line_starts);
     doc.* = undefined;
+}
+
+pub fn span(doc: Document, index: Node.Index) Source.Span {
+    return doc.spans[@backingInt(index)];
+}
+
+pub fn range(doc: Document, index: Node.Index) Source.Range {
+    return (Source.LineIndex{
+        .starts = doc.line_starts,
+        .source_len = doc.source_len,
+    }).range(doc.span(index));
 }
 
 /// Renders a document directly to a writer using the default renderer.

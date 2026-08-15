@@ -43,5 +43,18 @@ same result.
 
 ## Source ranges
 
-Every node has a range entry initialized to `Range.unknown`. Phase 3 will fill
-these entries from canonical byte offsets and line/column data during parsing.
+Every parser node has a canonical half-open byte span in the original Markdown
+source. `Document` also owns a line-start index, and `Ast.init` uses it to fill
+the range sidecar for every node. `start_byte` is inclusive and `end_byte` is
+exclusive, which makes ranges directly usable for slicing and diagnostics.
+
+Rows and columns are one-based and the displayed end position is inclusive,
+matching the cmark/SuperMD source-position convention. Columns count source
+bytes rather than Unicode scalar values. This intentionally preserves the
+behavior of cmark and makes UTF-8 and invalid source bytes unambiguous.
+
+`Parser.feedLine` accepts the absolute line start and the original line-ending
+width. `Parser.feed` is the preferred whole-buffer entry point because it
+recognizes LF and CRLF without normalizing away their byte widths. Multiline
+inline buffers retain a parallel per-byte source map, so links, escapes, and
+hard breaks continue to select the original bytes after parsing.
