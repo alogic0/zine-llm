@@ -337,6 +337,15 @@ pub fn Contract(comptime Directive: type) type {
                 return node.store.syntaxData(item.index).list_item.tight;
             }
 
+            pub fn tasklistItemChecked(node: Node) ?bool {
+                if (node.nodeType() != .ITEM) return null;
+                return switch (node.store.syntaxData(node.index).list_item.task) {
+                    .none => null,
+                    .unchecked => false,
+                    .checked => true,
+                };
+            }
+
             fn rawParent(node: Node) ?Node {
                 const parent_index = node.store.relations[indexInt(node.index)].parent orelse return null;
                 return node.store.node(parent_index);
@@ -756,6 +765,20 @@ test "GFM tables without outer pipes retain structure and ranges" {
     const header = table.firstChild().?;
     try std.testing.expect(header.isTableHeader());
     try std.testing.expectEqual(NodeType.TABLE_CELL, header.firstChild().?.nodeType());
+}
+
+test "task list state is exposed on item nodes" {
+    var ast = try parseTestAst("- [ ] open\n- [x] done\n- ordinary\n");
+    defer ast.deinit();
+
+    const list = findType(ast.root(), .LIST).?;
+    const unchecked = list.firstChild().?;
+    const checked = unchecked.nextSibling().?;
+    const ordinary = checked.nextSibling().?;
+    try std.testing.expectEqual(@as(?bool, false), unchecked.tasklistItemChecked());
+    try std.testing.expectEqual(@as(?bool, true), checked.tasklistItemChecked());
+    try std.testing.expectEqual(@as(?bool, null), ordinary.tasklistItemChecked());
+    try expectRange(checked, 11, 21, 2, 1, 2, 10);
 }
 
 test "source ranges cover nested blocks and fenced code" {

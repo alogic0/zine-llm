@@ -97,6 +97,7 @@ const Block = struct {
         },
         list_item: struct {
             continuation_indent: usize,
+            task: Node.TaskStatus = .none,
         },
         table: struct {
             column_alignments_buffer: [max_table_columns]Node.TableCellAlignment,
@@ -302,7 +303,7 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
         last_pending_block.canAccept()
     else
         .blocks;
-    const rest_line_trimmed = mem.trimStart(u8, rest_line, " \t");
+    var rest_line_trimmed = mem.trimStart(u8, rest_line, " \t");
     switch (can_accept) {
         .blocks => {
             // If we're inside a list item and the rest of the line is blank, it
@@ -318,6 +319,15 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
                 null;
 
             if (rest_line_trimmed.len > 0) {
+                if (p.pending_blocks.items.len > 0 and
+                    p.pending_blocks.last().?.tag == .list_item and
+                    p.scratch_extra.items.len == p.pending_blocks.last().?.extra_start)
+                {
+                    if (taskListMarker(rest_line_trimmed)) |task| {
+                        p.pending_blocks.items[p.pending_blocks.items.len - 1].data.list_item.task = task.status;
+                        rest_line_trimmed = task.rest;
+                    }
+                }
                 try p.appendBlockStart(.{
                     .tag = .paragraph,
                     .data = .{ .none = {} },
@@ -530,6 +540,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
     const tag: Block.Tag, const data: Block.Data = switch (block_start.tag) {
         .list_item => .{ .list_item, .{ .list_item = .{
             .continuation_indent = block_start.data.list_item.continuation_indent,
+            .task = .none,
         } } },
         .table_row => .{ .table_row, .{ .none = {} } },
         .heading => .{ .heading, .{ .heading = .{
@@ -1073,6 +1084,7 @@ fn closeLastBlock(p: *Parser) !void {
                 .tag = .list_item,
                 .data = .{ .list_item = .{
                     .tight = true,
+                    .task = b.data.list_item.task,
                     .children = children,
                 } },
             }, b.source_span);
@@ -2028,6 +2040,22 @@ fn currentContentEnd(p: Parser) u32 {
 
 fn isBlank(line: []const u8) bool {
     return mem.findNone(u8, line, " \t") == null;
+}
+
+const TaskListMarker = struct {
+    status: Node.TaskStatus,
+    rest: []const u8,
+};
+
+fn taskListMarker(line: []const u8) ?TaskListMarker {
+    if (line.len < 4 or line[0] != '[' or line[2] != ']' or
+        (line[3] != ' ' and line[3] != '\t')) return null;
+    const status: Node.TaskStatus = switch (line[1]) {
+        ' ' => .unchecked,
+        'x', 'X' => .checked,
+        else => return null,
+    };
+    return .{ .status = status, .rest = mem.trimStart(u8, line[4..], " \t") };
 }
 
 fn isPunctuation(c: u8) bool {

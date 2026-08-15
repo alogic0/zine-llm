@@ -93,6 +93,7 @@ pub const Node = struct {
         },
         list_item: struct {
             tight: bool,
+            task: TaskStatus,
             children: ExtraIndex,
         },
         table_cell: struct {
@@ -148,6 +149,12 @@ pub const Node = struct {
         left,
         center,
         right,
+    };
+
+    pub const TaskStatus = enum(u2) {
+        none,
+        unchecked,
+        checked,
     };
 
     /// Trailing: `len` times `Node.Index`

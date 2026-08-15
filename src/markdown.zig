@@ -941,6 +941,18 @@ test "GFM strikethrough" {
     );
 }
 
+test "GFM task list items" {
+    try testRender(
+        "- [ ] open\n- [x] done\n- [X] also done\n- [a] literal\n",
+        "<ul>\n" ++
+            "<li><input type=\"checkbox\" disabled=\"\" /> open</li>\n" ++
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> done</li>\n" ++
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> also done</li>\n" ++
+            "<li>[a] literal</li>\n" ++
+            "</ul>\n",
+    );
+}
+
 test "images" {
     try testRender(
         \\![Alt text](https://example.com/image.png)

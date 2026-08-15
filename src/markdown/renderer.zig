@@ -59,6 +59,11 @@ pub fn Renderer(comptime Context: type) type {
                 },
                 .list_item => {
                     try writer.writeAll("<li>");
+                    switch (data.list_item.task) {
+                        .none => {},
+                        .unchecked => try writer.writeAll("<input type=\"checkbox\" disabled=\"\" /> "),
+                        .checked => try writer.writeAll("<input type=\"checkbox\" checked=\"\" disabled=\"\" /> "),
+                    }
                     for (doc.extraChildren(data.list_item.children)) |child| {
                         if (data.list_item.tight and doc.nodes.items(.tag)[@backingInt(child)] == .paragraph) {
                             const para_data = doc.nodes.items(.data)[@backingInt(child)];
