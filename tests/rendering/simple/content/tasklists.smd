@@ -1,0 +1,27 @@
+---
+.title = "Task Lists",
+.date = .date("2020-07-06T00:00:00"),
+.layout = "index.shtml",
+.draft = false,
+---
+
+# Tight task list
+
+- [ ] unchecked
+- [x] lowercase checked
+- [X] uppercase checked
+- ordinary
+
+# Loose task list
+
+- [ ] loose unchecked
+
+- loose ordinary
+
+- [x] loose checked
+
+# Nested task list
+
+- [ ] parent task
+  - [X] checked child
+  - ordinary child
