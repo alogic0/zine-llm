@@ -440,6 +440,21 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&zine_run.step);
 
     const test_step = b.step("test", "build snapshot tests and diff the results");
+    const image_dimensions_module = b.createModule(.{
+        .root_source_file = b.path("src/image_dimensions.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const image_dimensions_test_module = b.createModule(.{
+        .root_source_file = b.path("src/image_dimensions_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    image_dimensions_test_module.addImport("image_dimensions", image_dimensions_module);
+    const image_dimensions_tests = b.addTest(.{
+        .root_module = image_dimensions_test_module,
+    });
+    const run_image_dimensions_tests = b.addRunArtifact(image_dimensions_tests);
     const legacy_wuffs_oracle_module = b.createModule(.{
         .root_source_file = b.path("src/wuffs.zig"),
         .target = target,
@@ -455,6 +470,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     wuffs_oracle_module.addImport("legacy_wuffs", legacy_wuffs_oracle_module);
+    wuffs_oracle_module.addImport("image_dimensions", image_dimensions_module);
     const wuffs_oracle_tests = b.addTest(.{
         .root_module = wuffs_oracle_module,
     });
@@ -463,7 +479,9 @@ pub fn build(b: *std.Build) !void {
         "test-image-dimensions",
         "Run image-dimension compatibility tests",
     );
+    test_image_dimensions_step.dependOn(&run_image_dimensions_tests.step);
     test_image_dimensions_step.dependOn(&run_wuffs_oracle_tests.step);
+    test_step.dependOn(&run_image_dimensions_tests.step);
     test_step.dependOn(&run_wuffs_oracle_tests.step);
     const markdown_tests = b.addTest(.{
         .root_module = markdown,

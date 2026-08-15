@@ -1,5 +1,6 @@
 const std = @import("std");
 const fixtures = @import("image_dimensions_fixtures.zig");
+const image_dimensions = @import("image_dimensions");
 const legacy = @import("legacy_wuffs");
 
 const Case = struct {
@@ -73,4 +74,19 @@ test "Wuffs rejects unknown and malformed input" {
         error.WuffsError,
         legacy.parseImageSize(std.testing.allocator, &malformed_png),
     );
+}
+
+test "fixed-layout Zig results match Wuffs" {
+    const retained_cases = .{
+        &fixtures.png,
+        &fixtures.gif,
+        &fixtures.bmp_info,
+        &fixtures.bmp_core,
+    };
+    inline for (retained_cases) |bytes| {
+        const old = try legacy.parseImageSize(std.testing.allocator, bytes);
+        const new = try image_dimensions.parse(bytes);
+        try std.testing.expectEqual(old.w, new.dimensions.width);
+        try std.testing.expectEqual(old.h, new.dimensions.height);
+    }
 }
