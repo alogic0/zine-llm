@@ -10,6 +10,8 @@ pub const Node = Semantic.Node;
 pub const Iter = Semantic.Markdown.Iter;
 pub const Error = Semantic.Error;
 pub const Directive = supermd.Directive;
+pub const Link = supermd.context.Link;
+pub const Src = supermd.context.Src;
 pub const ExtensionKind = enum { strikethrough, table, table_row, table_cell };
 
 pub const ParseOptions = struct {

@@ -1,6 +1,5 @@
 const std = @import("std");
 const Writer = std.Io.Writer;
-const supermd = @import("supermd");
 const markdown_backend = @import("../markdown/Backend.zig");
 const Ast = markdown_backend.Ast;
 const Iter = markdown_backend.Iter;
@@ -658,7 +657,7 @@ fn renderDirective(
 fn printUrl(
     ctx: *const context.Root,
     page: *const context.Page,
-    src: supermd.context.Src,
+    src: markdown_backend.Src,
     w: *Writer,
 ) !void {
     switch (src) {

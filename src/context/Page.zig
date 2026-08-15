@@ -10,7 +10,6 @@ const Writer = std.Io.Writer;
 const builtin = @import("builtin");
 const ziggy = @import("ziggy");
 const scripty = @import("scripty");
-const supermd = @import("supermd");
 const markdown_backend = @import("../markdown/Backend.zig");
 const utils = @import("utils.zig");
 const tracy = @import("tracy");
@@ -2025,7 +2024,7 @@ pub const Builtins = struct {
 
 pub const ContentSection = struct {
     id: []const u8,
-    data: supermd.Directive.Data = .empty,
+    data: markdown_backend.Directive.Data = .empty,
     _node: markdown_backend.Node,
     _page: *const Page,
 

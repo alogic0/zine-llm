@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const Io = std.Io;
-const supermd = @import("supermd");
+const markdown_backend = @import("markdown/Backend.zig");
 const wuffs = @import("wuffs");
 const windows = std.os.windows;
 const Allocator = std.mem.Allocator;
@@ -64,7 +64,7 @@ const win = if (builtin.os.tag != .windows) void else struct {
 pub fn setImageSize(
     io: Io,
     gpa: Allocator,
-    directive: *supermd.Directive,
+    directive: *markdown_backend.Directive,
     base_dir: Io.Dir,
     image_path: []const u8,
 ) void {

@@ -8,7 +8,6 @@ const Component = std.Uri.Component;
 const builtin = @import("builtin");
 const tracy = @import("tracy");
 const ziggy = @import("ziggy");
-const supermd = @import("supermd");
 const markdown_backend = @import("markdown/Backend.zig");
 const fatal = @import("fatal.zig");
 const worker = @import("worker.zig");

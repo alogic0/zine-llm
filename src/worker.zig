@@ -5,7 +5,6 @@ const Io = std.Io;
 const Writer = std.Io.Writer;
 const builtin = @import("builtin");
 const options = @import("options");
-const supermd = @import("supermd");
 const markdown_backend = @import("markdown/Backend.zig");
 const superhtml = @import("superhtml");
 const ziggy = @import("ziggy");
@@ -497,7 +496,7 @@ fn analyzeContent(
                     .url => continue :outer,
                     .self_page => |*resolved_alt| {
                         // This value is only expected for Link directives.
-                        if (@TypeOf(val.*) != supermd.context.Link) continue :outer;
+                        if (@TypeOf(val.*) != markdown_backend.Link) continue :outer;
 
                         if (val.alternative) |alt_name| {
                             for (page.alternatives) |alt| {
@@ -535,7 +534,7 @@ fn analyzeContent(
 
                     .page => |*p| {
                         // This value is only expected for Link directives.
-                        if (@TypeOf(val.*) != supermd.context.Link) continue :outer;
+                        if (@TypeOf(val.*) != markdown_backend.Link) continue :outer;
 
                         const path: Path = switch (p.kind) {
                             .absolute => blk: {
