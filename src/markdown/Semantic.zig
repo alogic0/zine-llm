@@ -89,11 +89,12 @@ pub const Ast = struct {
         defer parser.deinit();
 
         try parser.feed(source);
-        var document = try parser.endInput();
-        errdefer document.deinit(gpa);
-
         var result: Ast = .{
-            .md = try Markdown.Ast.init(gpa, &document),
+            .md = blk: {
+                var document = try parser.endInput();
+                errdefer document.deinit(gpa);
+                break :blk try Markdown.Ast.init(gpa, &document);
+            },
             .options = options,
         };
         errdefer result.deinit();
