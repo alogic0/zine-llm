@@ -1,5 +1,6 @@
 const zon = @import("build.zig.zon");
 const std = @import("std");
+const image_dimension_fixtures = @import("src/image_dimensions_fixtures.zig");
 const builtin = @import("builtin");
 const Io = std.Io;
 
@@ -403,6 +404,7 @@ pub fn build(b: *std.Build) !void {
         "test-workflows",
         "Smoke-test disk release and the live development server",
     );
+    const image_formats_site = addImageFormatsSite(b);
     const workflow_release = b.addRunArtifact(zine_exe);
     workflow_release.addArg("release");
     workflow_release.addArg("--force");
@@ -410,7 +412,7 @@ pub fn build(b: *std.Build) !void {
         "--output=",
         "workflow-release",
     );
-    workflow_release.setCwd(b.path("tests/rendering/simple"));
+    workflow_release.setCwd(image_formats_site.getDirectory());
     workflow_release.has_side_effects = true;
     const verify_workflow_release = b.addSystemCommand(&.{ "test", "-f" });
     verify_workflow_release.addFileArg(workflow_release_output.path(b, "index.html"));
@@ -421,7 +423,7 @@ pub fn build(b: *std.Build) !void {
     serve_smoke.addFileArg(b.path("build/serve_smoke.sh"));
     serve_smoke.addArtifactArg2(zine_exe, .{ .make_absolute = true });
     serve_smoke.addDirectoryArg2(
-        b.path("tests/rendering/simple"),
+        image_formats_site.getDirectory(),
         .{ .make_absolute = true },
     );
     _ = serve_smoke.addOutputFileArg2(
@@ -629,7 +631,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     setupSchemaCheck(b, target, zine_mod, test_step);
-    try setupSnapshotTesting(b, target, zine_exe, test_step);
+    try setupSnapshotTesting(b, target, zine_exe, test_step, image_formats_site);
 
     workAroundPinnedZigModuleSerialization(b);
 }
@@ -687,6 +689,7 @@ fn setupSnapshotTesting(
     target: std.Build.ResolvedTarget,
     zine_exe: *std.Build.Step.Compile,
     test_step: *std.Build.Step,
+    image_formats_site: *std.Build.Step.WriteFile,
 ) !void {
     const camera = b.addExecutable(.{
         .name = "camera",
@@ -753,6 +756,7 @@ fn setupSnapshotTesting(
         while (try it.next(b.graph.io)) |entry| {
             if (entry.kind != .directory) continue;
             if (entry.name[0] == '.') continue;
+            if (std.mem.eql(u8, entry.name, "image-formats")) continue;
             const src_path = b.pathJoin(&.{
                 "tests/rendering",
                 entry.name,
@@ -786,6 +790,29 @@ fn setupSnapshotTesting(
             update_snap.step.dependOn(&run_zine.step);
             git_add.step.dependOn(&update_snap.step);
         }
+
+        const run_image_formats = b.addRunArtifact(zine_exe);
+        run_image_formats.addArg("release");
+        run_image_formats.addArg("--force");
+        const image_formats_output = run_image_formats.addPrefixedOutputDirectoryArg(
+            "--output=",
+            "image-formats-snapshot",
+        );
+        run_image_formats.setCwd(image_formats_site.getDirectory());
+        run_image_formats.has_side_effects = true;
+
+        const image_formats_stderr = run_image_formats.captureStdErr(.{});
+        const update_image_formats = b.addUpdateSourceFiles();
+        update_image_formats.addCopyFileToSource(
+            image_formats_output.path(b, "index.html"),
+            "tests/rendering/image-formats/snapshot/index.html",
+        );
+        update_image_formats.addCopyFileToSource(
+            image_formats_stderr,
+            "tests/rendering/image-formats/snapshot.txt",
+        );
+        update_image_formats.step.dependOn(&run_image_formats.step);
+        git_add.step.dependOn(&update_image_formats.step);
     }
     // drafts on
     {
@@ -829,6 +856,64 @@ fn setupSnapshotTesting(
             git_add.step.dependOn(&update_snap.step);
         }
     }
+}
+
+fn addImageFormatsSite(b: *std.Build) *std.Build.Step.WriteFile {
+    const files = b.addWriteFiles();
+    _ = files.add("zine.ziggy",
+        \\.zine_version = "0.13.1-dev",
+        \\.site = .simple(.{
+        \\    .title = "Image formats",
+        \\    .host_url = "https://example.com",
+        \\    .content_dir_path = "content",
+        \\    .layouts_dir_path = "layouts",
+        \\    .assets_dir_path = "assets",
+        \\    .image_size_attributes = true,
+        \\})
+    );
+    _ = files.add("layouts/index.shtml",
+        \\<!DOCTYPE html>
+        \\<html>
+        \\    <body><div :html="$page.content()"></div></body>
+        \\</html>
+    );
+    _ = files.add("content/index.smd",
+        \\---
+        \\.title = "Image formats",
+        \\.date = .date("2026-08-15T00:00:00"),
+        \\.layout = "index.shtml",
+        \\---
+        \\[PNG]($image.siteAsset('image.png'))
+        \\
+        \\[JPEG]($image.siteAsset('image.jpg'))
+        \\
+        \\[GIF]($image.siteAsset('image.gif'))
+        \\
+        \\[WebP lossy]($image.siteAsset('lossy.webp'))
+        \\
+        \\[WebP lossless]($image.siteAsset('lossless.webp'))
+        \\
+        \\[WebP extended]($image.siteAsset('extended.webp'))
+        \\
+        \\[BMP]($image.siteAsset('image.bmp'))
+        \\
+        \\[SVG]($image.siteAsset('image.svg'))
+        \\
+        \\[SVG unresolved]($image.siteAsset('unresolved.svg'))
+        \\
+        \\[AVIF]($image.siteAsset('image.avif'))
+    );
+    _ = files.add("assets/image.png", &image_dimension_fixtures.png);
+    _ = files.add("assets/image.jpg", &image_dimension_fixtures.jpeg_app);
+    _ = files.add("assets/image.gif", &image_dimension_fixtures.gif);
+    _ = files.add("assets/lossy.webp", &image_dimension_fixtures.webp_vp8);
+    _ = files.add("assets/lossless.webp", &image_dimension_fixtures.webp_vp8l);
+    _ = files.add("assets/extended.webp", &image_dimension_fixtures.webp_vp8x);
+    _ = files.add("assets/image.bmp", &image_dimension_fixtures.bmp_info);
+    _ = files.add("assets/image.svg", image_dimension_fixtures.svg_derived);
+    _ = files.add("assets/unresolved.svg", "<svg viewBox='0 0 37 23'/>");
+    _ = files.add("assets/image.avif", &image_dimension_fixtures.avif_unrelated_ispe);
+    return files;
 }
 
 fn setupReleaseStep(
