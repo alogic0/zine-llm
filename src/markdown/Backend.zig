@@ -108,27 +108,151 @@ pub const ErrorFmt = struct {
             return;
         }
 
-        const kind = std.meta.activeTag(value.err.kind);
-        try writer.print("{s}:{}:{}: error: {s}\n", .{
+        try writer.print("{s}:{}:{}: ", .{
             value.path,
             value.frontmatter_line_count + value.err.main.start.row,
             value.err.main.start.col,
-            switch (kind) {
-                .inline_html => "markdown inline html syntax is forbidden",
-                .heading_section_missing_id => "missing section id",
-                .invalid_ref => "unknown ref",
-                .no_alt_in_links => "vanilla alt text in scripted link syntax",
-                .expression_in_image_syntax => "scripty expression in image syntax",
-                .empty_expression => "link syntax without link or scripty expression",
-                .duplicate_id => "duplicate id",
-                .scripty => "Scripty expression",
-                .html => "HTML syntax",
-                .heading_skip => "skipped heading level",
-            },
         });
-        try writer.print("{f}\n", .{linePreview(value.source, value.err.main)});
+        var preview = linePreview(value.source, value.err.main);
+        preview.carets += 1;
+        switch (value.err.kind) {
+            .inline_html => try writer.print(
+                \\error: markdown inline html syntax is forbidden
+                \\{f}
+                \\| -- note: superhtml supports `=html` code blocks as an alternative
+                \\
+            , .{preview}),
+            .heading_section_missing_id => try writer.print(
+                \\error: missing section id
+                \\{f}
+                \\| -- note: all heading sections must have an id
+                \\
+            , .{preview}),
+            .invalid_ref => try writer.print(
+                \\error: unknown ref
+                \\{f}
+                \\
+            , .{preview}),
+            .no_alt_in_links => try writer.print(
+                \\error: vanilla alt text in scripted link syntax
+                \\{f}
+                \\| -- note: use `.alt()` to provide alt text
+                \\
+            , .{preview}),
+            .expression_in_image_syntax => try writer.print(
+                \\error: scripty expression in image syntax
+                \\{f}
+                \\| -- note: scripty expressions go in link syntax, remove the '!'
+                \\
+            , .{preview}),
+            .empty_expression => try writer.print(
+                \\error: link syntax without link or scripty expression
+                \\{f}
+                \\
+            , .{preview}),
+            .duplicate_id => |duplicate| {
+                const original_range = duplicate.original.range();
+                var original_preview = linePreview(value.source, original_range);
+                original_preview.carets += 1;
+                try writer.print(
+                    \\error: duplicate id '{s}'
+                    \\{f}
+                    \\| -- note: first definition was on line {} col {}:
+                    \\{f}
+                    \\
+                , .{
+                    duplicate.id,
+                    preview,
+                    value.frontmatter_line_count + original_range.start.row,
+                    original_range.start.col,
+                    original_preview,
+                });
+            },
+            .scripty => |script_error| {
+                const precise_range = scriptyRange(
+                    value.source,
+                    value.err.main,
+                    script_error.span,
+                );
+                try writer.print(
+                    \\[scripty] error: {s}
+                    \\{f}
+                    \\
+                , .{ script_error.err, linePreview(value.source, precise_range) });
+            },
+            .html => |html_error| try writer.print(
+                \\[html] error: {f}
+                \\{f}
+                \\
+            , .{
+                html_error.tag.fmt("test"),
+                linePreview(value.source, value.err.main),
+            }),
+            .heading_skip => |gap| {
+                try writer.print(
+                    \\error: skipped heading level
+                    \\{f}
+                    \\
+                , .{preview});
+                if (gap.last) |last| {
+                    const previous_range = last.range();
+                    var previous_preview = linePreview(value.source, previous_range);
+                    previous_preview.carets += 1;
+                    try writer.print(
+                        \\| -- note: previous heading (level {}):
+                        \\{f}
+                        \\
+                    , .{ last.headingLevel(), previous_preview });
+                } else try writer.writeAll(
+                    \\| -- note: supermd documents start at heading level 1 ('#')
+                    \\| -- note: if your intent is to start the content at '<h2>', you
+                    \\|          can change how headings render in html by setting the
+                    \\|          corresponding option in your zine config file
+                    \\
+                );
+            },
+        }
     }
 };
+
+fn scriptyRange(
+    source: []const u8,
+    main: @TypeOf(@as(Semantic.Error, undefined).main),
+    relative: anytype,
+) @TypeOf(main) {
+    if (!main.isKnown()) return main;
+    const bytes = source[main.start_byte..main.end_byte];
+    const relative_destination = std.mem.indexOf(u8, bytes, "](") orelse return main;
+    const base: u32 = main.start_byte + @as(u32, @intCast(relative_destination)) + 2;
+    return rangeFromOffsets(source, base + relative.start, base + relative.end);
+}
+
+fn rangeFromOffsets(
+    source: []const u8,
+    start: u32,
+    end: u32,
+) @TypeOf(@as(Semantic.Error, undefined).main) {
+    return .{
+        .start = position(source, start),
+        .end = position(source, end),
+        .start_byte = start,
+        .end_byte = end,
+    };
+}
+
+fn position(
+    source: []const u8,
+    offset_arg: u32,
+) @TypeOf(@as(Semantic.Error, undefined).main.start) {
+    const offset = @min(offset_arg, source.len);
+    var row: u32 = 1;
+    var line_start: usize = 0;
+    for (source[0..offset], 0..) |byte, index| if (byte == '\n') {
+        row += 1;
+        line_start = index + 1;
+    };
+    return .{ .row = row, .col = @intCast(offset - line_start + 1) };
+}
 
 test "selected Markdown backend has the compatibility boundary" {
     if (is_zig) {

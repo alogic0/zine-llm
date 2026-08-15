@@ -213,7 +213,7 @@ const Analyzer = struct {
 
     fn enter(analyzer: *Analyzer, node: Node) !void {
         switch (node.nodeType()) {
-            .HTML_BLOCK, .HTML_INLINE => try analyzer.addError(node.range(), .inline_html),
+            .HTML_BLOCK => try analyzer.addError(node.range(), .inline_html),
             .CODE_BLOCK => try analyzer.validateHtmlBlock(node),
             else => {},
         }
@@ -222,7 +222,10 @@ const Analyzer = struct {
             .IMAGE => true,
             else => return,
         };
-        const raw = node.link() orelse return;
+        const stored_destination = node.link() orelse return;
+        const destination_and_title = splitDestinationTitle(stored_destination);
+        node.setTitle(destination_and_title.title);
+        const raw = destination_and_title.destination;
         const value = normalizeDestination(raw);
         const destination: Destination = .{
             .raw = raw,
@@ -550,10 +553,55 @@ fn stripTrailingSlash(path: []const u8) []const u8 {
 fn sourceRange(source: []const u8, start: u32, end: u32) SyntaxAst.Range {
     return .{
         .start = sourcePosition(source, start),
-        .end = sourcePosition(source, if (end > start) end - 1 else end),
+        .end = sourcePosition(source, end),
         .start_byte = start,
         .end_byte = end,
     };
+}
+
+fn splitDestinationTitle(raw: []const u8) struct {
+    destination: []const u8,
+    title: ?[]const u8,
+} {
+    var nesting: usize = 0;
+    var quote: ?u8 = null;
+    var escaped = false;
+    for (raw, 0..) |byte, index| {
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        if (byte == '\\') {
+            escaped = true;
+            continue;
+        }
+        if (quote) |delimiter| {
+            if (byte == delimiter) quote = null;
+            continue;
+        }
+        switch (byte) {
+            '\'', '"' => quote = byte,
+            '(' => nesting += 1,
+            ')' => nesting -|= 1,
+            ' ', '\t', '\n', '\r' => if (nesting == 0) {
+                const candidate = std.mem.trim(u8, raw[index..], " \t\n\r");
+                if (candidate.len < 2) break;
+                const closing: u8 = switch (candidate[0]) {
+                    '\'' => '\'',
+                    '"' => '"',
+                    '(' => ')',
+                    else => break,
+                };
+                if (candidate[candidate.len - 1] != closing) break;
+                return .{
+                    .destination = raw[0..index],
+                    .title = candidate[1 .. candidate.len - 1],
+                };
+            },
+            else => {},
+        }
+    }
+    return .{ .destination = raw, .title = null };
 }
 
 fn sourcePosition(source: []const u8, offset_arg: u32) Source.Position {
@@ -728,7 +776,9 @@ test "semantic validation errors retain pure parser ranges" {
         \\## Skipped
         \\[first]($text.id('same')) [second]($text.id('same'))
         \\[missing](#unknown) ![bad]($image)
-        \\<span>raw</span>
+        \\<div>
+        \\raw
+        \\</div>
     ;
     var ast = try Ast.init(std.testing.allocator, source, .{});
     defer ast.deinit();

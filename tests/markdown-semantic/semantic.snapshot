@@ -23,7 +23,5 @@ footnotes:
   one: def=fn-1 refs=fn-1-ref-1,fn-1-ref-2
 errors:
   duplicate_id 220..250
-  inline_html 252..258
-  inline_html 261..268
   html 285..289
   invalid_ref 170..189
