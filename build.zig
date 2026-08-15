@@ -294,13 +294,19 @@ pub fn build(b: *std.Build) !void {
     });
 
     const release = b.step("release", "Create release builds of Zine");
+    const check_release_targets = b.step(
+        "check-release-targets",
+        "Compile every supported release target without packaging",
+    );
     if (!preview and (std.mem.indexOf(u8, version, "dev") != null)) {
-        release.dependOn(&b.addFail(b.fmt(
+        const preview_required = b.addFail(b.fmt(
             "error: cannot build release of dev version ({s}), use -Dpreview to override",
             .{version},
-        )).step);
+        ));
+        release.dependOn(&preview_required.step);
+        check_release_targets.dependOn(&preview_required.step);
     } else {
-        setupReleaseStep(b, release, version, translate_c);
+        setupReleaseStep(b, release, check_release_targets, version, translate_c);
     }
 
     const shtml_docgen = b.addExecutable(.{
@@ -719,6 +725,7 @@ fn setupSnapshotTesting(
 fn setupReleaseStep(
     b: *std.Build,
     release_step: *std.Build.Step,
+    check_release_targets: *std.Build.Step,
     version: []const u8,
     translate_c: *std.Build.Dependency,
 ) void {
@@ -823,6 +830,7 @@ fn setupReleaseStep(
                 .optimize = .fast,
             }),
         });
+        check_release_targets.dependOn(&zine_exe_release.step);
 
         zine_exe_release.root_module.addImport("options", options);
         zine_exe_release.root_module.addImport("ziggy", ziggy);
