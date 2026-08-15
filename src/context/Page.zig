@@ -78,7 +78,7 @@ _parse: struct {
     active: bool,
     forbid_subsections: bool,
 
-    // Stores everything in parse except the cmark ast
+    // Stores everything allocated while parsing except the Markdown AST.
     arena: std.heap.ArenaAllocator.State,
     full_src: [:0]const u8,
     status: union(enum) {
