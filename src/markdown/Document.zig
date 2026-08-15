@@ -51,6 +51,8 @@ pub const Node = struct {
         paragraph,
         /// Data is `none`.
         thematic_break,
+        /// Data is `text`.
+        html_block,
 
         // Inlines
         /// Data is `link`.
@@ -69,6 +71,10 @@ pub const Node = struct {
         text,
         /// Data is `none`.
         line_break,
+        /// Data is `none`.
+        soft_break,
+        /// Data is `text`.
+        html_inline,
     };
 
     pub const Data = union {

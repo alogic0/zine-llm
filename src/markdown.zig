@@ -877,7 +877,7 @@ test "autolinks" {
         \\<p><a href="https://example.com">https://example.com</a>
         \\<strong>This is important: <a href="https://example.com/strong">https://example.com/strong</a></strong>
         \\<a href="https://example.com?query=abc.123#page(parens)">https://example.com?query=abc.123#page(parens)</a>
-        \\&lt;placeholder&gt;
+        \\<placeholder>
         \\<a href="data:">data:</a>
         \\1 &lt; 2
         \\4 &gt; 3
@@ -903,6 +903,21 @@ test "text autolinks" {
         \\(Links may be in parentheses: <a href="https://example.com/?q=(parens)">https://example.com/?q=(parens)</a>)
         \\Escaping a link so it's plain text: https://example.com</p>
         \\
+    );
+}
+
+test "soft breaks and raw HTML" {
+    try testRender(
+        "line one\nline two\n",
+        "<p>line one\nline two</p>\n",
+    );
+    try testRender(
+        "before <span class=\"note\">inside</span> after\n",
+        "<p>before <span class=\"note\">inside</span> after</p>\n",
+    );
+    try testRender(
+        "<div>\nraw <b>HTML</b>\n</div>\n\nafter\n",
+        "<div>\nraw <b>HTML</b>\n</div>\n<p>after</p>\n",
     );
 }
 

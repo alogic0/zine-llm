@@ -134,6 +134,10 @@ pub fn Renderer(comptime Context: type) type {
                 .thematic_break => {
                     try writer.writeAll("<hr />\n");
                 },
+                .html_block => {
+                    try writer.writeAll(doc.string(data.text.content));
+                    try writer.writeByte('\n');
+                },
                 .link => {
                     const target = doc.string(data.link.target);
                     try writer.print("<a href=\"{f}\">", .{fmtHtml(target)});
@@ -179,6 +183,8 @@ pub fn Renderer(comptime Context: type) type {
                 .line_break => {
                     try writer.writeAll("<br />\n");
                 },
+                .soft_break => try writer.writeByte('\n'),
+                .html_inline => try writer.writeAll(doc.string(data.text.content)),
             }
         }
     };
@@ -204,6 +210,7 @@ pub fn renderInlineNodeText(
         .blockquote,
         .paragraph,
         .thematic_break,
+        .html_block,
         => unreachable, // Blocks
 
         .link, .image => {
@@ -221,11 +228,11 @@ pub fn renderInlineNodeText(
                 try renderInlineNodeText(doc, child, writer);
             }
         },
-        .autolink, .code_span, .text => {
+        .autolink, .code_span, .text, .html_inline => {
             const content = doc.string(data.text.content);
             try writer.print("{f}", .{fmtHtml(content)});
         },
-        .line_break => {
+        .line_break, .soft_break => {
             try writer.writeAll("\n");
         },
     }

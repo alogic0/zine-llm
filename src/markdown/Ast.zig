@@ -106,10 +106,13 @@ pub fn Contract(comptime Directive: type) type {
                     .link, .image => store.document.extraChildren(data.link.children),
                     .code_block,
                     .thematic_break,
+                    .html_block,
                     .autolink,
                     .code_span,
                     .text,
                     .line_break,
+                    .soft_break,
+                    .html_inline,
                     => &.{},
                 };
             }
@@ -264,6 +267,7 @@ pub fn Contract(comptime Directive: type) type {
                     .blockquote => .BLOCK_QUOTE,
                     .paragraph => .PARAGRAPH,
                     .thematic_break => .THEMATIC_BREAK,
+                    .html_block => .HTML_BLOCK,
                     .link => .LINK,
                     .autolink => .LINK,
                     .image => .IMAGE,
@@ -272,13 +276,15 @@ pub fn Contract(comptime Directive: type) type {
                     .code_span => .CODE,
                     .text => .TEXT,
                     .line_break => .LINEBREAK,
+                    .soft_break => .SOFTBREAK,
+                    .html_inline => .HTML_INLINE,
                 };
             }
 
             pub fn literal(node: Node) ?[]const u8 {
                 const data = node.store.syntaxData(node.index);
                 return switch (node.store.syntaxTag(node.index)) {
-                    .autolink, .code_span, .text => node.store.document.string(data.text.content),
+                    .autolink, .code_span, .text, .html_inline, .html_block => node.store.document.string(data.text.content),
                     .code_block => node.store.document.string(data.code_block.content),
                     else => null,
                 };
@@ -485,10 +491,10 @@ pub fn Contract(comptime Directive: type) type {
                     if (event.dir != .enter) continue;
                     const current = event.node;
                     switch (current.store.syntaxTag(current.index)) {
-                        .autolink, .code_span, .text, .code_block => {
+                        .autolink, .code_span, .text, .code_block, .html_inline, .html_block => {
                             output.writer.writeAll(current.literal().?) catch return error.OutOfMemory;
                         },
-                        .line_break => output.writer.writeByte('\n') catch return error.OutOfMemory,
+                        .line_break, .soft_break => output.writer.writeByte('\n') catch return error.OutOfMemory,
                         else => {},
                     }
                 }
@@ -549,10 +555,13 @@ pub fn Contract(comptime Directive: type) type {
                     => true,
                     .code_block,
                     .thematic_break,
+                    .html_block,
                     .autolink,
                     .code_span,
                     .text,
                     .line_break,
+                    .soft_break,
+                    .html_inline,
                     => false,
                 };
             }
@@ -699,10 +708,29 @@ test "source ranges cross CRLF in multiline links" {
 
     const paragraph = ast.root().firstChild().?;
     const link = paragraph.firstChild().?;
-    const text_node = link.firstChild().?;
+    const first_text = link.firstChild().?;
+    const soft_break = first_text.nextSibling().?;
+    const last_text = soft_break.nextSibling().?;
     try expectRange(paragraph, 0, 16, 1, 1, 2, 10);
     try expectRange(link, 0, 16, 1, 1, 2, 10);
-    try expectRange(text_node, 1, 10, 1, 2, 2, 4);
+    try expectRange(first_text, 1, 4, 1, 2, 1, 4);
+    try std.testing.expectEqual(NodeType.SOFTBREAK, soft_break.nodeType());
+    try expectRange(soft_break, 4, 6, 1, 5, 1, 6);
+    try expectRange(last_text, 7, 10, 2, 2, 2, 4);
+}
+
+test "raw HTML nodes retain literal content and ranges" {
+    var ast = try parseTestAst("<div>\nblock\n</div>\n\nbefore <i>x</i> after\n");
+    defer ast.deinit();
+
+    const html_block = ast.root().firstChild().?;
+    try std.testing.expectEqual(NodeType.HTML_BLOCK, html_block.nodeType());
+    try std.testing.expectEqualStrings("<div>\nblock\n</div>", html_block.literal().?);
+    try expectRange(html_block, 0, 18, 1, 1, 3, 6);
+
+    const html_inline = findType(ast.root(), .HTML_INLINE).?;
+    try std.testing.expectEqualStrings("<i>", html_inline.literal().?);
+    try expectRange(html_inline, 27, 30, 5, 8, 5, 10);
 }
 
 test "source ranges cover nested blocks and fenced code" {

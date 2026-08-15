@@ -82,6 +82,8 @@ const Block = struct {
         paragraph,
         /// Data is `none`.
         thematic_break,
+        /// Data is `none`.
+        html_block,
     };
 
     const Data = union {
@@ -139,6 +141,7 @@ const Block = struct {
             => .inlines,
 
             .code_block,
+            .html_block,
             => .raw_inlines,
 
             .table_row,
@@ -176,6 +179,7 @@ const Block = struct {
                     break :code_block null;
                 }
             },
+            .html_block => if (unindented.len > 0) line else null,
             .blockquote => if (mem.startsWith(u8, unindented, ">"))
                 unindented[1..]
             else
@@ -237,6 +241,8 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
 
     const in_code_block = p.pending_blocks.items.len > 0 and
         p.pending_blocks.last().?.tag == .code_block;
+    const in_html_block = p.pending_blocks.items.len > 0 and
+        p.pending_blocks.last().?.tag == .html_block;
     const code_block_end = in_code_block and
         first_unmatched + 1 == p.pending_blocks.items.len;
     if (code_block_end) {
@@ -245,7 +251,7 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
     // New blocks cannot be started if we are actively inside a code block or
     // are just closing one (to avoid interpreting the closing ``` as a new code
     // block start).
-    var maybe_block_start = if (!in_code_block or first_unmatched + 2 <= p.pending_blocks.items.len)
+    var maybe_block_start = if ((!in_code_block or first_unmatched + 2 <= p.pending_blocks.items.len) and !in_html_block)
         try p.startBlock(rest_line)
     else
         null;
@@ -280,8 +286,8 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
         try p.appendBlockStart(block_start);
         // There may be more blocks to start within the same line.
         rest_line = block_start.rest;
-        // Headings may only contain inline content.
-        if (block_start.tag == .heading) break;
+        // Headings and raw HTML blocks do not contain nested blocks.
+        if (block_start.tag == .heading or block_start.tag == .html_block) break;
         // An opening code fence does not contain any additional block or inline
         // content to process.
         if (block_start.tag == .code_block) return;
@@ -403,6 +409,8 @@ const BlockStart = struct {
         paragraph,
         /// Data is `none`.
         thematic_break,
+        /// Data is `none`.
+        html_block,
     };
 
     const Data = union {
@@ -533,6 +541,7 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
         .blockquote => .{ .blockquote, .{ .none = {} } },
         .paragraph => .{ .paragraph, .{ .none = {} } },
         .thematic_break => .{ .thematic_break, .{ .none = {} } },
+        .html_block => .{ .html_block, .{ .none = {} } },
     };
 
     try p.pending_blocks.append(p.allocator, .{
@@ -621,6 +630,13 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
                 .indent = indent,
             } },
             .rest = "",
+            .source_start = source_start,
+        };
+    } else if (isHtmlBlockStart(unindented)) {
+        return .{
+            .tag = .html_block,
+            .data = .{ .none = {} },
+            .rest = unindented,
             .source_start = source_start,
         };
     } else if (startBlockquote(unindented)) |rest| {
@@ -897,6 +913,39 @@ fn isThematicBreak(line: []const u8) bool {
     return count >= 3;
 }
 
+fn isHtmlBlockStart(line: []const u8) bool {
+    if (line.len < 2 or line[0] != '<') return false;
+    if (mem.startsWith(u8, line, "<!--") or
+        mem.startsWith(u8, line, "<?") or
+        mem.startsWith(u8, line, "<![CDATA[") or
+        (line.len > 2 and line[1] == '!' and std.ascii.isUpper(line[2]))) return true;
+
+    var pos: usize = 1;
+    if (line[pos] == '/') pos += 1;
+    const name_start = pos;
+    while (pos < line.len and (std.ascii.isAlphanumeric(line[pos]) or line[pos] == '-')) : (pos += 1) {}
+    if (pos == name_start) return false;
+    if (!isBlockHtmlTag(line[name_start..pos])) return false;
+    return pos == line.len or isWhitespace(line[pos]) or line[pos] == '>' or line[pos] == '/';
+}
+
+fn isBlockHtmlTag(name: []const u8) bool {
+    const tags = [_][]const u8{
+        "address", "article",  "aside",    "base",     "basefont", "blockquote", "body",
+        "caption", "center",   "col",      "colgroup", "dd",       "details",    "dialog",
+        "dir",     "div",      "dl",       "dt",       "fieldset", "figcaption", "figure",
+        "footer",  "form",     "frame",    "frameset", "h1",       "h2",         "h3",
+        "h4",      "h5",       "h6",       "head",     "header",   "hr",         "html",
+        "iframe",  "legend",   "li",       "link",     "main",     "menu",       "menuitem",
+        "nav",     "noframes", "ol",       "optgroup", "option",   "p",          "param",
+        "search",  "section",  "summary",  "table",    "tbody",    "td",         "tfoot",
+        "th",      "thead",    "title",    "tr",       "track",    "ul",         "script",
+        "pre",     "style",    "textarea",
+    };
+    for (tags) |tag| if (std.ascii.eqlIgnoreCase(name, tag)) return true;
+    return false;
+}
+
 fn closeLastBlock(p: *Parser) !void {
     const b = p.pending_blocks.pop().?;
     const node = switch (b.tag) {
@@ -1006,6 +1055,13 @@ fn closeLastBlock(p: *Parser) !void {
             .tag = .thematic_break,
             .data = .{ .none = {} },
         }, b.source_span),
+        .html_block => html_block: {
+            const content = mem.trimEnd(u8, p.scratch_string.items[b.string_start..], "\n");
+            break :html_block try p.addNode(.{
+                .tag = .html_block,
+                .data = .{ .text = .{ .content = try p.addString(content) } },
+            }, b.source_span);
+        },
     };
     p.scratch_string.items.len = b.string_start;
     p.scratch_source_spans.items.len = b.string_start;
@@ -1090,7 +1146,7 @@ const InlineParser = struct {
                     ip.pos += 1;
                 },
                 ']' => try ip.parseLink(),
-                '<' => try ip.parseAutolink(),
+                '<' => if (!try ip.parseHtml()) try ip.parseAutolink(),
                 '*', '_' => try ip.parseEmphasis(),
                 '`' => try ip.parseCodeSpan(),
                 'h' => if (ip.pos == 0 or isPreTextAutolink(ip.content[ip.pos - 1])) {
@@ -1166,6 +1222,56 @@ const InlineParser = struct {
         });
     }
 
+    /// Parses a raw inline HTML tag, comment, declaration, or processing
+    /// instruction. Returns whether a node was emitted.
+    fn parseHtml(ip: *InlineParser) !bool {
+        const start = ip.pos;
+        if (start + 1 >= ip.content.len) return false;
+
+        var pos = start + 1;
+        const special = ip.content[pos] == '!' or ip.content[pos] == '?';
+        if (!special) {
+            if (ip.content[pos] == '/') pos += 1;
+            if (pos >= ip.content.len or !std.ascii.isAlphabetic(ip.content[pos])) return false;
+            pos += 1;
+            while (pos < ip.content.len and
+                (std.ascii.isAlphanumeric(ip.content[pos]) or ip.content[pos] == '-')) : (pos += 1)
+            {}
+            if (pos >= ip.content.len or
+                !(isWhitespace(ip.content[pos]) or ip.content[pos] == '/' or ip.content[pos] == '>')) return false;
+        }
+
+        var quote: ?u8 = null;
+        while (pos < ip.content.len) : (pos += 1) {
+            const c = ip.content[pos];
+            if (quote) |q| {
+                if (c == q) quote = null;
+                continue;
+            }
+            if (c == '\'' or c == '"') {
+                quote = c;
+            } else if (c == '>') {
+                const end = pos + 1;
+                const node = try ip.parent.addNode(.{
+                    .tag = .html_inline,
+                    .data = .{ .text = .{
+                        .content = try ip.parent.addString(ip.content[start..end]),
+                    } },
+                }, ip.sourceSpan(start, end));
+                try ip.completed_inlines.append(ip.parent.allocator, .{
+                    .node = node,
+                    .start = start,
+                    .len = end - start,
+                });
+                ip.pos = pos;
+                return true;
+            } else if (c == '\n') {
+                return false;
+            }
+        }
+        return false;
+    }
+
     fn encodeLinkTarget(ip: *InlineParser, start: usize, end: usize) !StringIndex {
         // For efficiency, we can encode directly into string_bytes rather than
         // creating a temporary string and then encoding it, since this process
@@ -1179,6 +1285,7 @@ const InlineParser = struct {
                 .char => |c| try ip.parent.string_bytes.append(ip.parent.allocator, c),
                 .text => |s| try ip.parent.string_bytes.appendSlice(ip.parent.allocator, s),
                 .line_break => try ip.parent.string_bytes.appendSlice(ip.parent.allocator, "\\\n"),
+                .soft_break => try ip.parent.string_bytes.append(ip.parent.allocator, '\n'),
             }
         }
         try ip.parent.string_bytes.append(ip.parent.allocator, 0);
@@ -1588,6 +1695,24 @@ const InlineParser = struct {
                     }, ip.sourceSpan(raw_start, raw_end)));
                     text_source_start = raw_end;
                 },
+                .soft_break => {
+                    const raw_start = raw_end - 1;
+                    if (ip.parent.string_bytes.items.len > string_start) {
+                        try ip.parent.string_bytes.append(ip.parent.allocator, 0);
+                        try ip.parent.addScratchExtraNode(try ip.parent.addNode(.{
+                            .tag = .text,
+                            .data = .{ .text = .{
+                                .content = @fromBackingInt(@intCast(string_start)),
+                            } },
+                        }, ip.sourceSpan(text_source_start, raw_start)));
+                        string_start = ip.parent.string_bytes.items.len;
+                    }
+                    try ip.parent.addScratchExtraNode(try ip.parent.addNode(.{
+                        .tag = .soft_break,
+                        .data = .{ .none = {} },
+                    }, ip.sourceSpan(raw_start, raw_end)));
+                    text_source_start = raw_end;
+                },
             }
         }
         if (ip.parent.string_bytes.items.len > string_start) {
@@ -1611,12 +1736,17 @@ const InlineParser = struct {
             char: u8,
             text: []const u8,
             line_break,
+            soft_break,
         };
 
         const replacement = "\u{FFFD}";
 
         fn next(iter: *TextIterator) ?Content {
             if (iter.pos >= iter.content.len) return null;
+            if (iter.content[iter.pos] == '\n') {
+                iter.pos += 1;
+                return .soft_break;
+            }
             if (iter.content[iter.pos] == '\\') {
                 iter.pos += 1;
                 if (iter.pos == iter.content.len) {
