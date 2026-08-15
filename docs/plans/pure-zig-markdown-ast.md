@@ -414,6 +414,13 @@ Deliverable: no cmark types, symbols, headers, libraries, or build steps remain.
 
 ### Phase 8: Performance and release validation
 
+Status: complete. Repeatable gates now cover performance and allocation
+profiles, parallel parser isolation, all optimization modes, generated and
+malformed input properties, full rendering snapshots, disk and live-server
+workflows, and every supported release target. `src/markdown/FEATURES.md`
+defines supported syntax and intentional deviations; commands and gate
+semantics are documented in `docs/markdown-validation.md`.
+
 1. Benchmark parsing, semantic analysis, rendering, peak memory, and allocations on representative sites.
 2. Check that parallel builds do not share mutable parser state.
 3. Run debug and optimized builds.
