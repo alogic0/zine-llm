@@ -132,3 +132,13 @@ test "Zig adds SVG intrinsic sizing" {
     try std.testing.expectEqual(fixtures.width, result.dimensions.width);
     try std.testing.expectEqual(fixtures.height, result.dimensions.height);
 }
+
+test "Zig adds static AVIF dimensions" {
+    try std.testing.expectError(
+        error.UnsupportedImageFormat,
+        legacy.parseImageSize(std.testing.allocator, &fixtures.avif),
+    );
+    const result = try image_dimensions.parse(&fixtures.avif);
+    try std.testing.expectEqual(fixtures.width, result.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, result.dimensions.height);
+}

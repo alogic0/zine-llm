@@ -15,6 +15,179 @@ pub const webp_vp8l = makeWebpVp8l(width, height);
 pub const webp_vp8x = makeWebpVp8x(width, height);
 pub const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='37' height=\"23\"></svg>";
 pub const svg_derived = "<?xml version='1.0'?><!--fixture--><svg:svg xmlns:svg='http://www.w3.org/2000/svg' height='23px' viewBox='0 0 74 46'/>";
+pub const avif = makeAvif(&.{.{ .ispe = .{ .width = width, .height = height } }}, &.{1}, false, "av01");
+pub const avif_unrelated_ispe = makeAvif(
+    &.{
+        .{ .ispe = .{ .width = 999, .height = 888 } },
+        .{ .ispe = .{ .width = width, .height = height } },
+    },
+    &.{2},
+    false,
+    "av01",
+);
+pub const avif_rotated = makeAvif(
+    &.{ .{ .ispe = .{ .width = width, .height = height } }, .{ .irot = 1 } },
+    &.{ 1, 2 },
+    false,
+    "av01",
+);
+pub const avif_cropped = makeAvif(
+    &.{
+        .{ .ispe = .{ .width = width, .height = height } },
+        .{ .clap = .{ .width = 17, .height = 11 } },
+    },
+    &.{ 1, 2 },
+    false,
+    "av01",
+);
+pub const avif_large_id = makeAvif(&.{.{ .ispe = .{ .width = width, .height = height } }}, &.{1}, true, "av01");
+pub const avif_grid = makeAvif(&.{.{ .ispe = .{ .width = width, .height = height } }}, &.{1}, false, "grid");
+
+/// libavif v1.2.0 `tests/data/white_1x1.avif`, licensed under the same
+/// BSD-style license as libavif. Its test-data README identifies it as a
+/// one-pixel image produced by libavif at default quality.
+pub const libavif_white_1x1_base64 =
+    "AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUEAAADybWV0YQAAAAAAAAAo" ++
+    "aGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAA" ++
+    "AAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAABcAAAAoaWluZgAAAAAAAQAA" ++
+    "ABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3Bl" ++
+    "AAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgSAAAAAAABNjb2xy" ++
+    "bmNseAABAA0ABoAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAAB9tZGF0EgAKBzgA" ++
+    "BhAQ0GkyCh/wP///xAAAr3A=";
+
+const FixtureDimensions = struct { width: u32, height: u32 };
+const AvifProperty = union(enum) {
+    ispe: FixtureDimensions,
+    clap: FixtureDimensions,
+    irot: u2,
+};
+
+fn makeAvif(
+    comptime properties: []const AvifProperty,
+    comptime associations: []const u8,
+    comptime large_id: bool,
+    comptime item_type: *const [4]u8,
+) [avifFixtureLen(properties, associations.len, large_id)]u8 {
+    const total_len = avifFixtureLen(properties, associations.len, large_id);
+    var bytes: [total_len]u8 = @splat(0);
+
+    const ftyp_size = 28;
+    putBoxHeader(&bytes, 0, ftyp_size, "ftyp");
+    bytes[8..12].* = "avif".*;
+    bytes[16..20].* = "mif1".*;
+    bytes[20..24].* = "avif".*;
+    bytes[24..28].* = "miaf".*;
+
+    const pitm_size: usize = if (large_id) 16 else 14;
+    const infe_size: usize = if (large_id) 23 else 21;
+    const iinf_size = 14 + infe_size;
+    const ipco_size = avifIpcoLen(properties);
+    const ipma_size = 19 + associations.len + @as(usize, if (large_id) 2 else 0);
+    const iprp_size = 8 + ipco_size + ipma_size;
+    const meta_size = 12 + pitm_size + iinf_size + iprp_size;
+    putBoxHeader(&bytes, ftyp_size, meta_size, "meta");
+
+    var offset: usize = ftyp_size + 12;
+    putBoxHeader(&bytes, offset, pitm_size, "pitm");
+    bytes[offset + 8] = if (large_id) 1 else 0;
+    if (large_id) {
+        std.mem.writeInt(u32, bytes[offset + 12 ..][0..4], 0x10001, .big);
+    } else {
+        std.mem.writeInt(u16, bytes[offset + 12 ..][0..2], 1, .big);
+    }
+    offset += pitm_size;
+
+    putBoxHeader(&bytes, offset, iinf_size, "iinf");
+    std.mem.writeInt(u16, bytes[offset + 12 ..][0..2], 1, .big);
+    const infe_offset = offset + 14;
+    putBoxHeader(&bytes, infe_offset, infe_size, "infe");
+    bytes[infe_offset + 8] = if (large_id) 3 else 2;
+    const id_len: usize = if (large_id) 4 else 2;
+    if (large_id) {
+        std.mem.writeInt(u32, bytes[infe_offset + 12 ..][0..4], 0x10001, .big);
+    } else {
+        std.mem.writeInt(u16, bytes[infe_offset + 12 ..][0..2], 1, .big);
+    }
+    bytes[infe_offset + 12 + id_len + 2 ..][0..4].* = item_type.*;
+    offset += iinf_size;
+
+    putBoxHeader(&bytes, offset, iprp_size, "iprp");
+    const ipco_offset = offset + 8;
+    putBoxHeader(&bytes, ipco_offset, ipco_size, "ipco");
+    var property_offset = ipco_offset + 8;
+    for (properties) |property| {
+        property_offset = putAvifProperty(&bytes, property_offset, property);
+    }
+
+    const ipma_offset = ipco_offset + ipco_size;
+    putBoxHeader(&bytes, ipma_offset, ipma_size, "ipma");
+    bytes[ipma_offset + 8] = if (large_id) 1 else 0;
+    std.mem.writeInt(u32, bytes[ipma_offset + 12 ..][0..4], 1, .big);
+    var association_offset = ipma_offset + 16;
+    if (large_id) {
+        std.mem.writeInt(u32, bytes[association_offset..][0..4], 0x10001, .big);
+        association_offset += 4;
+    } else {
+        std.mem.writeInt(u16, bytes[association_offset..][0..2], 1, .big);
+        association_offset += 2;
+    }
+    bytes[association_offset] = associations.len;
+    association_offset += 1;
+    for (associations) |association| {
+        bytes[association_offset] = association;
+        association_offset += 1;
+    }
+    return bytes;
+}
+
+fn avifFixtureLen(comptime properties: []const AvifProperty, comptime association_count: usize, comptime large_id: bool) usize {
+    const pitm_size: usize = if (large_id) 16 else 14;
+    const infe_size: usize = if (large_id) 23 else 21;
+    const iinf_size = 14 + infe_size;
+    const ipma_size = 19 + association_count + @as(usize, if (large_id) 2 else 0);
+    return 28 + 12 + pitm_size + iinf_size + 8 + avifIpcoLen(properties) + ipma_size;
+}
+
+fn avifIpcoLen(comptime properties: []const AvifProperty) usize {
+    var len: usize = 8;
+    for (properties) |property| len += switch (property) {
+        .ispe => 20,
+        .clap => 40,
+        .irot => 9,
+    };
+    return len;
+}
+
+fn putAvifProperty(bytes: []u8, offset: usize, property: AvifProperty) usize {
+    return switch (property) {
+        .ispe => |dimensions| blk: {
+            putBoxHeader(bytes, offset, 20, "ispe");
+            std.mem.writeInt(u32, bytes[offset + 12 ..][0..4], dimensions.width, .big);
+            std.mem.writeInt(u32, bytes[offset + 16 ..][0..4], dimensions.height, .big);
+            break :blk offset + 20;
+        },
+        .clap => |dimensions| blk: {
+            putBoxHeader(bytes, offset, 40, "clap");
+            std.mem.writeInt(u32, bytes[offset + 8 ..][0..4], dimensions.width, .big);
+            std.mem.writeInt(u32, bytes[offset + 12 ..][0..4], 1, .big);
+            std.mem.writeInt(u32, bytes[offset + 16 ..][0..4], dimensions.height, .big);
+            std.mem.writeInt(u32, bytes[offset + 20 ..][0..4], 1, .big);
+            std.mem.writeInt(u32, bytes[offset + 28 ..][0..4], 1, .big);
+            std.mem.writeInt(u32, bytes[offset + 36 ..][0..4], 1, .big);
+            break :blk offset + 40;
+        },
+        .irot => |angle| blk: {
+            putBoxHeader(bytes, offset, 9, "irot");
+            bytes[offset + 8] = angle;
+            break :blk offset + 9;
+        },
+    };
+}
+
+fn putBoxHeader(bytes: []u8, offset: usize, size: usize, comptime kind: *const [4]u8) void {
+    std.mem.writeInt(u32, bytes[offset..][0..4], size, .big);
+    bytes[offset + 4 ..][0..4].* = kind.*;
+}
 
 fn makePng(w: u32, h: u32) [45]u8 {
     var bytes: [45]u8 = @splat(0);

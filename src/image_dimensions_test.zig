@@ -221,3 +221,92 @@ test "SVG scanning is bounded" {
     bytes[0..4].* = "<!--".*;
     try std.testing.expectError(error.UnsupportedVariant, parse(&bytes));
 }
+
+test "static AVIF primary item dimensions" {
+    const cases = .{
+        .{ .bytes = &fixtures.avif, .width = fixtures.width, .height = fixtures.height },
+        .{ .bytes = &fixtures.avif_unrelated_ispe, .width = fixtures.width, .height = fixtures.height },
+        .{ .bytes = &fixtures.avif_large_id, .width = fixtures.width, .height = fixtures.height },
+        .{ .bytes = &fixtures.avif_rotated, .width = fixtures.height, .height = fixtures.width },
+        .{ .bytes = &fixtures.avif_cropped, .width = @as(u32, 17), .height = @as(u32, 11) },
+    };
+    inline for (cases) |case| {
+        const result = try parse(case.bytes);
+        try std.testing.expectEqual(Format.avif, result.format);
+        try std.testing.expectEqual(case.width, result.dimensions.width);
+        try std.testing.expectEqual(case.height, result.dimensions.height);
+    }
+}
+
+test "upstream libavif fixture" {
+    const decoded_len = try std.base64.standard.Decoder.calcSizeForSlice(fixtures.libavif_white_1x1_base64);
+    try std.testing.expectEqual(@as(usize, 305), decoded_len);
+    var bytes: [305]u8 = undefined;
+    try std.base64.standard.Decoder.decode(&bytes, fixtures.libavif_white_1x1_base64);
+    const result = try parse(&bytes);
+    try std.testing.expectEqual(@as(u32, 1), result.dimensions.width);
+    try std.testing.expectEqual(@as(u32, 1), result.dimensions.height);
+}
+
+test "AVIF rejects unsupported and malformed metadata" {
+    try std.testing.expectError(error.UnsupportedVariant, parse(&fixtures.avif_grid));
+
+    var sequence = fixtures.avif;
+    sequence[20..24].* = "avis".*;
+    try std.testing.expectError(error.UnsupportedVariant, parse(&sequence));
+
+    var unrelated_primary = fixtures.avif_unrelated_ispe;
+    unrelated_primary[unrelated_primary.len - 1] = 1;
+    const wrong_dimensions = try parse(&unrelated_primary);
+    try std.testing.expectEqual(@as(u32, 999), wrong_dimensions.dimensions.width);
+    try std.testing.expectEqual(@as(u32, 888), wrong_dimensions.dimensions.height);
+
+    var oversized_meta = fixtures.avif;
+    std.mem.writeInt(u32, oversized_meta[28..32], oversized_meta.len, .big);
+    try std.testing.expectError(error.Truncated, parse(&oversized_meta));
+
+    var bad_ispe = fixtures.avif;
+    const ispe = std.mem.indexOf(u8, &bad_ispe, "ispe").?;
+    std.mem.writeInt(u32, bad_ispe[ispe + 8 ..][0..4], 0, .big);
+    try std.testing.expectError(error.Malformed, parse(&bad_ispe));
+
+    var unknown_essential = fixtures.avif;
+    const property_type = std.mem.indexOf(u8, &unknown_essential, "ispe").?;
+    unknown_essential[property_type..][0..4].* = "zzzz".*;
+    unknown_essential[unknown_essential.len - 1] |= 0x80;
+    try std.testing.expectError(error.UnsupportedVariant, parse(&unknown_essential));
+}
+
+test "AVIF property containers may be reordered" {
+    const ipco_type = std.mem.indexOf(u8, &fixtures.avif, "ipco").?;
+    const ipco_start = ipco_type - 4;
+    const ipco_len = std.mem.readInt(u32, fixtures.avif[ipco_start..][0..4], .big);
+    const ipma_type = std.mem.indexOfPos(u8, &fixtures.avif, ipco_start + ipco_len, "ipma").?;
+    const ipma_start = ipma_type - 4;
+    const ipma_len = std.mem.readInt(u32, fixtures.avif[ipma_start..][0..4], .big);
+
+    var reordered = fixtures.avif;
+    @memcpy(reordered[ipco_start..][0..ipma_len], fixtures.avif[ipma_start..][0..ipma_len]);
+    @memcpy(reordered[ipco_start + ipma_len ..][0..ipco_len], fixtures.avif[ipco_start..][0..ipco_len]);
+    const result = try parse(&reordered);
+    try std.testing.expectEqual(fixtures.width, result.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, result.dimensions.height);
+}
+
+test "AVIF box walking is bounded" {
+    for (8..fixtures.avif.len) |prefix_len| {
+        const expected_error = if (prefix_len == 28) error.Malformed else error.Truncated;
+        try std.testing.expectError(expected_error, parse(fixtures.avif[0..prefix_len]));
+    }
+
+    var extended: [8 + fixtures.avif.len]u8 = @splat(0);
+    extended[0..4].* = fixtures.avif[0..4].*;
+    extended[4..8].* = "ftyp".*;
+    extended[0..4].* = .{ 0, 0, 0, 1 };
+    std.mem.writeInt(u64, extended[8..16], 16 + 20, .big);
+    extended[16..36].* = fixtures.avif[8..28].*;
+    extended[36..].* = fixtures.avif[28..].*;
+    const result = try parse(&extended);
+    try std.testing.expectEqual(fixtures.width, result.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, result.dimensions.height);
+}
