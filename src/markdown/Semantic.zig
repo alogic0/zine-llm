@@ -864,3 +864,38 @@ test "semantic snapshot is independent of HTML rendering" {
     try writeSnapshot(ast, &output.writer);
     try std.testing.expectEqualStrings(expected, output.written());
 }
+
+test "cmark compatibility permits inline HTML but rejects HTML blocks" {
+    var inline_ast = try Ast.init(std.testing.allocator, "text <ctx> text\n", .{});
+    defer inline_ast.deinit();
+    try std.testing.expectEqual(@as(usize, 0), inline_ast.errors.len);
+    try std.testing.expect(
+        inline_ast.root().firstChild().?.firstChild().?.nextSibling().?.nodeType() == .HTML_INLINE,
+    );
+
+    var block_ast = try Ast.init(
+        std.testing.allocator,
+        "<div>block HTML</div>\n",
+        .{},
+    );
+    defer block_ast.deinit();
+    try std.testing.expectEqual(@as(usize, 1), block_ast.errors.len);
+    try std.testing.expect(block_ast.errors[0].kind == .inline_html);
+    try std.testing.expect(block_ast.errors[0].main.isKnown());
+}
+
+test "link titles are separated before Scripty evaluation" {
+    const source = "[]($link.page(\"foo\") \"title\")\n";
+    var ast = try Ast.init(std.testing.allocator, source, .{});
+    defer ast.deinit();
+
+    const link = ast.root().firstChild().?.firstChild().?;
+    try std.testing.expectEqualStrings("title", link.title().?);
+    try std.testing.expectEqualStrings("foo", link.getDirective().?.kind.link.src.?.page.ref);
+    try std.testing.expectEqual(@as(usize, 1), ast.errors.len);
+    try std.testing.expect(ast.errors[0].kind == .no_alt_in_links);
+    try std.testing.expectEqualStrings(
+        source[0 .. source.len - 1],
+        source[ast.errors[0].main.start_byte..ast.errors[0].main.end_byte],
+    );
+}
