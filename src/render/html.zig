@@ -1,9 +1,9 @@
 const std = @import("std");
 const Writer = std.Io.Writer;
 const supermd = @import("supermd");
-const c = supermd.c;
-const Ast = supermd.Ast;
-const Iter = Ast.Iter;
+const markdown_backend = @import("../markdown/Backend.zig");
+const Ast = markdown_backend.Ast;
+const Iter = markdown_backend.Iter;
 const tracy = @import("tracy");
 const root = @import("../root.zig");
 const highlight = @import("../highlight.zig");
@@ -20,7 +20,7 @@ pub fn html(
     gpa: std.mem.Allocator,
     ctx: *const context.Root,
     page: *const context.Page,
-    start: supermd.Node,
+    start: markdown_backend.Node,
     w: *Writer,
 ) !void {
     const zone = tracy.traceNamed(@src(), "html");
@@ -31,10 +31,11 @@ pub fn html(
     // Footnotes are disconnected from the main ast tree so we cannot
     // start an iterator from the document's root node when rendering
     // one (which happens on-demand by pointing `start` at a footnote node).
-    const root_node = if (start.nodeType() == .FOOTNOTE_DEFINITION) start else ast.md.root;
+    const document_root = markdown_backend.root(&ast);
+    const root_node = if (start.nodeType() == .FOOTNOTE_DEFINITION) start else document_root;
     var it = Iter.init(root_node);
 
-    const full_page = start.n == ast.md.root.n;
+    const full_page = markdown_backend.eql(start, document_root);
     var event: ?Iter.Event = if (!full_page) blk: {
         it.reset(start, .enter);
         break :blk .{ .node = start, .dir = .enter };
@@ -60,18 +61,16 @@ pub fn html(
         //     @tagName(ev.dir),
         // }) catch unreachable);
 
-        log.debug("node ({}, {s}, {?s}) = {} {s} \n({*} == {*} {})", .{
+        log.debug("node ({}, {s}, {?s}) = {} {s} same={}", .{
             node_is_section,
             if (node.getDirective()) |d| @tagName(d.kind) else "<>",
             if (node.getDirective()) |d| d.id else null,
             node.nodeType(),
             @tagName(ev.dir),
-            node.n,
-            start.n,
-            node.n != start.n,
+            !markdown_backend.eql(node, start),
         });
 
-        if (!full_page and node_is_section and node.n != start.n) {
+        if (!full_page and node_is_section and !markdown_backend.eql(node, start)) {
             log.debug("done, breaking", .{});
             break;
         }
@@ -350,62 +349,67 @@ pub fn html(
                 },
             },
 
-            else => |nt| if (@intFromEnum(nt) == c.CMARK_NODE_STRIKETHROUGH) switch (ev.dir) {
-                .enter => try w.writeAll("<del>"),
-                .exit => try w.writeAll("</del>"),
-            } else if (@intFromEnum(nt) == c.CMARK_NODE_TABLE) switch (ev.dir) {
-                .enter => {
-                    table_alignments = node.getTableAlignments();
-                    try w.writeAll("<table>");
-                },
-                .exit => {
-                    table_alignments = &.{};
-                    try w.writeAll("</table>");
-                },
-            } else if (@intFromEnum(nt) == c.CMARK_NODE_TABLE_ROW) switch (ev.dir) {
-                .enter => {
-                    table_in_header = node.isTableHeader();
-                    try w.writeAll("<tr>");
-                },
-                .exit => {
-                    table_in_header = !node.isTableHeader();
-                    table_cell_id = 0;
-                    try w.writeAll("</tr>");
-                },
-            } else if (@intFromEnum(nt) == c.CMARK_NODE_TABLE_CELL) switch (ev.dir) {
-                .enter => {
-                    if (table_in_header) {
-                        try w.writeAll("<th");
-                    } else {
-                        try w.writeAll("<td");
-                    }
-
-                    if (table_cell_id < table_alignments.len) {
-                        const char = table_alignments[table_cell_id];
-                        if (char != 0) try w.print(" align='{s}'", .{
-                            switch (char) {
-                                else => unreachable,
-                                'l' => "left",
-                                'c' => "center",
-                                'r' => "right",
-                            },
-                        });
-                    }
-                    table_cell_id += 1;
-
-                    try w.writeAll(">");
-                },
-                .exit => {
-                    if (table_in_header) {
-                        try w.writeAll("</th>");
-                    } else {
-                        try w.writeAll("</td>");
-                    }
-                },
-            } else std.debug.panic(
+            else => switch (markdown_backend.extensionKind(node) orelse std.debug.panic(
                 "TODO: implement support for {x}",
                 .{node.nodeType()},
-            ),
+            )) {
+                .strikethrough => switch (ev.dir) {
+                    .enter => try w.writeAll("<del>"),
+                    .exit => try w.writeAll("</del>"),
+                },
+                .table => switch (ev.dir) {
+                    .enter => {
+                        table_alignments = node.getTableAlignments();
+                        try w.writeAll("<table>");
+                    },
+                    .exit => {
+                        table_alignments = &.{};
+                        try w.writeAll("</table>");
+                    },
+                },
+                .table_row => switch (ev.dir) {
+                    .enter => {
+                        table_in_header = node.isTableHeader();
+                        try w.writeAll("<tr>");
+                    },
+                    .exit => {
+                        table_in_header = !node.isTableHeader();
+                        table_cell_id = 0;
+                        try w.writeAll("</tr>");
+                    },
+                },
+                .table_cell => switch (ev.dir) {
+                    .enter => {
+                        if (table_in_header) {
+                            try w.writeAll("<th");
+                        } else {
+                            try w.writeAll("<td");
+                        }
+
+                        if (table_cell_id < table_alignments.len) {
+                            const char = table_alignments[table_cell_id];
+                            if (char != 0) try w.print(" align='{s}'", .{
+                                switch (char) {
+                                    else => unreachable,
+                                    'l' => "left",
+                                    'c' => "center",
+                                    'r' => "right",
+                                },
+                            });
+                        }
+                        table_cell_id += 1;
+
+                        try w.writeAll(">");
+                    },
+                    .exit => {
+                        if (table_in_header) {
+                            try w.writeAll("</th>");
+                        } else {
+                            try w.writeAll("</td>");
+                        }
+                    },
+                },
+            },
         }
     }
     if (open_div) {
@@ -695,7 +699,7 @@ fn printUrl(
                 page != ctx.page,
             );
 
-            const path: Path = @enumFromInt(p.resolved.path);
+            const path: Path = @fromBackingInt(@intCast(p.resolved.path));
             const v = ctx._meta.build.variants[p.resolved.variant_id];
             if (p.resolved.alt) |a| {
                 if (a[0] != '/') {
@@ -724,8 +728,8 @@ fn printUrl(
             );
 
             const pn: PathName = .{
-                .path = @enumFromInt(pa.resolved.path),
-                .name = @enumFromInt(pa.resolved.name),
+                .path = @fromBackingInt(@intCast(pa.resolved.path)),
+                .name = @fromBackingInt(@intCast(pa.resolved.name)),
             };
 
             const v = ctx._meta.build.variants[page._scan.variant_id];
@@ -740,8 +744,8 @@ fn printUrl(
             try printAssetUrlPrefix(ctx, page, w);
 
             const pn: PathName = .{
-                .path = @enumFromInt(sa.resolved.path),
-                .name = @enumFromInt(sa.resolved.name),
+                .path = @fromBackingInt(@intCast(sa.resolved.path)),
+                .name = @fromBackingInt(@intCast(sa.resolved.name)),
             };
 
             try w.print("{f}", .{pn.fmt(
@@ -817,7 +821,7 @@ pub fn htmlToc(ast: Ast, w: *Writer) !void {
     try w.print("<ul>\n", .{});
     var lvl: i32 = 1;
     var first_item = true;
-    var node: ?supermd.Node = ast.md.root.firstChild();
+    var node: ?markdown_backend.Node = markdown_backend.root(&ast).firstChild();
     while (node) |n| : (node = n.nextSibling()) {
         if (n.nodeType() != .HEADING) continue;
         defer first_item = false;
@@ -857,7 +861,7 @@ pub fn htmlToc(ast: Ast, w: *Writer) !void {
     try w.print("</ul>", .{});
 }
 
-fn tocRenderHeading(heading: supermd.Node, w: *Writer, link: bool) !void {
+fn tocRenderHeading(heading: markdown_backend.Node, w: *Writer, link: bool) !void {
     var it = Iter.init(heading);
     while (it.next()) |ev| {
         const node = ev.node;
@@ -918,7 +922,7 @@ fn tocRenderHeading(heading: supermd.Node, w: *Writer, link: bool) !void {
 pub fn htmlTocDetails(ast: Ast, w: *Writer) !void {
     var lvl: i32 = 1;
     var first_item = true;
-    var node: ?supermd.Node = ast.md.root.firstChild();
+    var node: ?markdown_backend.Node = markdown_backend.root(&ast).firstChild();
     while (node) |n| : (node = n.nextSibling()) {
         if (n.nodeType() != .HEADING) continue;
         defer first_item = false;

@@ -235,7 +235,7 @@ pub fn deinit(v: *const Variant, io: Io, gpa: Allocator) void {
         s.deinit(gpa);
     }
 
-    for (v.pages.items) |p| p.deinit(gpa);
+    for (v.pages.items) |*p| p.deinit(gpa);
 
     {
         var p = v.pages;

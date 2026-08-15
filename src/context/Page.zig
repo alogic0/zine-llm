@@ -11,6 +11,7 @@ const builtin = @import("builtin");
 const ziggy = @import("ziggy");
 const scripty = @import("scripty");
 const supermd = @import("supermd");
+const markdown_backend = @import("../markdown/Backend.zig");
 const utils = @import("utils.zig");
 const tracy = @import("tracy");
 const root = @import("../root.zig");
@@ -102,7 +103,7 @@ _parse: struct {
     ziggy_start: u32,
     date_err: ?@typeInfo(@typeInfo(@TypeOf(zeit.Time.fromISO8601)).@"fn".return_type.?).error_union.error_set = null,
     ziggy_doc: ziggy.Deserializer.Meta.Doc,
-    ast: supermd.Ast,
+    ast: markdown_backend.Ast,
 } = undefined,
 
 // Valid if parse.active = true and parse.status == .parsed
@@ -122,7 +123,7 @@ _render: struct {
 } = undefined,
 
 pub const PageAnalysisError = struct {
-    node: supermd.Node,
+    node: markdown_backend.Node,
     kind: union(enum) {
         not_a_section,
         no_parent_section,
@@ -299,7 +300,8 @@ pub const FrontmatterAnalysisError = union(enum) {
     }
 };
 
-pub fn deinit(p: *const Page, gpa: Allocator) void {
+pub fn deinit(p: *Page, gpa: Allocator) void {
+    if (p._parse.status == .parsed) markdown_backend.deinit(&p._parse.ast, gpa);
     p._parse.arena.promote(gpa).deinit();
 }
 
@@ -307,7 +309,7 @@ pub fn parse(
     p: *Page,
     io: Io,
     gpa: Allocator,
-    cmark: supermd.Ast.CmarkParser,
+    cmark: markdown_backend.ParserContext,
     cfg: *const root.Config,
     drafts: bool,
     progress: ?std.Progress.Node,
@@ -424,7 +426,7 @@ pub fn parse(
 
     // const smd_start = std.mem.indexOf(u8, full_src[meta.doc.end..], "---").? + "---".len + meta.doc.end;
     const smd_start = meta.doc.end;
-    const ast = supermd.Ast.init(gpa, full_src[smd_start..], cmark, .{
+    const ast = markdown_backend.parse(gpa, full_src[smd_start..], cmark, .{
         .auto_target_blank = cfg.supermd.auto_target_blank,
     }) catch fatal.oom();
 
@@ -867,7 +869,7 @@ pub const Builtins = struct {
                 return .{ .page = other_page };
             }
 
-            const index_html: StringTable.String = @enumFromInt(11);
+            const index_html: StringTable.String = @fromBackingInt(@intCast(11));
 
             const v = &ctx._meta.build.variants[p._scan.variant_id];
 
@@ -961,7 +963,7 @@ pub const Builtins = struct {
                 return Optional.init(gpa, other_page);
             }
 
-            const index_html: StringTable.String = @enumFromInt(11);
+            const index_html: StringTable.String = @fromBackingInt(@intCast(11));
             const v = &ctx._meta.build.variants[p._scan.variant_id];
 
             var buf: [std.fs.max_path_bytes]u8 = undefined;
@@ -1023,7 +1025,7 @@ pub const Builtins = struct {
                 return context.Array.init(gpa, Value, pages.items) catch unreachable;
             }
 
-            const index_html: StringTable.String = @enumFromInt(11);
+            const index_html: StringTable.String = @fromBackingInt(@intCast(11));
 
             const v = &ctx._meta.build.variants[p._scan.variant_id];
 
@@ -1793,7 +1795,7 @@ pub const Builtins = struct {
                 gpa,
                 ctx,
                 p,
-                ast.md.root,
+                markdown_backend.root(&ast),
                 &aw.writer,
             ) catch return error.OutOfMemory;
             return String.init(aw.written());
@@ -2025,7 +2027,7 @@ pub const Builtins = struct {
 pub const ContentSection = struct {
     id: []const u8,
     data: supermd.Directive.Data = .empty,
-    _node: supermd.Node,
+    _node: markdown_backend.Node,
     _page: *const Page,
 
     pub const Dot = true;

@@ -6,6 +6,7 @@ const Writer = std.Io.Writer;
 const builtin = @import("builtin");
 const options = @import("options");
 const supermd = @import("supermd");
+const markdown_backend = @import("markdown/Backend.zig");
 const superhtml = @import("superhtml");
 const ziggy = @import("ziggy");
 const tracy = @import("tracy");
@@ -332,13 +333,14 @@ fn analyzeContent(
     const errors = &page._analysis.page;
     const variant = &b.variants[variant_id];
     const autosize = b.cfg.getImageAutosize();
-    const index_smd: String = @enumFromInt(1);
+    const index_smd: String = @fromBackingInt(@intCast(1));
     assert(variant.string_table.get("index.smd") == index_smd);
-    const index_html: String = @enumFromInt(11);
+    const index_html: String = @fromBackingInt(@intCast(11));
     assert(variant.string_table.get("index.html") == index_html);
 
-    var current: ?supermd.Node = ast.md.root.firstChild();
-    outer: while (current) |n| : (current = n.next(ast.md.root)) {
+    const root_node = markdown_backend.root(ast);
+    var current: ?markdown_backend.Node = root_node.firstChild();
+    outer: while (current) |n| : (current = n.next(root_node)) {
         if (n.nodeType() == .CODE_BLOCK) blk: {
             const fence_info = n.fenceInfo() orelse break :blk;
             var fence_it = std.mem.tokenizeScalar(u8, fence_info, ' ');
@@ -690,7 +692,7 @@ fn analyzeContent(
                         p.resolved = .{
                             .page_id = hint.id,
                             .variant_id = other_page._scan.variant_id,
-                            .path = @intFromEnum(path),
+                            .path = @backingInt(path),
                         };
 
                         if (val.alternative) |alt_name| {
@@ -770,8 +772,8 @@ fn analyzeContent(
                                         //       grab image size info if needed
                                         _ = rc.fetchAdd(1, .acq_rel);
                                         pa.resolved = .{
-                                            .path = @intFromEnum(path),
-                                            .name = @intFromEnum(name),
+                                            .path = @backingInt(path),
+                                            .name = @backingInt(name),
                                         };
 
                                         const bytes = try std.fmt.allocPrint(scratch, "{f}", .{
@@ -825,8 +827,8 @@ fn analyzeContent(
                                 if (b.site_assets.getPtr(pn)) |rc| {
                                     _ = rc.fetchAdd(1, .acq_rel);
                                     sa.resolved = .{
-                                        .path = @intFromEnum(path),
-                                        .name = @intFromEnum(name),
+                                        .path = @backingInt(path),
+                                        .name = @backingInt(name),
                                     };
 
                                     if (autosize and directive.kind == .image and directive.kind.image.size == null) {

@@ -9,6 +9,7 @@ const builtin = @import("builtin");
 const tracy = @import("tracy");
 const ziggy = @import("ziggy");
 const supermd = @import("supermd");
+const markdown_backend = @import("markdown/Backend.zig");
 const fatal = @import("fatal.zig");
 const worker = @import("worker.zig");
 pub const context = @import("context.zig");
@@ -904,7 +905,7 @@ pub fn run(
 
                 pages_to_parse += s.pages.items.len;
 
-                const index_smd: String = @enumFromInt(1);
+                const index_smd: String = @fromBackingInt(@intCast(1));
                 assert(v.string_table.get("index.smd").? == index_smd);
                 for (s.pages.items) |page_index| {
                     const p = &v.pages.items[page_index];
@@ -1321,7 +1322,7 @@ pub fn run(
                     const range = n.range();
                     const md_src = p._parse.full_src[p._parse.ziggy_doc.end..];
                     const fm_lines = p._parse.ziggy_doc.lines + 1;
-                    var lp = supermd.Ast.linePreview(md_src, range);
+                    var lp = markdown_backend.linePreview(md_src, range);
                     lp.carets += 1;
                     std.debug.print(
                         \\{f}:{}:{}: error: {s}
@@ -1335,8 +1336,8 @@ pub fn run(
                             v.content_dir_path,
                             "",
                         ),
-                        fm_lines + n.startLine(),
-                        n.startColumn(),
+                        fm_lines + range.start.row,
+                        range.start.col,
                         err.title(),
                         lp,
                     });
@@ -1355,8 +1356,8 @@ pub fn run(
                                     v.content_dir_path,
                                     "",
                                 ),
-                                fm_lines + n.startLine(),
-                                n.startColumn(),
+                                fm_lines + range.start.row,
+                                range.start.col,
                                 err.title(),
                                 lp,
                             }),
@@ -1849,7 +1850,7 @@ fn printSuperMdErrors(
     build: *Build,
     v: *Variant,
     file: PathName,
-    ast: *const supermd.Ast,
+    ast: *const markdown_backend.Ast,
     md_src: []const u8,
     fm_lines: u32,
 ) void {
@@ -1860,14 +1861,14 @@ fn printSuperMdErrors(
 
     for (ast.errors) |err| {
         std.debug.print("{f}\n", .{
-            err.fmt(fm_lines, md_src, path),
+            markdown_backend.errorFmt(err, fm_lines, md_src, path),
         });
 
         if (build.mode == .memory) {
             build.mode.memory.errors.append(gpa, .{
                 .ref = "",
                 .msg = std.fmt.allocPrint(gpa, "{f}\n", .{
-                    err.fmt(fm_lines, md_src, path),
+                    markdown_backend.errorFmt(err, fm_lines, md_src, path),
                 }) catch fatal.oom(),
             }) catch fatal.oom();
         }
