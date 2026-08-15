@@ -386,12 +386,24 @@ pub fn build(b: *std.Build) !void {
         .root_module = markdown,
     });
     const run_markdown_tests = b.addRunArtifact(markdown_tests);
+    const semantic_markdown_module = b.createModule(.{
+        .root_source_file = b.path("src/markdown/Semantic.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    semantic_markdown_module.addImport("supermd", supermd);
+    const semantic_markdown_tests = b.addTest(.{
+        .root_module = semantic_markdown_module,
+    });
+    const run_semantic_markdown_tests = b.addRunArtifact(semantic_markdown_tests);
     const test_markdown_step = b.step(
         "test-markdown",
         "Run the vendored Zig Markdown tests",
     );
     test_markdown_step.dependOn(&run_markdown_tests.step);
+    test_markdown_step.dependOn(&run_semantic_markdown_tests.step);
     test_step.dependOn(&run_markdown_tests.step);
+    test_step.dependOn(&run_semantic_markdown_tests.step);
 
     setupSchemaCheck(b, target, zine_mod, test_step);
     try setupSnapshotTesting(b, target, zine_exe, supermd, test_step);
