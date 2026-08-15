@@ -214,6 +214,7 @@ const Block = struct {
 
 pub fn init(allocator: Allocator) Allocator.Error!Parser {
     var p: Parser = .{ .allocator = allocator };
+    errdefer p.deinit();
     try p.nodes.append(allocator, .{
         .tag = .root,
         .data = undefined,
