@@ -395,6 +395,32 @@ pub fn build(b: *std.Build) !void {
         .root_module = semantic_markdown_module,
     });
     const run_semantic_markdown_tests = b.addRunArtifact(semantic_markdown_tests);
+    const markdown_benchmark = b.addExecutable(.{
+        .name = "markdown-benchmark",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/markdown_benchmark.zig"),
+            .target = target,
+            .optimize = .fast,
+        }),
+    });
+    markdown_benchmark.root_module.addImport("supermd", supermd);
+    markdown_benchmark.root_module.addImport("scripty", scripty);
+    markdown_benchmark.root_module.addImport("superhtml", superhtml);
+    markdown_benchmark.root_module.addImport("fixtures", b.createModule(.{
+        .root_source_file = b.path("build/markdown_benchmark_fixtures.zig"),
+    }));
+    const run_markdown_benchmark = b.addRunArtifact(markdown_benchmark);
+    const benchmark_iterations = b.option(
+        usize,
+        "markdown-benchmark-iterations",
+        "Number of iterations per Markdown benchmark fixture",
+    ) orelse 50;
+    run_markdown_benchmark.addArg(b.fmt("{}", .{benchmark_iterations}));
+    const benchmark_markdown_step = b.step(
+        "benchmark-markdown",
+        "Benchmark Markdown parsing, semantics, rendering, and allocations",
+    );
+    benchmark_markdown_step.dependOn(&run_markdown_benchmark.step);
     const markdown_backend_module = b.createModule(.{
         .root_source_file = b.path("src/markdown/Backend.zig"),
         .target = target,
