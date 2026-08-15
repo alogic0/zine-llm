@@ -122,3 +122,13 @@ test "Zig expands WebP compatibility beyond Wuffs" {
     try std.testing.expectEqual(fixtures.width, extended_new.dimensions.width);
     try std.testing.expectEqual(fixtures.height, extended_new.dimensions.height);
 }
+
+test "Zig adds SVG intrinsic sizing" {
+    try std.testing.expectError(
+        error.UnsupportedImageFormat,
+        legacy.parseImageSize(std.testing.allocator, fixtures.svg),
+    );
+    const result = try image_dimensions.parse(fixtures.svg);
+    try std.testing.expectEqual(fixtures.width, result.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, result.dimensions.height);
+}

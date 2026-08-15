@@ -70,7 +70,7 @@ pub fn parse(bytes: []const u8) ProbeError!Result {
         .different => {},
     }
 
-    return error.UnsupportedFormat;
+    return .{ .format = .svg, .dimensions = try parseSvg(bytes) };
 }
 
 const SignatureMatch = enum { match, prefix, different };
@@ -279,6 +279,249 @@ fn parseWebpVp8x(payload: []const u8) ProbeError!Dimensions {
         .width = @as(u32, readU24Le(payload, 4)) + 1,
         .height = @as(u32, readU24Le(payload, 7)) + 1,
     };
+}
+
+const max_svg_prefix = 64 * 1024;
+
+fn parseSvg(bytes: []const u8) ProbeError!Dimensions {
+    const bounded = bytes.len > max_svg_prefix;
+    const prefix = bytes[0..@min(bytes.len, max_svg_prefix)];
+    return parseSvgPrefix(prefix) catch |err| switch (err) {
+        error.Truncated => if (bounded) error.UnsupportedVariant else error.Truncated,
+        else => err,
+    };
+}
+
+fn parseSvgPrefix(bytes: []const u8) ProbeError!Dimensions {
+    var offset: usize = 0;
+    if (std.mem.startsWith(u8, bytes, &.{ 0xEF, 0xBB, 0xBF })) offset = 3;
+
+    while (true) {
+        skipXmlSpace(bytes, &offset);
+        if (offset == bytes.len) return error.UnsupportedFormat;
+        if (bytes[offset] != '<') return error.UnsupportedFormat;
+
+        if (startsAt(bytes, offset, "<!--")) {
+            offset = try skipUntil(bytes, offset + 4, "-->");
+            continue;
+        }
+        if (startsAt(bytes, offset, "<?")) {
+            offset = try skipUntil(bytes, offset + 2, "?>");
+            continue;
+        }
+        if (startsAt(bytes, offset, "<!DOCTYPE")) {
+            offset = try skipDoctype(bytes, offset + "<!DOCTYPE".len);
+            continue;
+        }
+        if (startsAt(bytes, offset, "<!")) return error.Malformed;
+        break;
+    }
+
+    offset += 1;
+    const element_name = try parseXmlName(bytes, &offset);
+    const local_name = if (std.mem.lastIndexOfScalar(u8, element_name, ':')) |colon|
+        element_name[colon + 1 ..]
+    else
+        element_name;
+    if (!std.mem.eql(u8, local_name, "svg")) return error.UnsupportedFormat;
+
+    var width_value: ?[]const u8 = null;
+    var height_value: ?[]const u8 = null;
+    var view_box_value: ?[]const u8 = null;
+    while (true) {
+        skipXmlSpace(bytes, &offset);
+        if (offset == bytes.len) return error.Truncated;
+        if (bytes[offset] == '>') break;
+        if (bytes[offset] == '/') {
+            offset += 1;
+            if (offset == bytes.len) return error.Truncated;
+            if (bytes[offset] != '>') return error.Malformed;
+            break;
+        }
+
+        const attribute_name = try parseXmlName(bytes, &offset);
+        skipXmlSpace(bytes, &offset);
+        if (offset == bytes.len) return error.Truncated;
+        if (bytes[offset] != '=') return error.Malformed;
+        offset += 1;
+        skipXmlSpace(bytes, &offset);
+        if (offset == bytes.len) return error.Truncated;
+        const quote = bytes[offset];
+        if (quote != '\'' and quote != '"') return error.Malformed;
+        offset += 1;
+        const value_start = offset;
+        while (offset < bytes.len and bytes[offset] != quote) : (offset += 1) {}
+        if (offset == bytes.len) return error.Truncated;
+        const value = bytes[value_start..offset];
+        offset += 1;
+
+        if (std.mem.eql(u8, attribute_name, "width")) width_value = value;
+        if (std.mem.eql(u8, attribute_name, "height")) height_value = value;
+        if (std.mem.eql(u8, attribute_name, "viewBox")) view_box_value = value;
+    }
+
+    const width_px = if (width_value) |value| try parseSvgLength(value) else null;
+    const height_px = if (height_value) |value| try parseSvgLength(value) else null;
+    if (width_px == null and height_px == null) return error.UnsupportedVariant;
+
+    var resolved_width = width_px;
+    var resolved_height = height_px;
+    if (resolved_width == null or resolved_height == null) {
+        const view_box = try parseViewBox(view_box_value orelse return error.UnsupportedVariant);
+        if (resolved_width) |width| {
+            resolved_height = width * view_box.height / view_box.width;
+        } else if (resolved_height) |height| {
+            resolved_width = height * view_box.width / view_box.height;
+        }
+    }
+
+    return .{
+        .width = try cssPixelsToDimension(resolved_width.?),
+        .height = try cssPixelsToDimension(resolved_height.?),
+    };
+}
+
+fn parseSvgLength(raw: []const u8) ProbeError!?f64 {
+    const value = std.mem.trim(u8, raw, " \t\r\n");
+    if (value.len == 0) return error.Malformed;
+    const number_end = scanNumber(value, 0) catch return error.Malformed;
+    const number = std.fmt.parseFloat(f64, value[0..number_end]) catch return error.Malformed;
+    if (!std.math.isFinite(number) or number <= 0) return error.Malformed;
+    const unit = value[number_end..];
+    const multiplier: f64 = if (unit.len == 0 or std.mem.eql(u8, unit, "px"))
+        1
+    else if (std.mem.eql(u8, unit, "in"))
+        96
+    else if (std.mem.eql(u8, unit, "cm"))
+        4800.0 / 127.0
+    else if (std.mem.eql(u8, unit, "mm"))
+        480.0 / 127.0
+    else if (std.mem.eql(u8, unit, "q"))
+        120.0 / 127.0
+    else if (std.mem.eql(u8, unit, "pt"))
+        4.0 / 3.0
+    else if (std.mem.eql(u8, unit, "pc"))
+        16
+    else
+        return error.UnsupportedVariant;
+    return number * multiplier;
+}
+
+const ViewBox = struct { width: f64, height: f64 };
+
+fn parseViewBox(raw: []const u8) ProbeError!ViewBox {
+    var offset: usize = 0;
+    var values: [4]f64 = undefined;
+    for (&values) |*value| {
+        skipSvgNumberSeparators(raw, &offset);
+        const end = scanNumber(raw, offset) catch return error.Malformed;
+        value.* = std.fmt.parseFloat(f64, raw[offset..end]) catch return error.Malformed;
+        if (!std.math.isFinite(value.*)) return error.Malformed;
+        offset = end;
+    }
+    skipSvgNumberSeparators(raw, &offset);
+    if (offset != raw.len or values[2] <= 0 or values[3] <= 0) return error.Malformed;
+    return .{ .width = values[2], .height = values[3] };
+}
+
+fn scanNumber(bytes: []const u8, start: usize) ProbeError!usize {
+    var offset = start;
+    if (offset < bytes.len and (bytes[offset] == '+' or bytes[offset] == '-')) offset += 1;
+
+    const integer_start = offset;
+    while (offset < bytes.len and std.ascii.isDigit(bytes[offset])) : (offset += 1) {}
+    var has_digits = offset > integer_start;
+    if (offset < bytes.len and bytes[offset] == '.') {
+        offset += 1;
+        const fraction_start = offset;
+        while (offset < bytes.len and std.ascii.isDigit(bytes[offset])) : (offset += 1) {}
+        has_digits = has_digits or offset > fraction_start;
+    }
+    if (!has_digits) return error.Malformed;
+
+    if (offset < bytes.len and (bytes[offset] == 'e' or bytes[offset] == 'E')) {
+        var exponent_offset = offset + 1;
+        if (exponent_offset < bytes.len and (bytes[exponent_offset] == '+' or bytes[exponent_offset] == '-')) {
+            exponent_offset += 1;
+        }
+        if (exponent_offset < bytes.len and std.ascii.isDigit(bytes[exponent_offset])) {
+            offset = exponent_offset + 1;
+            while (offset < bytes.len and std.ascii.isDigit(bytes[offset])) : (offset += 1) {}
+        }
+    }
+    return offset;
+}
+
+fn cssPixelsToDimension(value: f64) ProbeError!u32 {
+    if (!std.math.isFinite(value) or value <= 0) return error.Malformed;
+    // HTML width/height attributes are integral. Use the nearest CSS pixel and
+    // preserve every positive sub-pixel intrinsic length as one pixel.
+    const rounded = @round(value);
+    if (rounded > @as(f64, @floatFromInt(std.math.maxInt(u32)))) return error.DimensionOverflow;
+    return if (rounded < 1) 1 else @intFromFloat(rounded);
+}
+
+fn skipXmlSpace(bytes: []const u8, offset: *usize) void {
+    while (offset.* < bytes.len and isXmlSpace(bytes[offset.*])) : (offset.* += 1) {}
+}
+
+fn skipSvgNumberSeparators(bytes: []const u8, offset: *usize) void {
+    while (offset.* < bytes.len and (isXmlSpace(bytes[offset.*]) or bytes[offset.*] == ',')) : (offset.* += 1) {}
+}
+
+fn isXmlSpace(byte: u8) bool {
+    return byte == ' ' or byte == '\t' or byte == '\r' or byte == '\n';
+}
+
+fn parseXmlName(bytes: []const u8, offset: *usize) ProbeError![]const u8 {
+    if (offset.* == bytes.len) return error.Truncated;
+    const start = offset.*;
+    if (!isXmlNameStart(bytes[offset.*])) return error.Malformed;
+    offset.* += 1;
+    while (offset.* < bytes.len and isXmlNameContinue(bytes[offset.*])) : (offset.* += 1) {}
+    return bytes[start..offset.*];
+}
+
+fn isXmlNameStart(byte: u8) bool {
+    return std.ascii.isAlphabetic(byte) or byte == '_' or byte == ':';
+}
+
+fn isXmlNameContinue(byte: u8) bool {
+    return isXmlNameStart(byte) or std.ascii.isDigit(byte) or byte == '-' or byte == '.';
+}
+
+fn startsAt(bytes: []const u8, offset: usize, expected: []const u8) bool {
+    return offset <= bytes.len and expected.len <= bytes.len - offset and
+        std.mem.eql(u8, bytes[offset..][0..expected.len], expected);
+}
+
+fn skipUntil(bytes: []const u8, start: usize, terminator: []const u8) ProbeError!usize {
+    const relative = std.mem.indexOf(u8, bytes[start..], terminator) orelse return error.Truncated;
+    return std.math.add(usize, start + relative, terminator.len) catch return error.DimensionOverflow;
+}
+
+fn skipDoctype(bytes: []const u8, start: usize) ProbeError!usize {
+    var offset = start;
+    var subset_depth: usize = 0;
+    var quote: ?u8 = null;
+    while (offset < bytes.len) : (offset += 1) {
+        const byte = bytes[offset];
+        if (quote) |active_quote| {
+            if (byte == active_quote) quote = null;
+            continue;
+        }
+        if (byte == '\'' or byte == '"') {
+            quote = byte;
+        } else if (byte == '[') {
+            subset_depth += 1;
+        } else if (byte == ']') {
+            if (subset_depth == 0) return error.Malformed;
+            subset_depth -= 1;
+        } else if (byte == '>' and subset_depth == 0) {
+            return offset + 1;
+        }
+    }
+    return error.Truncated;
 }
 
 fn validateBmpBitDepth(bit_depth: u16) ProbeError!void {

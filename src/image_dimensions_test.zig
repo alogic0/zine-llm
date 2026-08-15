@@ -172,3 +172,52 @@ test "WebP skips unrelated chunks and accounts for odd padding" {
     std.mem.writeInt(u32, bytes[4..8], bytes.len - 9, .little);
     try std.testing.expectError(error.Truncated, parse(&bytes));
 }
+
+test "SVG intrinsic dimensions" {
+    const direct = try parse(fixtures.svg);
+    try std.testing.expectEqual(Format.svg, direct.format);
+    try std.testing.expectEqual(fixtures.width, direct.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, direct.dimensions.height);
+
+    const derived = try parse(fixtures.svg_derived);
+    try std.testing.expectEqual(fixtures.width, derived.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, derived.dimensions.height);
+
+    const absolute_units = try parse("<svg width='1in' height='2.54cm'/>");
+    try std.testing.expectEqual(@as(u32, 96), absolute_units.dimensions.width);
+    try std.testing.expectEqual(@as(u32, 96), absolute_units.dimensions.height);
+
+    const rounded = try parse("<svg width='.1px' height='1.6pt'/>");
+    try std.testing.expectEqual(@as(u32, 1), rounded.dimensions.width);
+    try std.testing.expectEqual(@as(u32, 2), rounded.dimensions.height);
+}
+
+test "SVG prolog and root scanning" {
+    const with_doctype =
+        "\xEF\xBB\xBF<?xml version='1.0'?><!DOCTYPE svg [<!ENTITY ignored '37'>]>" ++
+        "<!-- before root --><svg height='23' width='37'></svg>";
+    const result = try parse(with_doctype);
+    try std.testing.expectEqual(fixtures.width, result.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, result.dimensions.height);
+
+    try std.testing.expectError(error.UnsupportedFormat, parse("<html width='37' height='23'>"));
+    try std.testing.expectError(error.Truncated, parse("<?xml version='1.0'?> <!--"));
+    try std.testing.expectError(error.Malformed, parse("<!CDATA[x]]><svg width='1' height='1'>"));
+}
+
+test "SVG unresolved and malformed sizing" {
+    try std.testing.expectError(error.UnsupportedVariant, parse("<svg viewBox='0 0 37 23'/>"));
+    try std.testing.expectError(error.UnsupportedVariant, parse("<svg width='100%' height='23'/>"));
+    try std.testing.expectError(error.UnsupportedVariant, parse("<svg width='2em' height='23'/>"));
+    try std.testing.expectError(error.UnsupportedVariant, parse("<svg width='37'/>"));
+    try std.testing.expectError(error.Malformed, parse("<svg width='0' height='23'/>"));
+    try std.testing.expectError(error.Malformed, parse("<svg width='37' viewBox='0 0 0 1'/>"));
+    try std.testing.expectError(error.Truncated, parse("<svg width='37' height='23"));
+    try std.testing.expectError(error.DimensionOverflow, parse("<svg width='4294967296' height='1'/>"));
+}
+
+test "SVG scanning is bounded" {
+    var bytes: [64 * 1024 + 32]u8 = @splat(' ');
+    bytes[0..4].* = "<!--".*;
+    try std.testing.expectError(error.UnsupportedVariant, parse(&bytes));
+}

@@ -13,6 +13,8 @@ pub const bmp_core = makeBmpCore(width, height);
 pub const webp_vp8 = makeWebpVp8();
 pub const webp_vp8l = makeWebpVp8l(width, height);
 pub const webp_vp8x = makeWebpVp8x(width, height);
+pub const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='37' height=\"23\"></svg>";
+pub const svg_derived = "<?xml version='1.0'?><!--fixture--><svg:svg xmlns:svg='http://www.w3.org/2000/svg' height='23px' viewBox='0 0 74 46'/>";
 
 fn makePng(w: u32, h: u32) [45]u8 {
     var bytes: [45]u8 = @splat(0);
