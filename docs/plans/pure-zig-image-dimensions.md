@@ -1,5 +1,8 @@
 # Pure-Zig Image-Dimension Probe Plan
 
+Status: complete. The bounded Zig probe is authoritative, Wuffs has been
+removed, and all focused, workflow, full-suite, and release gates pass.
+
 ## Objective
 
 Replace Wuffs with a small, allocation-free Zig implementation that reads only
@@ -479,6 +482,9 @@ docs: record pure Zig image probing results
 
 ## Phase 6: Final validation
 
+Status: complete. Permanent image validation is documented in
+`docs/image-validation.md`; all commands below passed on 2026-08-15.
+
 ### Slice 6.1: Focused gates
 
 Add a dedicated build step if the image tests are not naturally included in an
@@ -529,13 +535,13 @@ docs: complete pure Zig image validation
 
 ## Completion checklist
 
-- [ ] Phase 1: Wuffs behavior and build cost are baselined.
-- [ ] Phase 2: the pure-Zig parser covers PNG, JPEG, GIF, WebP, BMP, SVG, and
+- [x] Phase 1: Wuffs behavior and build cost are baselined.
+- [x] Phase 2: the pure-Zig parser covers PNG, JPEG, GIF, WebP, BMP, SVG, and
       static AVIF according to the documented contract.
-- [ ] Phase 3: bounded file probing replaces whole-file mapping in production.
-- [ ] Phase 4: production rendering verifies automatic dimensions.
-- [ ] Phase 5: Wuffs and its build wrapper are removed.
-- [ ] Phase 6: focused, full, workflow, and release validation passes.
+- [x] Phase 3: bounded file probing replaces whole-file mapping in production.
+- [x] Phase 4: production rendering verifies automatic dimensions.
+- [x] Phase 5: Wuffs and its build wrapper are removed.
+- [x] Phase 6: focused, full, workflow, and release validation passes.
 
 The replacement is complete only when the Wuffs oracle has served its purpose,
 the narrower legacy-format scope and new SVG/AVIF support are documented, all
