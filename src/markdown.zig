@@ -496,14 +496,16 @@ test "tables" {
         \\| `??`     | **Not sure yet** |
         \\
         \\| Item 1 | Value 1 |
+        \\| ------ | ------- |
         \\| Item 2 | Value 2 |
         \\| Item 3 | Value 3 |
         \\| Item 4 | Value 4 |
         \\
-        \\| :--- | :----: | ----: |
         \\| Left | Center | Right |
+        \\| :--- | :----: | ----: |
         \\
         \\   | One | Two |
+        \\   | --- | --- |
         \\ | Three |     Four   |
         \\         | Five | Six |
         \\
@@ -536,8 +538,8 @@ test "tables" {
         \\</table>
         \\<table>
         \\<tr>
-        \\<td>Item 1</td>
-        \\<td>Value 1</td>
+        \\<th>Item 1</th>
+        \\<th>Value 1</th>
         \\</tr>
         \\<tr>
         \\<td>Item 2</td>
@@ -554,15 +556,15 @@ test "tables" {
         \\</table>
         \\<table>
         \\<tr>
-        \\<td style="text-align: left">Left</td>
-        \\<td style="text-align: center">Center</td>
-        \\<td style="text-align: right">Right</td>
+        \\<th style="text-align: left">Left</th>
+        \\<th style="text-align: center">Center</th>
+        \\<th style="text-align: right">Right</th>
         \\</tr>
         \\</table>
         \\<table>
         \\<tr>
-        \\<td>One</td>
-        \\<td>Two</td>
+        \\<th>One</th>
+        \\<th>Two</th>
         \\</tr>
         \\<tr>
         \\<td>Three</td>
@@ -580,7 +582,7 @@ test "tables" {
 test "table with uneven number of columns" {
     try testRender(
         \\| One |
-        \\| :-- | :--: |
+        \\| :-- |
         \\| One | Two | Three |
         \\
     ,
@@ -590,7 +592,7 @@ test "table with uneven number of columns" {
         \\</tr>
         \\<tr>
         \\<td style="text-align: left">One</td>
-        \\<td style="text-align: center">Two</td>
+        \\<td>Two</td>
         \\<td>Three</td>
         \\</tr>
         \\</table>
@@ -601,7 +603,7 @@ test "table with uneven number of columns" {
 test "table with escaped pipes" {
     try testRender(
         \\| One \| Two |
-        \\| --- | --- |
+        \\| --- |
         \\| One \| Two |
         \\
     ,
@@ -620,6 +622,7 @@ test "table with escaped pipes" {
 test "table with pipes in code spans" {
     try testRender(
         \\| `|` | Bitwise _OR_ |
+        \\| --- | --- |
         \\| `||` | Combines error sets |
         \\| `` `||` `` | Escaped version |
         \\| ` ``||`` ` | Another escaped version |
@@ -628,8 +631,8 @@ test "table with pipes in code spans" {
     ,
         \\<table>
         \\<tr>
-        \\<td><code>|</code></td>
-        \\<td>Bitwise <em>OR</em></td>
+        \\<th><code>|</code></th>
+        \\<th>Bitwise <em>OR</em></th>
         \\</tr>
         \\<tr>
         \\<td><code>||</code></td>
@@ -649,11 +652,15 @@ test "table with pipes in code spans" {
     );
 }
 
-test "tables require leading and trailing pipes" {
+test "GFM tables allow optional outer pipes and require a delimiter" {
     try testRender(
         \\Not | a | table
         \\
-        \\| But | this | is |
+        \\But | this | is
+        \\--- | ---- | --
+        \\one | two | three
+        \\
+        \\| No | delimiter | here |
         \\
         \\Also not a table:
         \\|
@@ -663,11 +670,17 @@ test "tables require leading and trailing pipes" {
         \\<p>Not | a | table</p>
         \\<table>
         \\<tr>
-        \\<td>But</td>
-        \\<td>this</td>
-        \\<td>is</td>
+        \\<th>But</th>
+        \\<th>this</th>
+        \\<th>is</th>
+        \\</tr>
+        \\<tr>
+        \\<td>one</td>
+        \\<td>two</td>
+        \\<td>three</td>
         \\</tr>
         \\</table>
+        \\<p>| No | delimiter | here |</p>
         \\<p>Also not a table:
         \\|
         \\|</p>

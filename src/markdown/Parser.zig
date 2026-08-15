@@ -226,6 +226,8 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
     p.current_line_end = line_start + @as(u32, @intCast(line.len)) + line_ending_len;
     p.source_len = @max(p.source_len, p.current_line_end);
 
+    if (try p.promoteParagraphToTable(line)) return;
+
     var rest_line = line;
     const first_unmatched = for (p.pending_blocks.items, 0..) |b, i| {
         if (b.match(rest_line)) |rest| {
@@ -602,7 +604,10 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
             .rest = list_item.rest,
             .source_start = source_start,
         };
-    } else if (startTableRow(unindented)) |table_row| {
+    } else if (hasOpenTable(p) and
+        startTableRow(unindented) != null)
+    {
+        const table_row = startTableRow(unindented).?;
         return .{
             .tag = .table_row,
             .data = .{ .table_row = .{
@@ -649,6 +654,13 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
     } else {
         return null;
     }
+}
+
+fn hasOpenTable(p: *Parser) bool {
+    if (p.pending_blocks.items.len == 0) return false;
+    if (p.pending_blocks.last().?.tag == .table) return true;
+    return p.pending_blocks.items.len >= 2 and
+        p.pending_blocks.items[p.pending_blocks.items.len - 2].tag == .table;
 }
 
 const ListItemStart = struct {
@@ -705,21 +717,99 @@ const TableRowStart = struct {
     cells_len: usize,
 };
 
+fn promoteParagraphToTable(p: *Parser, delimiter_line: []const u8) !bool {
+    if (p.pending_blocks.items.len == 0 or p.pending_blocks.last().?.tag != .paragraph) return false;
+    const paragraph = p.pending_blocks.last().?;
+    const header_with_newline = p.scratch_string.items[paragraph.string_start..];
+    if (header_with_newline.len == 0 or header_with_newline[header_with_newline.len - 1] != '\n') return false;
+    const header = header_with_newline[0 .. header_with_newline.len - 1];
+    if (mem.findScalar(u8, header, '\n') != null) return false;
+
+    const header_row = startTableRow(header) orelse return false;
+    const delimiter_row = startTableRow(mem.trimStart(u8, delimiter_line, " \t")) orelse return false;
+    var alignment_buffer: [max_table_columns]Node.TableCellAlignment = undefined;
+    const alignments = parseTableHeaderDelimiter(
+        delimiter_row.cells_buffer[0..delimiter_row.cells_len],
+        &alignment_buffer,
+    ) orelse return false;
+    if (alignments.len != header_row.cells_len) return false;
+
+    _ = p.pending_blocks.pop();
+    try p.pending_blocks.append(p.allocator, .{
+        .tag = .table,
+        .data = .{ .table = .{
+            .column_alignments_buffer = undefined,
+            .column_alignments_len = alignments.len,
+        } },
+        .string_start = paragraph.string_start,
+        .extra_start = paragraph.extra_start,
+        .source_span = .{
+            .start = paragraph.source_span.start,
+            .end = p.currentContentEnd(),
+        },
+    });
+    @memcpy(
+        p.pending_blocks.items[p.pending_blocks.items.len - 1].data.table.column_alignments_buffer[0..alignments.len],
+        alignments,
+    );
+
+    var cell_nodes_buffer: [max_table_columns]Node.Index = undefined;
+    var cell_nodes: ArrayList(Node.Index) = .initBuffer(&cell_nodes_buffer);
+    const header_maps = p.scratch_source_spans.items[paragraph.string_start..][0..header.len];
+    for (header_row.cells_buffer[0..header_row.cells_len], 0..) |cell_content, i| {
+        const offset = @intFromPtr(cell_content.ptr) - @intFromPtr(header.ptr);
+        const cell_maps = header_maps[offset..][0..cell_content.len];
+        const children = try p.parseInlines(cell_content, cell_maps);
+        const cell = try p.addNode(.{
+            .tag = .table_cell,
+            .data = .{ .table_cell = .{
+                .info = .{ .alignment = alignments[i], .header = true },
+                .children = children,
+            } },
+        }, mappedSpan(cell_maps, paragraph.source_span.start));
+        cell_nodes.appendAssumeCapacity(cell);
+    }
+    const row = try p.addNode(.{
+        .tag = .table_row,
+        .data = .{ .container = .{
+            .children = try p.addExtraChildren(cell_nodes.items),
+        } },
+    }, paragraph.source_span);
+
+    p.scratch_string.items.len = paragraph.string_start;
+    p.scratch_source_spans.items.len = paragraph.string_start;
+    p.scratch_extra.items.len = paragraph.extra_start;
+    try p.addScratchExtraNode(row);
+    return true;
+}
+
+fn mappedSpan(maps: []const Source.Span, fallback: u32) Source.Span {
+    if (maps.len == 0) return .{ .start = fallback, .end = fallback };
+    return .{ .start = maps[0].start, .end = maps[maps.len - 1].end };
+}
+
 fn startTableRow(unindented_line: []const u8) ?TableRowStart {
-    if (unindented_line.len < 2 or
-        !mem.startsWith(u8, unindented_line, "|") or
-        mem.endsWith(u8, unindented_line, "\\|") or
-        !mem.endsWith(u8, unindented_line, "|")) return null;
+    const line = mem.trim(u8, unindented_line, " \t");
+    if (line.len == 0) return null;
+
+    const has_leading_pipe = line[0] == '|';
+    const has_trailing_pipe = line[line.len - 1] == '|' and
+        (line.len < 2 or line[line.len - 2] != '\\');
+    const content_start: usize = @intFromBool(has_leading_pipe);
+    const content_end = line.len - @intFromBool(has_trailing_pipe);
+    if (content_start > content_end) return null;
 
     var cells_buffer: [max_table_columns][]const u8 = undefined;
     var cells: ArrayList([]const u8) = .initBuffer(&cells_buffer);
-    const table_row_content = unindented_line[1 .. unindented_line.len - 1];
+    const table_row_content = line[content_start..content_end];
     var cell_start: usize = 0;
     var i: usize = 0;
+    var saw_separator = has_leading_pipe or has_trailing_pipe;
     while (i < table_row_content.len) : (i += 1) {
         switch (table_row_content[i]) {
             '\\' => i += 1,
             '|' => {
+                saw_separator = true;
                 cells.appendBounded(table_row_content[cell_start..i]) catch return null;
                 cell_start = i + 1;
             },
@@ -738,6 +828,7 @@ fn startTableRow(unindented_line: []const u8) ?TableRowStart {
             else => {},
         }
     }
+    if (!saw_separator) return null;
     cells.appendBounded(table_row_content[cell_start..]) catch return null;
 
     return .{ .cells_buffer = cells_buffer, .cells_len = cells.items.len };

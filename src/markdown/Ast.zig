@@ -746,6 +746,18 @@ test "strikethrough nodes retain children and source ranges" {
     try std.testing.expectEqual(NodeType.EMPH, strike.firstChild().?.nextSibling().?.nodeType());
 }
 
+test "GFM tables without outer pipes retain structure and ranges" {
+    var ast = try parseTestAst("name | value\n:--- | ---:\none | two\n");
+    defer ast.deinit();
+
+    const table = findType(ast.root(), .TABLE).?;
+    try expectRange(table, 0, 34, 1, 1, 3, 9);
+    try std.testing.expectEqualSlices(u8, &.{ 'l', 'r' }, table.getTableAlignments());
+    const header = table.firstChild().?;
+    try std.testing.expect(header.isTableHeader());
+    try std.testing.expectEqual(NodeType.TABLE_CELL, header.firstChild().?.nodeType());
+}
+
 test "source ranges cover nested blocks and fenced code" {
     const source = "> - item\r\n>   continued\r\n\r\n```zig\r\nconst \xCF\x80 = 1;\r\n```\r\n";
     var ast = try parseTestAst(source);
