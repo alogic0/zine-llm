@@ -109,3 +109,66 @@ test "JPEG marker walking" {
     try std.testing.expectError(error.Malformed, parse(&.{ 0xFF, 0xD8, 0xFF, 0xDA, 0, 2 }));
     try std.testing.expectError(error.Truncated, parse(&.{ 0xFF, 0xD8, 0xFF, 0xE1, 0, 20 }));
 }
+
+test "WebP container variants" {
+    const cases = .{
+        .{ .bytes = &fixtures.webp_vp8, .width = @as(u32, 1), .height = @as(u32, 1) },
+        .{ .bytes = &fixtures.webp_vp8l, .width = fixtures.width, .height = fixtures.height },
+        .{ .bytes = &fixtures.webp_vp8x, .width = fixtures.width, .height = fixtures.height },
+    };
+    inline for (cases) |case| {
+        const result = try parse(case.bytes);
+        try std.testing.expectEqual(Format.webp, result.format);
+        try std.testing.expectEqual(case.width, result.dimensions.width);
+        try std.testing.expectEqual(case.height, result.dimensions.height);
+
+        for (0..case.bytes.len) |prefix_len| {
+            try std.testing.expectError(error.Truncated, parse(case.bytes[0..prefix_len]));
+        }
+    }
+}
+
+test "WebP validates RIFF and chunk metadata" {
+    var bad_signature = fixtures.webp_vp8;
+    bad_signature[23] = 0;
+    try std.testing.expectError(error.Malformed, parse(&bad_signature));
+
+    var zero_width = fixtures.webp_vp8;
+    zero_width[26] = 0;
+    zero_width[27] = 0;
+    try std.testing.expectError(error.Malformed, parse(&zero_width));
+
+    var bad_lossless_version = fixtures.webp_vp8l;
+    bad_lossless_version[24] |= 0x20;
+    try std.testing.expectError(error.UnsupportedVariant, parse(&bad_lossless_version));
+
+    var bad_extended_flags = fixtures.webp_vp8x;
+    bad_extended_flags[20] = 1;
+    try std.testing.expectError(error.Malformed, parse(&bad_extended_flags));
+
+    var oversized_chunk = fixtures.webp_vp8l;
+    std.mem.writeInt(u32, oversized_chunk[16..20], 50, .little);
+    try std.testing.expectError(error.Truncated, parse(&oversized_chunk));
+
+    var wrong_form = fixtures.webp_vp8l;
+    wrong_form[8..12].* = "WAVE".*;
+    try std.testing.expectError(error.UnsupportedFormat, parse(&wrong_form));
+}
+
+test "WebP skips unrelated chunks and accounts for odd padding" {
+    var bytes: [38]u8 = @splat(0);
+    bytes[0..4].* = "RIFF".*;
+    std.mem.writeInt(u32, bytes[4..8], bytes.len - 8, .little);
+    bytes[8..12].* = "WEBP".*;
+    bytes[12..16].* = "JUNK".*;
+    std.mem.writeInt(u32, bytes[16..20], 3, .little);
+    bytes[20..23].* = .{ 1, 2, 3 };
+    bytes[24..38].* = fixtures.webp_vp8l[12..26].*;
+
+    const result = try parse(&bytes);
+    try std.testing.expectEqual(fixtures.width, result.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, result.dimensions.height);
+
+    std.mem.writeInt(u32, bytes[4..8], bytes.len - 9, .little);
+    try std.testing.expectError(error.Truncated, parse(&bytes));
+}

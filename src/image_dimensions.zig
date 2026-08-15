@@ -60,6 +60,16 @@ pub fn parse(bytes: []const u8) ProbeError!Result {
         .different => {},
     }
 
+    switch (signature(bytes, "RIFF")) {
+        .match => {
+            try requireLen(bytes, 12);
+            if (!std.mem.eql(u8, bytes[8..12], "WEBP")) return error.UnsupportedFormat;
+            return .{ .format = .webp, .dimensions = try parseWebp(bytes) };
+        },
+        .prefix => return error.Truncated,
+        .different => {},
+    }
+
     return error.UnsupportedFormat;
 }
 
@@ -202,6 +212,75 @@ fn isJpegSof(marker: u8) bool {
     };
 }
 
+fn parseWebp(bytes: []const u8) ProbeError!Dimensions {
+    const riff_size = readU32Le(bytes, 4);
+    const riff_end = std.math.add(usize, 8, riff_size) catch return error.DimensionOverflow;
+    if (riff_end < 12) return error.Malformed;
+    try requireLen(bytes, riff_end);
+
+    var offset: usize = 12;
+    while (offset < riff_end) {
+        const chunk_header_end = std.math.add(usize, offset, 8) catch return error.DimensionOverflow;
+        if (chunk_header_end > riff_end) return error.Truncated;
+
+        const chunk_type = bytes[offset..][0..4];
+        const chunk_len = readU32Le(bytes, offset + 4);
+        const payload_offset = chunk_header_end;
+        const payload_end = std.math.add(usize, payload_offset, chunk_len) catch return error.DimensionOverflow;
+        if (payload_end > riff_end) return error.Truncated;
+        const padded_len = std.math.add(usize, chunk_len, chunk_len & 1) catch return error.DimensionOverflow;
+        const padded_end = std.math.add(usize, payload_offset, padded_len) catch return error.DimensionOverflow;
+        if (padded_end > riff_end) return error.Truncated;
+
+        if (std.mem.eql(u8, chunk_type, "VP8 ")) {
+            return parseWebpVp8(bytes[payload_offset..payload_end]);
+        }
+        if (std.mem.eql(u8, chunk_type, "VP8L")) {
+            return parseWebpVp8l(bytes[payload_offset..payload_end]);
+        }
+        if (std.mem.eql(u8, chunk_type, "VP8X")) {
+            return parseWebpVp8x(bytes[payload_offset..payload_end]);
+        }
+
+        offset = padded_end;
+    }
+
+    return error.UnsupportedVariant;
+}
+
+fn parseWebpVp8(payload: []const u8) ProbeError!Dimensions {
+    try requireLen(payload, 10);
+    if ((payload[0] & 1) != 0 or !std.mem.eql(u8, payload[3..6], &.{ 0x9D, 0x01, 0x2A })) {
+        return error.Malformed;
+    }
+    const width = readU16Le(payload, 6) & 0x3FFF;
+    const height = readU16Le(payload, 8) & 0x3FFF;
+    if (width == 0 or height == 0) return error.Malformed;
+    return .{ .width = width, .height = height };
+}
+
+fn parseWebpVp8l(payload: []const u8) ProbeError!Dimensions {
+    try requireLen(payload, 5);
+    if (payload[0] != 0x2F) return error.Malformed;
+    const dimension_bits = readU32Le(payload, 1);
+    if ((dimension_bits >> 29) != 0) return error.UnsupportedVariant;
+    return .{
+        .width = (dimension_bits & 0x3FFF) + 1,
+        .height = ((dimension_bits >> 14) & 0x3FFF) + 1,
+    };
+}
+
+fn parseWebpVp8x(payload: []const u8) ProbeError!Dimensions {
+    if (payload.len != 10) return if (payload.len < 10) error.Truncated else error.Malformed;
+    if ((payload[0] & 0xC1) != 0 or payload[1] != 0 or payload[2] != 0 or payload[3] != 0) {
+        return error.Malformed;
+    }
+    return .{
+        .width = @as(u32, readU24Le(payload, 4)) + 1,
+        .height = @as(u32, readU24Le(payload, 7)) + 1,
+    };
+}
+
 fn validateBmpBitDepth(bit_depth: u16) ProbeError!void {
     switch (bit_depth) {
         1, 4, 8, 16, 24, 32 => {},
@@ -223,6 +302,12 @@ fn readU16Be(bytes: []const u8, offset: usize) u16 {
 
 fn readU32Le(bytes: []const u8, offset: usize) u32 {
     return std.mem.readInt(u32, bytes[offset..][0..4], .little);
+}
+
+fn readU24Le(bytes: []const u8, offset: usize) u24 {
+    return @as(u24, bytes[offset]) |
+        (@as(u24, bytes[offset + 1]) << 8) |
+        (@as(u24, bytes[offset + 2]) << 16);
 }
 
 fn readI32Le(bytes: []const u8, offset: usize) i32 {

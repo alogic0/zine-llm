@@ -99,3 +99,26 @@ test "JPEG Zig result matches Wuffs" {
     try std.testing.expectEqual(old.w, new.dimensions.width);
     try std.testing.expectEqual(old.h, new.dimensions.height);
 }
+
+test "Zig expands WebP compatibility beyond Wuffs" {
+    const lossless_old = try legacy.parseImageSize(std.testing.allocator, &fixtures.webp_vp8l);
+    const lossless_new = try image_dimensions.parse(&fixtures.webp_vp8l);
+    try std.testing.expectEqual(lossless_old.w, lossless_new.dimensions.width);
+    try std.testing.expectEqual(lossless_old.h, lossless_new.dimensions.height);
+
+    try std.testing.expectError(
+        error.WuffsError,
+        legacy.parseImageSize(std.testing.allocator, &fixtures.webp_vp8),
+    );
+    const lossy_new = try image_dimensions.parse(&fixtures.webp_vp8);
+    try std.testing.expectEqual(@as(u32, 1), lossy_new.dimensions.width);
+    try std.testing.expectEqual(@as(u32, 1), lossy_new.dimensions.height);
+
+    try std.testing.expectError(
+        error.WuffsError,
+        legacy.parseImageSize(std.testing.allocator, &fixtures.webp_vp8x),
+    );
+    const extended_new = try image_dimensions.parse(&fixtures.webp_vp8x);
+    try std.testing.expectEqual(fixtures.width, extended_new.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, extended_new.dimensions.height);
+}
