@@ -178,6 +178,41 @@ const Analyzer = struct {
                 } });
             }
             try analyzer.indexDirective(node, directive);
+            try analyzer.transformDirective(node, directive);
+        }
+    }
+
+    fn transformDirective(
+        analyzer: *Analyzer,
+        node: Node,
+        directive: *supermd.Directive,
+    ) !void {
+        switch (directive.kind) {
+            .heading => {
+                const parent = node.parent() orelse return;
+                _ = try parent.setDirective(analyzer.allocator, directive, false);
+            },
+            .section => {
+                const parent = node.parent() orelse return;
+                const id = directive.id orelse return;
+
+                // Keep section semantics on the containing block, then turn
+                // the source link into the same self-link cmark produced.
+                _ = try parent.setDirective(analyzer.allocator, directive, true);
+                directive.id = null;
+                directive.attrs = &.{};
+                directive.kind = .{ .link = .{
+                    .src = .{ .url = "" },
+                    .ref = id,
+                } };
+            },
+            .block => {
+                const blockquote = semanticTarget(node, directive);
+                if (blockquote.nodeType() == .BLOCK_QUOTE) {
+                    _ = try blockquote.setDirective(analyzer.allocator, directive, false);
+                }
+            },
+            else => {},
         }
     }
 
@@ -614,4 +649,38 @@ test "semantic validation errors retain pure parser ranges" {
     try std.testing.expect(saw_invalid_ref);
     try std.testing.expect(saw_image_expression);
     try std.testing.expect(saw_inline_html);
+}
+
+test "semantic transformations preserve sections blocks captions and math" {
+    const source =
+        \\# [Section]($section.id('section'))
+        \\> # [Summary]($block.collapsible(false))
+        \\> Body.
+        \\
+        \\[Caption]($image.asset('photo.jpg'))
+        \\
+        \\[`x + y`](<$mathtex>)
+    ;
+    var ast = try Ast.init(std.testing.allocator, source, .{});
+    defer ast.deinit();
+
+    const heading = ast.root().firstChild().?;
+    try std.testing.expect(heading.getDirective().?.kind == .section);
+    const section_link = heading.firstChild().?;
+    try std.testing.expect(section_link.getDirective().?.kind == .link);
+    try std.testing.expectEqualStrings("section", section_link.getDirective().?.kind.link.ref.?);
+
+    const quote = heading.nextSibling().?;
+    try std.testing.expect(quote.getDirective().?.kind == .block);
+    try std.testing.expectEqual(false, quote.getDirective().?.kind.block.collapsible.?);
+
+    const caption_paragraph = quote.nextSibling().?;
+    const caption = caption_paragraph.firstChild().?;
+    try std.testing.expect(caption.getDirective().?.kind == .image);
+    try std.testing.expectEqualStrings("Caption", caption.firstChild().?.literal().?);
+
+    const math = caption_paragraph.nextSibling().?.firstChild().?;
+    try std.testing.expect(math.getDirective().?.kind == .mathtex);
+    try std.testing.expectEqualStrings("x + y", math.getDirective().?.kind.mathtex.formula);
+    try std.testing.expect(math.firstChild() == null);
 }
