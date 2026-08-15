@@ -17,6 +17,12 @@ const Parser = @import("Parser.zig");
 pub const Markdown = SyntaxAst.Contract(supermd.Directive);
 pub const Node = Markdown.Node;
 
+pub const Footnote = struct {
+    node: Node,
+    def_id: []const u8,
+    ref_ids: [][]const u8,
+};
+
 pub const Options = struct {
     auto_target_blank: bool = false,
 };
@@ -51,6 +57,10 @@ pub const Ast = struct {
     options: Options,
     destinations: std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, Destination) = .{},
     evaluated: std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, *supermd.Directive) = .{},
+    ids: std.StringArrayHashMapUnmanaged(Node) = .{},
+    referenced_ids: std.StringArrayHashMapUnmanaged(Node) = .{},
+    sections: std.StringArrayHashMapUnmanaged(Node) = .{},
+    footnotes: std.StringArrayHashMapUnmanaged(Footnote) = .{},
 
     pub fn init(gpa: Allocator, source: []const u8, options: Options) !Ast {
         var parser = try Parser.init(gpa);
@@ -71,6 +81,10 @@ pub const Ast = struct {
             .options = options,
             .destinations = &result.destinations,
             .evaluated = &result.evaluated,
+            .ids = &result.ids,
+            .referenced_ids = &result.referenced_ids,
+            .sections = &result.sections,
+            .footnotes = &result.footnotes,
         };
         try analyzer.run(result.md.root());
         return result;
@@ -91,6 +105,10 @@ const Analyzer = struct {
     options: Options,
     destinations: *std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, Destination),
     evaluated: *std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, *supermd.Directive),
+    ids: *std.StringArrayHashMapUnmanaged(Node),
+    referenced_ids: *std.StringArrayHashMapUnmanaged(Node),
+    sections: *std.StringArrayHashMapUnmanaged(Node),
+    footnotes: *std.StringArrayHashMapUnmanaged(Footnote),
     vm: ScriptyVM = .{},
 
     fn run(analyzer: *Analyzer, root: Node) !void {
@@ -102,6 +120,7 @@ const Analyzer = struct {
             .enter => try analyzer.enter(event.node),
             .exit => {},
         };
+        try analyzer.buildFootnotes(root);
     }
 
     fn enter(analyzer: *Analyzer, node: Node) !void {
@@ -120,6 +139,91 @@ const Analyzer = struct {
         };
         try analyzer.destinations.put(analyzer.allocator, node.index, destination);
         try analyzer.attach(node, destination);
+        if (node.getDirective()) |directive| try analyzer.indexDirective(node, directive);
+    }
+
+    fn indexDirective(analyzer: *Analyzer, node: Node, directive: *supermd.Directive) !void {
+        const target = semanticTarget(node, directive);
+        if (directive.id) |id| {
+            const result = try analyzer.ids.getOrPut(analyzer.allocator, id);
+            if (!result.found_existing) result.value_ptr.* = target;
+            if (directive.kind == .section) {
+                try analyzer.sections.put(analyzer.allocator, id, target);
+            }
+        }
+
+        if (directive.kind == .link) {
+            const link = directive.kind.link;
+            if (!link.ref_unsafe and link.ref != null and link.src != null and link.src.? == .self_page) {
+                try analyzer.referenced_ids.put(analyzer.allocator, link.ref.?, node);
+            }
+        }
+    }
+
+    fn buildFootnotes(analyzer: *Analyzer, root: Node) !void {
+        var definitions: std.StringArrayHashMapUnmanaged(Node) = .{};
+        var counts: std.StringArrayHashMapUnmanaged(usize) = .{};
+
+        var iterator = Markdown.Iter.init(root);
+        defer iterator.deinit();
+        while (iterator.next()) |event| {
+            if (event.dir != .enter) continue;
+            switch (event.node.nodeType()) {
+                .FOOTNOTE_DEFINITION => try definitions.put(
+                    analyzer.allocator,
+                    event.node.footnoteLabel().?,
+                    event.node,
+                ),
+                .FOOTNOTE_REFERENCE => {
+                    const count = try counts.getOrPutValue(
+                        analyzer.allocator,
+                        event.node.footnoteLabel().?,
+                        0,
+                    );
+                    count.value_ptr.* += 1;
+                },
+                else => {},
+            }
+        }
+
+        iterator = Markdown.Iter.init(root);
+        var seen: std.StringArrayHashMapUnmanaged(usize) = .{};
+        while (iterator.next()) |event| {
+            if (event.dir != .enter or event.node.nodeType() != .FOOTNOTE_REFERENCE) continue;
+            const label = event.node.footnoteLabel().?;
+            const definition = definitions.get(label) orelse continue;
+            const result = try analyzer.footnotes.getOrPut(analyzer.allocator, label);
+            if (!result.found_existing) {
+                const footnote_number = result.index + 1;
+                const def_id = try std.fmt.allocPrint(analyzer.allocator, "fn-{d}", .{footnote_number});
+                const ref_ids = try analyzer.allocator.alloc([]const u8, counts.get(label).?);
+                for (ref_ids, 0..) |*ref_id, index| {
+                    ref_id.* = try std.fmt.allocPrint(
+                        analyzer.allocator,
+                        "fn-{d}-ref-{d}",
+                        .{ footnote_number, index + 1 },
+                    );
+                }
+                result.value_ptr.* = .{
+                    .node = definition,
+                    .def_id = def_id,
+                    .ref_ids = ref_ids,
+                };
+                try analyzer.ids.put(analyzer.allocator, def_id, definition);
+                definition.setFootnoteMetadata(null, @intCast(ref_ids.len), 0);
+            }
+
+            const occurrence = try seen.getOrPutValue(analyzer.allocator, label, 0);
+            const reference_index = occurrence.value_ptr.*;
+            occurrence.value_ptr.* += 1;
+            const ref_id = result.value_ptr.ref_ids[reference_index];
+            try analyzer.ids.put(analyzer.allocator, ref_id, event.node);
+            event.node.setFootnoteMetadata(
+                definition.index,
+                @intCast(result.value_ptr.ref_ids.len),
+                @intCast(reference_index + 1),
+            );
+        }
     }
 
     fn attach(analyzer: *Analyzer, node: Node, destination: Destination) !void {
@@ -201,6 +305,20 @@ const Analyzer = struct {
         }
     }
 };
+
+fn semanticTarget(node: Node, directive: *const supermd.Directive) Node {
+    return switch (directive.kind) {
+        .heading, .section => node.parent() orelse node,
+        .block => block: {
+            var current = node.parent() orelse break :block node;
+            while (current.nodeType() != .BLOCK_QUOTE) {
+                current = current.parent() orelse break :block node;
+            }
+            break :block current;
+        },
+        else => node,
+    };
+}
 
 fn stripTrailingSlash(path: []const u8) []const u8 {
     return if (path.len > 0 and path[path.len - 1] == '/') path[0 .. path.len - 1] else path;
@@ -336,4 +454,26 @@ test "semantic directives are attached through AST sidecars" {
         "logo.svg",
         image.getDirective().?.kind.image.src.?.page_asset.ref,
     );
+}
+
+test "semantic analysis builds IDs, references, sections, and footnotes" {
+    const source =
+        \\# [Intro]($section.id('intro'))
+        \\See [above](#intro) and note[^n] twice[^n].
+        \\[^n]: Footnote.
+    ;
+    var ast = try Ast.init(std.testing.allocator, source, .{});
+    defer ast.deinit();
+
+    try std.testing.expect(ast.ids.get("intro").?.nodeType() == .HEADING);
+    try std.testing.expect(ast.sections.get("intro").?.nodeType() == .HEADING);
+    try std.testing.expect(ast.referenced_ids.contains("intro"));
+    try std.testing.expect(ast.ids.contains("fn-1"));
+    try std.testing.expect(ast.ids.contains("fn-1-ref-1"));
+    try std.testing.expect(ast.ids.contains("fn-1-ref-2"));
+
+    const footnote = ast.footnotes.get("n").?;
+    try std.testing.expectEqualStrings("fn-1", footnote.def_id);
+    try std.testing.expectEqual(@as(usize, 2), footnote.ref_ids.len);
+    try std.testing.expect(footnote.node.nodeType() == .FOOTNOTE_DEFINITION);
 }
