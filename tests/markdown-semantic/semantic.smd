@@ -13,4 +13,8 @@ See [intro](#intro), [missing](#missing), and note[^one] twice[^one].
 
 <span>raw</span>
 
+```=html
+<div><span></div>
+```
+
 [^one]: Footnote body.

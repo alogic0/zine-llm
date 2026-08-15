@@ -8,6 +8,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const supermd = @import("supermd");
+const superhtml = @import("superhtml");
+const html = superhtml.html;
 const scripty = @import("scripty");
 const ScriptyVM = scripty.VM(supermd.Value);
 const SyntaxAst = @import("Ast.zig");
@@ -37,6 +39,7 @@ pub const Error = struct {
         empty_expression,
         duplicate_id: struct { id: []const u8, original: Node },
         scripty: struct { len: u32, span: Source.Span, err: []const u8 },
+        html: html.Ast.Error,
         heading_skip: struct { have: u8, last: ?Node },
     };
 };
@@ -98,6 +101,7 @@ pub const Ast = struct {
         var errors: std.ArrayList(Error) = .empty;
         var analyzer: Analyzer = .{
             .allocator = result.md.allocator(),
+            .source = source,
             .options = options,
             .destinations = &result.destinations,
             .evaluated = &result.evaluated,
@@ -174,6 +178,7 @@ pub fn writeSnapshot(ast: Ast, writer: *std.Io.Writer) std.Io.Writer.Error!void 
 
 const Analyzer = struct {
     allocator: Allocator,
+    source: []const u8,
     options: Options,
     destinations: *std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, Destination),
     evaluated: *std.AutoArrayHashMapUnmanaged(SyntaxAst.Index, *supermd.Directive),
@@ -209,6 +214,7 @@ const Analyzer = struct {
     fn enter(analyzer: *Analyzer, node: Node) !void {
         switch (node.nodeType()) {
             .HTML_BLOCK, .HTML_INLINE => try analyzer.addError(node.range(), .inline_html),
+            .CODE_BLOCK => try analyzer.validateHtmlBlock(node),
             else => {},
         }
         const is_image = switch (node.nodeType()) {
@@ -326,6 +332,26 @@ const Analyzer = struct {
 
     fn addError(analyzer: *Analyzer, range: SyntaxAst.Range, kind: Error.Kind) !void {
         try analyzer.errors.append(analyzer.allocator, .{ .main = range, .kind = kind });
+    }
+
+    fn validateHtmlBlock(analyzer: *Analyzer, node: Node) !void {
+        const fence = node.fenceInfo() orelse return;
+        if (!std.mem.startsWith(u8, fence, "=html")) return;
+        const literal = node.literal() orelse return;
+        const html_ast = try html.Ast.init(analyzer.allocator, literal, .html, false);
+        defer html_ast.deinit(analyzer.allocator);
+
+        const block_range = node.range();
+        const block_source = analyzer.source[block_range.start_byte..block_range.end_byte];
+        const content_offset: u32 = if (std.mem.indexOfScalar(u8, block_source, '\n')) |newline|
+            block_range.start_byte + @as(u32, @intCast(newline)) + 1
+        else
+            block_range.start_byte;
+        for (html_ast.errors) |html_error| {
+            const start = content_offset + html_error.main_location.start;
+            const end = content_offset + html_error.main_location.end;
+            try analyzer.addError(sourceRange(analyzer.source, start, end), .{ .html = html_error });
+        }
     }
 
     fn buildFootnotes(analyzer: *Analyzer, root: Node) !void {
@@ -519,6 +545,28 @@ fn semanticTarget(node: Node, directive: *const supermd.Directive) Node {
 
 fn stripTrailingSlash(path: []const u8) []const u8 {
     return if (path.len > 0 and path[path.len - 1] == '/') path[0 .. path.len - 1] else path;
+}
+
+fn sourceRange(source: []const u8, start: u32, end: u32) SyntaxAst.Range {
+    return .{
+        .start = sourcePosition(source, start),
+        .end = sourcePosition(source, if (end > start) end - 1 else end),
+        .start_byte = start,
+        .end_byte = end,
+    };
+}
+
+fn sourcePosition(source: []const u8, offset_arg: u32) Source.Position {
+    const offset = @min(offset_arg, source.len);
+    var row: u32 = 1;
+    var line_start: usize = 0;
+    for (source[0..offset], 0..) |byte, index| {
+        if (byte == '\n') {
+            row += 1;
+            line_start = index + 1;
+        }
+    }
+    return .{ .row = row, .col = @intCast(offset - line_start + 1) };
 }
 
 fn normalizeDestination(raw: []const u8) []const u8 {
