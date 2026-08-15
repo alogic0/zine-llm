@@ -195,22 +195,30 @@ fn parseJpeg(bytes: []const u8) ProbeError!Dimensions {
         try requireLen(bytes, segment_end);
 
         if (isJpegSof(marker)) {
-            if (segment_len < 8) return error.Malformed;
-            const precision = bytes[offset + 2];
-            const height = readU16Be(bytes, offset + 3);
-            const width = readU16Be(bytes, offset + 5);
-            const component_count = bytes[offset + 7];
-            if (precision == 0 or width == 0 or height == 0 or component_count == 0) {
-                return error.Malformed;
-            }
-            const component_bytes = std.math.mul(u16, component_count, 3) catch return error.DimensionOverflow;
-            const expected_len = std.math.add(u16, 8, component_bytes) catch return error.DimensionOverflow;
-            if (segment_len != expected_len) return error.Malformed;
-            return .{ .width = width, .height = height };
+            return parseJpegSofSegment(marker, segment_len, bytes[offset..segment_end]);
         }
 
         offset = segment_end;
     }
+}
+
+/// Parses the length field and leading frame-header bytes of a JPEG SOF
+/// segment. Filesystem probing uses this after skipping metadata positionally.
+pub fn parseJpegSofSegment(marker: u8, segment_len: u16, segment: []const u8) ProbeError!Dimensions {
+    if (!isJpegSof(marker)) return error.UnsupportedVariant;
+    if (segment_len < 8) return error.Malformed;
+    try requireLen(segment, 8);
+    const precision = segment[2];
+    const height = readU16Be(segment, 3);
+    const width = readU16Be(segment, 5);
+    const component_count = segment[7];
+    if (precision == 0 or width == 0 or height == 0 or component_count == 0) {
+        return error.Malformed;
+    }
+    const component_bytes = std.math.mul(u16, component_count, 3) catch return error.DimensionOverflow;
+    const expected_len = std.math.add(u16, 8, component_bytes) catch return error.DimensionOverflow;
+    if (segment_len != expected_len) return error.Malformed;
+    return .{ .width = width, .height = height };
 }
 
 fn isJpegSof(marker: u8) bool {
@@ -241,18 +249,27 @@ fn parseWebp(bytes: []const u8) ProbeError!Dimensions {
         if (padded_end > riff_end) return error.Truncated;
 
         if (std.mem.eql(u8, chunk_type, "VP8 ")) {
-            return parseWebpVp8(bytes[payload_offset..payload_end]);
+            return parseWebpChunk("VP8 ", bytes[payload_offset..payload_end]);
         }
         if (std.mem.eql(u8, chunk_type, "VP8L")) {
-            return parseWebpVp8l(bytes[payload_offset..payload_end]);
+            return parseWebpChunk("VP8L", bytes[payload_offset..payload_end]);
         }
         if (std.mem.eql(u8, chunk_type, "VP8X")) {
-            return parseWebpVp8x(bytes[payload_offset..payload_end]);
+            return parseWebpChunk("VP8X", bytes[payload_offset..payload_end]);
         }
 
         offset = padded_end;
     }
 
+    return error.UnsupportedVariant;
+}
+
+/// Parses the bounded prefix needed by an image-bearing WebP chunk.
+/// Container and chunk lengths must be validated by the caller.
+pub fn parseWebpChunk(kind: *const [4]u8, payload: []const u8) ProbeError!Dimensions {
+    if (std.mem.eql(u8, kind, "VP8 ")) return parseWebpVp8(payload);
+    if (std.mem.eql(u8, kind, "VP8L")) return parseWebpVp8l(payload);
+    if (std.mem.eql(u8, kind, "VP8X")) return parseWebpVp8x(payload);
     return error.UnsupportedVariant;
 }
 

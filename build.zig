@@ -465,6 +465,14 @@ pub fn build(b: *std.Build) !void {
         .root_module = image_dimensions_property_module,
     });
     const run_image_dimensions_property_tests = b.addRunArtifact(image_dimensions_property_tests);
+    const image_dimensions_file_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/image_dimensions_file_test.zig"),
+            .target = target,
+            .optimize = .debug,
+        }),
+    });
+    const run_image_dimensions_file_tests = b.addRunArtifact(image_dimensions_file_tests);
     const legacy_wuffs_oracle_module = b.createModule(.{
         .root_source_file = b.path("src/wuffs.zig"),
         .target = target,
@@ -491,9 +499,11 @@ pub fn build(b: *std.Build) !void {
     );
     test_image_dimensions_step.dependOn(&run_image_dimensions_tests.step);
     test_image_dimensions_step.dependOn(&run_image_dimensions_property_tests.step);
+    test_image_dimensions_step.dependOn(&run_image_dimensions_file_tests.step);
     test_image_dimensions_step.dependOn(&run_wuffs_oracle_tests.step);
     test_step.dependOn(&run_image_dimensions_tests.step);
     test_step.dependOn(&run_image_dimensions_property_tests.step);
+    test_step.dependOn(&run_image_dimensions_file_tests.step);
     test_step.dependOn(&run_wuffs_oracle_tests.step);
     const markdown_tests = b.addTest(.{
         .root_module = markdown,
