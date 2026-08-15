@@ -2,7 +2,7 @@
     .name = .zine,
     .version = "0.13.1",
     .fingerprint = 0xa466bcb520a7eea2,
-    .minimum_zig_version = "0.17.0-dev.1471+ff10b90bc",
+    .minimum_zig_version = "0.17.0-dev.1756+613c03321",
     .dependencies = .{
         .scripty = .{
             .url = "git+https://github.com/kristoff-it/scripty#51a03222e9a125a65888a5df6e2a41e36c86ccd5",
@@ -17,8 +17,7 @@
             .hash = "mime-3.0.0-zwmL--0gAAByELrj57sRm2EFBRzjKLFrMgHQcs7sFZev",
         },
         .wuffs = .{
-            .url = "git+https://github.com/allyourcodebase/wuffs#364ba880b20ca1c9b94ee41b07738bc941cee275",
-            .hash = "wuffs-0.4.0-alpha.9+3837.20240914-3CHJgY8LAADueYEeHrj8cQs_rZQ0bDGsngrbgV7Z2LFt",
+            .path = "vendor/wuffs",
         },
         .frameworks = .{
             .url = "git+https://code.hexops.org/hexops/xcode-frameworks.git#8a1cfb373587ea4c9bb1468b7c986462d8d4e10e",
@@ -26,8 +25,7 @@
             .lazy = true,
         },
         .superhtml = .{
-            .url = "git+https://github.com/kristoff-it/superhtml#abd86c4ba995a37b0f0559801b32b35cde8bcef9",
-            .hash = "superhtml-0.7.0-Y7MdPPuSJgDIM8DNUQpLacP0BU9-0FousIeXbBOTKFrb",
+            .path = "vendor/superhtml",
         },
         .zeit = .{
             .url = "git+https://github.com/rockorager/zeit#ed64c36035fe44d6372c20cbcd447b0090687167",
@@ -42,12 +40,10 @@
             .hash = "ziggy-0.2.0-kTg8v53yBwCAN_CrgG3Y_ngWnkUb971-w-0LdZlE8hYJ",
         },
         .supermd = .{
-            .url = "git+https://github.com/kristoff-it/supermd#f0551284a1d33184bf62ecf4ebbe153efe2128f2",
-            .hash = "supermd-0.1.0-3Mco3OO8WABy_SfXOHyqYaRZ2gTV_1Mtl5MLEao-ZeBY",
+            .path = "vendor/supermd",
         },
         .translate_c = .{
-            .url = "git+https://codeberg.org/ziglang/translate-c#2a6613bcc09c74296d785e660fe98d2eb310d760",
-            .hash = "translate_c-0.0.0-Q_BUWjQ7BwAhlMt3Zf4l3Jw-y0_TOpJWgcK8rk4d0aWv",
+            .path = "vendor/translate-c",
         },
     },
     .paths = .{"."},

@@ -1,6 +1,18 @@
 const zon = @import("build.zig.zon");
 const std = @import("std");
+const builtin = @import("builtin");
 const Io = std.Io;
+
+const required_zig_version = "0.17.0-dev.1756+613c03321";
+
+comptime {
+    if (!std.mem.eql(u8, builtin.zig_version_string, required_zig_version)) {
+        @compileError(
+            "Zine must be built with Zig " ++ required_zig_version ++
+                "; found " ++ builtin.zig_version_string,
+        );
+    }
+}
 
 pub const BuildAsset = struct {
     /// Name of this asset
@@ -366,6 +378,25 @@ pub fn build(b: *std.Build) !void {
     const test_step = b.step("test", "build snapshot tests and diff the results");
     setupSchemaCheck(b, target, zine_mod, test_step);
     try setupSnapshotTesting(b, target, zine_exe, test_step);
+
+    workAroundPinnedZigModuleSerialization(b);
+}
+
+/// Zig 0.17.0-dev.1756 serializes every public dependency module before it
+/// discovers compile-step dependencies. Public modules which link a compiled
+/// library therefore cause `std.Build.Serialize.stepIndex` to unwrap null.
+///
+/// All dependency modules needed by Zine have already been resolved and are
+/// reachable from a top-level compile step by the time this runs. Clearing the
+/// public-module lookup tables lets the serializer discover the modules later
+/// through those compile-step module graphs, after its step index has been
+/// populated. Clearing only directly linked modules is insufficient because a
+/// public module can import another module which links a compile step.
+fn workAroundPinnedZigModuleSerialization(b: *std.Build) void {
+    var dependencies = b.graph.dependency_cache.valueIterator();
+    while (dependencies.next()) |dependency_ptr| {
+        dependency_ptr.*.builder.modules.clearRetainingCapacity();
+    }
 }
 
 fn setupSchemaCheck(
