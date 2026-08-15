@@ -361,25 +361,37 @@ const Analyzer = struct {
     fn buildFootnotes(analyzer: *Analyzer, root: Node) !void {
         var definitions: std.StringArrayHashMapUnmanaged(Node) = .{};
         var counts: std.StringArrayHashMapUnmanaged(usize) = .{};
+        var seen: std.StringArrayHashMapUnmanaged(usize) = .{};
 
+        var definition_count: usize = 0;
+        var reference_count: usize = 0;
         var iterator = Markdown.Iter.init(root);
         defer iterator.deinit();
         while (iterator.next()) |event| {
             if (event.dir != .enter) continue;
             switch (event.node.nodeType()) {
+                .FOOTNOTE_DEFINITION => definition_count += 1,
+                .FOOTNOTE_REFERENCE => reference_count += 1,
+                else => {},
+            }
+        }
+        try definitions.ensureTotalCapacity(analyzer.allocator, definition_count);
+        try counts.ensureTotalCapacity(analyzer.allocator, reference_count);
+        try seen.ensureTotalCapacity(analyzer.allocator, reference_count);
+        try analyzer.footnotes.ensureUnusedCapacity(analyzer.allocator, reference_count);
+        try analyzer.ids.ensureUnusedCapacity(analyzer.allocator, reference_count * 2);
+
+        iterator = Markdown.Iter.init(root);
+        while (iterator.next()) |event| {
+            if (event.dir != .enter) continue;
+            switch (event.node.nodeType()) {
                 .FOOTNOTE_DEFINITION => {
-                    const result = try definitions.getOrPut(
-                        analyzer.allocator,
-                        event.node.footnoteLabel().?,
-                    );
+                    const result = definitions.getOrPutAssumeCapacity(event.node.footnoteLabel().?);
                     if (!result.found_existing) result.value_ptr.* = event.node;
                 },
                 .FOOTNOTE_REFERENCE => {
-                    const count = try counts.getOrPutValue(
-                        analyzer.allocator,
-                        event.node.footnoteLabel().?,
-                        0,
-                    );
+                    const count = counts.getOrPutAssumeCapacity(event.node.footnoteLabel().?);
+                    if (!count.found_existing) count.value_ptr.* = 0;
                     count.value_ptr.* += 1;
                 },
                 else => {},
@@ -387,12 +399,11 @@ const Analyzer = struct {
         }
 
         iterator = Markdown.Iter.init(root);
-        var seen: std.StringArrayHashMapUnmanaged(usize) = .{};
         while (iterator.next()) |event| {
             if (event.dir != .enter or event.node.nodeType() != .FOOTNOTE_REFERENCE) continue;
             const label = event.node.footnoteLabel().?;
             const definition = definitions.get(label) orelse continue;
-            const result = try analyzer.footnotes.getOrPut(analyzer.allocator, label);
+            const result = analyzer.footnotes.getOrPutAssumeCapacity(label);
             if (!result.found_existing) {
                 const footnote_number = result.index + 1;
                 const def_id = try std.fmt.allocPrint(analyzer.allocator, "fn-{d}", .{footnote_number});
@@ -409,15 +420,16 @@ const Analyzer = struct {
                     .def_id = def_id,
                     .ref_ids = ref_ids,
                 };
-                try analyzer.ids.put(analyzer.allocator, def_id, definition);
+                analyzer.ids.putAssumeCapacity(def_id, definition);
                 definition.setFootnoteMetadata(null, @intCast(ref_ids.len), 0);
             }
 
-            const occurrence = try seen.getOrPutValue(analyzer.allocator, label, 0);
+            const occurrence = seen.getOrPutAssumeCapacity(label);
+            if (!occurrence.found_existing) occurrence.value_ptr.* = 0;
             const reference_index = occurrence.value_ptr.*;
             occurrence.value_ptr.* += 1;
             const ref_id = result.value_ptr.ref_ids[reference_index];
-            try analyzer.ids.put(analyzer.allocator, ref_id, event.node);
+            analyzer.ids.putAssumeCapacity(ref_id, event.node);
             event.node.setFootnoteMetadata(
                 definition.index,
                 @intCast(result.value_ptr.ref_ids.len),
@@ -1008,23 +1020,34 @@ fn exerciseAllocationFailures(allocator: Allocator, source: []const u8) !void {
     defer ast.deinit();
 }
 
-test "semantic allocation failures clean up owned syntax and sidecars" {
+test "semantic allocation failures clean up plain syntax" {
     try std.testing.checkAllAllocationFailures(
         std.testing.allocator,
         exerciseAllocationFailures,
         .{"# Heading\n\nPlain paragraph.\n"},
     );
+}
 
-    const rich_source =
-        "# [Section]($section.id('intro').attrs('wide'))\n" ++
-        "See [the section](#intro) and a repeated note[^n][^n].\n\n" ++
-        "[^n]: Footnote with **formatting**.\n\n" ++
-        "```=html\n" ++
-        "<div><span>unfinished</div>\n" ++
-        "```\n";
+test "semantic allocation failures clean up directive sidecars" {
     try std.testing.checkAllAllocationFailures(
         std.testing.allocator,
         exerciseAllocationFailures,
-        .{rich_source},
+        .{"# [Section]($section.id('intro').attrs('wide'))\n"},
+    );
+}
+
+test "semantic allocation failures clean up footnote sidecars" {
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        exerciseAllocationFailures,
+        .{"A repeated note[^n][^n].\n\n[^n]: Footnote with **formatting**.\n"},
+    );
+}
+
+test "semantic allocation failures clean up fenced HTML sidecars" {
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        exerciseAllocationFailures,
+        .{"```=html\n<div><span>unfinished</div>\n```\n"},
     );
 }

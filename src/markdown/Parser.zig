@@ -875,10 +875,16 @@ fn resolveFootnoteReferences(p: *Parser) Allocator.Error!void {
     defer definitions.deinit(p.allocator);
 
     const context: FootnoteDefinitionContext = .{ .parser = p };
+    var definition_count: u32 = 0;
+    for (p.nodes.items(.tag)) |tag| {
+        definition_count += @intFromBool(tag == .footnote_definition);
+    }
+    try definitions.ensureTotalCapacityContext(p.allocator, definition_count, context);
+
     for (p.nodes.items(.tag), p.nodes.items(.data)) |tag, data| {
         if (tag != .footnote_definition) continue;
         const label = data.footnote_definition.label;
-        const result = try definitions.getOrPutContext(p.allocator, label, context);
+        const result = definitions.getOrPutAssumeCapacityContext(label, context);
         if (!result.found_existing) result.value_ptr.* = label;
     }
 

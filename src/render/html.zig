@@ -12,6 +12,7 @@ const PathTable = @import("../PathTable.zig");
 const Path = PathTable.Path;
 const PathName = PathTable.PathName;
 const HtmlSafe = @import("superhtml").HtmlSafe;
+const MarkdownRenderSafety = @import("../markdown/RenderSafety.zig");
 
 const log = std.log.scoped(.render);
 
@@ -247,7 +248,7 @@ pub fn html(
                 .exit => {},
             },
             .FOOTNOTE_REFERENCE => switch (ev.dir) {
-                .enter => try renderFootnoteReference(ast, node, w),
+                .enter => try MarkdownRenderSafety.footnoteReference(ast, node, w),
                 .exit => {},
             },
             .FOOTNOTE_DEFINITION => switch (ev.dir) {
@@ -416,56 +417,6 @@ pub fn html(
     }
 }
 
-fn renderFootnoteReference(ast: Ast, node: markdown_backend.Node, w: *Writer) !void {
-    const label = node.literal() orelse "";
-    const def_idx = ast.footnotes.getIndex(label) orelse
-        return renderUnresolvedFootnote(label, w);
-    const footnote = ast.footnotes.values()[def_idx];
-    const reference_number = node.footnoteRefIx();
-    if (reference_number <= 0) return renderUnresolvedFootnote(label, w);
-    const reference_index: usize = @intCast(reference_number - 1);
-    if (reference_index >= footnote.ref_ids.len) {
-        return renderUnresolvedFootnote(label, w);
-    }
-
-    try w.print("<sup class=\"footnote-ref\"><a href=\"#{s}\" id=\"{s}\">{d}</a></sup>", .{
-        footnote.def_id,
-        footnote.ref_ids[reference_index],
-        def_idx + 1,
-    });
-}
-
-fn renderUnresolvedFootnote(label: []const u8, w: *Writer) !void {
-    try w.writeAll("[^");
-    try w.print("{f}", .{HtmlSafe{ .bytes = label }});
-    try w.writeByte(']');
-}
-
-test "unresolved footnote renderer fallback escapes the literal label" {
-    var ast = try markdown_backend.parse(
-        std.testing.allocator,
-        "Text[^unsafe&label].\n\n[^unsafe&label]: Body.\n",
-        .{},
-    );
-    defer markdown_backend.deinit(&ast, std.testing.allocator);
-
-    var reference: ?markdown_backend.Node = null;
-    var iterator = Iter.init(markdown_backend.root(&ast));
-    defer iterator.deinit();
-    while (iterator.next()) |event| {
-        if (event.dir == .enter and event.node.nodeType() == .FOOTNOTE_REFERENCE) {
-            reference = event.node;
-            break;
-        }
-    }
-    try std.testing.expect(ast.footnotes.orderedRemove("unsafe&label"));
-
-    var output: Writer.Allocating = .init(std.testing.allocator);
-    defer output.deinit();
-    try renderFootnoteReference(ast, reference.?, &output.writer);
-    try std.testing.expectEqualStrings("[^unsafe&amp;label]", output.written());
-}
-
 fn renderDirective(
     gpa: std.mem.Allocator,
     ctx: *const context.Root,
@@ -613,29 +564,32 @@ fn renderDirective(
                 }
             },
         },
-        .link => |lnk| switch (ev.dir) {
-            .enter => {
-                try w.writeAll("<a");
-                if (directive.id) |id| try w.print(" id=\"{s}\"", .{id});
-                if (directive.attrs) |attrs| {
-                    try w.writeAll(" class=\"");
-                    for (attrs) |attr| try w.print("{s} ", .{attr});
+        .link => |lnk| link: {
+            if (try MarkdownRenderSafety.urlLink(node, ev.dir == .enter, w)) return;
+            break :link switch (ev.dir) {
+                .enter => {
+                    try w.writeAll("<a");
+                    if (directive.id) |id| try w.print(" id=\"{s}\"", .{id});
+                    if (directive.attrs) |attrs| {
+                        try w.writeAll(" class=\"");
+                        for (attrs) |attr| try w.print("{s} ", .{attr});
+                        try w.writeAll("\"");
+                    }
+
+                    if (directive.title) |t| try w.print(" title=\"{s}\"", .{t});
+                    try w.writeAll(" href=\"");
+                    try printUrl(ctx, page, lnk.src.?, w);
+                    if (lnk.ref) |r| try w.print("#{s}", .{r});
                     try w.writeAll("\"");
-                }
 
-                if (directive.title) |t| try w.print(" title=\"{s}\"", .{t});
-                try w.writeAll(" href=\"");
-                try printUrl(ctx, page, lnk.src.?, w);
-                if (lnk.ref) |r| try w.print("#{s}", .{r});
-                try w.writeAll("\"");
+                    if (lnk.new orelse false) {
+                        try w.writeAll(" target=\"_blank\"");
+                    }
 
-                if (lnk.new orelse false) {
-                    try w.writeAll(" target=\"_blank\"");
-                }
-
-                try w.writeAll(">");
-            },
-            .exit => try w.writeAll("</a>"),
+                    try w.writeAll(">");
+                },
+                .exit => try w.writeAll("</a>"),
+            };
         },
         .code => |code| switch (ev.dir) {
             .enter => {
