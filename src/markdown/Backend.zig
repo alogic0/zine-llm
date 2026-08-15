@@ -1,22 +1,15 @@
-//! Temporary compile-time boundary between the cmark and pure-Zig Markdown
-//! implementations. Phase 7 removes this module after the Zig backend becomes
-//! authoritative.
+//! Zine-facing SuperMD parser and diagnostic helpers.
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const options = @import("options");
 const supermd = @import("supermd");
 const Semantic = @import("Semantic.zig");
 
-pub const selected = options.markdown_parser;
-pub const is_zig = selected == .zig;
-
-pub const Ast = if (is_zig) Semantic.Ast else supermd.Ast;
-pub const Node = if (is_zig) Semantic.Node else supermd.Node;
-pub const Iter = if (is_zig) Semantic.Markdown.Iter else supermd.Ast.Iter;
-pub const Error = if (is_zig) Semantic.Error else supermd.Ast.Error;
+pub const Ast = Semantic.Ast;
+pub const Node = Semantic.Node;
+pub const Iter = Semantic.Markdown.Iter;
+pub const Error = Semantic.Error;
 pub const Directive = supermd.Directive;
-pub const ParserContext = supermd.Ast.CmarkParser;
 pub const ExtensionKind = enum { strikethrough, table, table_row, table_cell };
 
 pub const ParseOptions = struct {
@@ -28,25 +21,17 @@ pub fn parse(
     source: []const u8,
     parse_options: ParseOptions,
 ) !Ast {
-    return if (is_zig)
-        Semantic.Ast.init(gpa, source, .{
-            .auto_target_blank = parse_options.auto_target_blank,
-        })
-    else blk: {
-        const cmark = ParserContext.default();
-        defer supermd.c.cmark_parser_free(cmark.parser);
-        break :blk supermd.Ast.init(gpa, source, cmark, .{
-            .auto_target_blank = parse_options.auto_target_blank,
-        });
-    };
+    return Semantic.Ast.init(gpa, source, .{
+        .auto_target_blank = parse_options.auto_target_blank,
+    });
 }
 
-pub fn deinit(ast: *Ast, gpa: Allocator) void {
-    if (is_zig) ast.deinit() else ast.*.deinit(gpa);
+pub fn deinit(ast: *Ast, _: Allocator) void {
+    ast.deinit();
 }
 
 pub fn root(ast: *const Ast) Node {
-    return if (is_zig) ast.root() else ast.md.root;
+    return ast.root();
 }
 
 pub fn eql(a: Node, b: Node) bool {
@@ -54,30 +39,49 @@ pub fn eql(a: Node, b: Node) bool {
 }
 
 pub fn extensionKind(node: Node) ?ExtensionKind {
-    if (is_zig) return switch (node.nodeType()) {
+    return switch (node.nodeType()) {
         .STRIKETHROUGH => .strikethrough,
         .TABLE => .table,
         .TABLE_ROW => .table_row,
         .TABLE_CELL => .table_cell,
         else => null,
     };
-
-    const raw = @backingInt(node.nodeType());
-    if (raw == supermd.c.CMARK_NODE_STRIKETHROUGH) return .strikethrough;
-    if (raw == supermd.c.CMARK_NODE_TABLE) return .table;
-    if (raw == supermd.c.CMARK_NODE_TABLE_ROW) return .table_row;
-    if (raw == supermd.c.CMARK_NODE_TABLE_CELL) return .table_cell;
-    return null;
 }
 
-pub fn linePreview(source: []const u8, range: @TypeOf(@as(Node, undefined).range())) supermd.Ast.LinePreview {
-    return if (is_zig)
-        supermd.Ast.linePreview(source, .{
-            .start = .{ .row = range.start.row, .col = range.start.col },
-            .end = .{ .row = range.end.row, .col = range.end.col },
-        })
+pub const LinePreview = struct {
+    code: []const u8,
+    spaces: u32,
+    carets: u32,
+
+    pub fn format(preview: LinePreview, writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        try writer.print("|    {s}\n", .{preview.code});
+        try writer.writeAll("|    ");
+        try writer.splatByteAll(' ', preview.spaces);
+        try writer.splatByteAll('^', preview.carets);
+    }
+};
+
+pub fn linePreview(source: []const u8, range: @TypeOf(@as(Node, undefined).range())) LinePreview {
+    const line = blk: {
+        var iterator = std.mem.splitScalar(u8, source, '\n');
+        for (1..range.start.row) |_| _ = iterator.next();
+        break :blk iterator.next().?;
+    };
+
+    const line_trim_left = std.mem.trimStart(u8, line, &std.ascii.whitespace);
+    const start_trim_left = line.len - line_trim_left.len;
+    const line_trim = std.mem.trimEnd(u8, line_trim_left, &std.ascii.whitespace);
+    const caret_len = if (range.start.row == range.end.row)
+        range.end.col - range.start.col
     else
-        supermd.Ast.linePreview(source, range);
+        line_trim.len - start_trim_left;
+    const caret_spaces_len = range.start.col - 1 - start_trim_left;
+
+    return .{
+        .code = line_trim,
+        .spaces = @intCast(caret_spaces_len),
+        .carets = @intCast(if (caret_len == 0) 1 else caret_len),
+    };
 }
 
 pub fn errorFmt(
@@ -101,15 +105,6 @@ pub const ErrorFmt = struct {
     frontmatter_line_count: u32,
 
     pub fn format(value: ErrorFmt, writer: *std.Io.Writer) std.Io.Writer.Error!void {
-        if (!is_zig) {
-            try writer.print("{f}", .{value.err.fmt(
-                value.frontmatter_line_count,
-                value.source,
-                value.path,
-            )});
-            return;
-        }
-
         try writer.print("{s}:{}:{}: ", .{
             value.path,
             value.frontmatter_line_count + value.err.main.start.row,
@@ -256,19 +251,7 @@ fn position(
     return .{ .row = row, .col = @intCast(offset - line_start + 1) };
 }
 
-test "selected Markdown backend has the compatibility boundary" {
-    if (is_zig) {
-        try std.testing.expect(Ast == Semantic.Ast);
-        try std.testing.expect(Node == Semantic.Node);
-    } else {
-        try std.testing.expect(Ast == supermd.Ast);
-        try std.testing.expect(Node == supermd.Node);
-    }
-}
-
-test "selected backend parses and owns its AST" {
-    if (!is_zig) supermd.c.cmark_gfm_core_extensions_ensure_registered();
-
+test "parser facade parses and owns its AST" {
     var ast = try parse(std.testing.allocator, "# Heading\n", .{});
     defer deinit(&ast, std.testing.allocator);
     try std.testing.expect(root(&ast).firstChild().?.nodeType() == .HEADING);
