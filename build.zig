@@ -430,6 +430,27 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_semantic_markdown_tests.step);
     test_step.dependOn(&run_markdown_backend_tests.step);
 
+    const parser_parity_step = b.step(
+        "test-parser-parity",
+        "Run the complete corpus with cmark and pure-Zig Markdown backends",
+    );
+    const test_cmark_backend = b.addSystemCommand(&.{
+        "./build.sh",
+        "test",
+        "-Dmarkdown-parser=cmark",
+    });
+    test_cmark_backend.setCwd(b.path("."));
+    test_cmark_backend.setName("test complete corpus with cmark");
+    const test_zig_backend = b.addSystemCommand(&.{
+        "./build.sh",
+        "test",
+        "-Dmarkdown-parser=zig",
+    });
+    test_zig_backend.setCwd(b.path("."));
+    test_zig_backend.setName("test complete corpus with pure-Zig Markdown");
+    test_zig_backend.step.dependOn(&test_cmark_backend.step);
+    parser_parity_step.dependOn(&test_zig_backend.step);
+
     setupSchemaCheck(b, target, zine_mod, test_step);
     try setupSnapshotTesting(b, target, zine_exe, supermd, test_step);
 
