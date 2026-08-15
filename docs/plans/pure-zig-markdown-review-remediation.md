@@ -388,12 +388,12 @@ docs: record Markdown review remediation validation
 
 ## Completion checklist
 
-- [ ] Phase 1: allocator ownership is explicit and failure-injection tested.
-- [ ] Phase 2: autolinks use a compatibility-correct link subtree.
-- [ ] Phase 3: footnotes resolve at end of input and cannot crash rendering.
-- [ ] Phase 4: task-list checked state appears in Zine HTML.
-- [ ] Phase 5: compile-only gates are independent of archive tools.
-- [ ] Phase 6: focused, full, workflow, and release validation passes.
+- [x] Phase 1: allocator ownership is explicit and failure-injection tested.
+- [x] Phase 2: autolinks use a compatibility-correct link subtree.
+- [x] Phase 3: footnotes resolve at end of input and cannot crash rendering.
+- [x] Phase 4: task-list checked state appears in Zine HTML.
+- [x] Phase 5: compile-only gates are independent of archive tools.
+- [x] Phase 6: focused, full, workflow, and release validation passes.
 
 The remediation is complete only when every checkbox above is satisfied and
 the branch review can be repeated without the original findings.
