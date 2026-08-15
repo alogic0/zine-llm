@@ -238,16 +238,7 @@ pub fn html(
                 .exit => {},
             },
             .FOOTNOTE_REFERENCE => switch (ev.dir) {
-                .enter => {
-                    const literal = node.literal().?;
-                    const def_idx = ast.footnotes.getIndex(literal).?;
-                    const footnote = ast.footnotes.values()[def_idx];
-                    try w.print("<sup class=\"footnote-ref\"><a href=\"#{s}\" id=\"{s}\">{d}</a></sup>", .{
-                        footnote.def_id,
-                        footnote.ref_ids[@intCast(node.footnoteRefIx() - 1)],
-                        def_idx + 1,
-                    });
-                },
+                .enter => try renderFootnoteReference(ast, node, w),
                 .exit => {},
             },
             .FOOTNOTE_DEFINITION => switch (ev.dir) {
@@ -414,6 +405,56 @@ pub fn html(
     if (open_div) {
         try w.writeAll("</div>");
     }
+}
+
+fn renderFootnoteReference(ast: Ast, node: markdown_backend.Node, w: *Writer) !void {
+    const label = node.literal() orelse "";
+    const def_idx = ast.footnotes.getIndex(label) orelse
+        return renderUnresolvedFootnote(label, w);
+    const footnote = ast.footnotes.values()[def_idx];
+    const reference_number = node.footnoteRefIx();
+    if (reference_number <= 0) return renderUnresolvedFootnote(label, w);
+    const reference_index: usize = @intCast(reference_number - 1);
+    if (reference_index >= footnote.ref_ids.len) {
+        return renderUnresolvedFootnote(label, w);
+    }
+
+    try w.print("<sup class=\"footnote-ref\"><a href=\"#{s}\" id=\"{s}\">{d}</a></sup>", .{
+        footnote.def_id,
+        footnote.ref_ids[reference_index],
+        def_idx + 1,
+    });
+}
+
+fn renderUnresolvedFootnote(label: []const u8, w: *Writer) !void {
+    try w.writeAll("[^");
+    try w.print("{f}", .{HtmlSafe{ .bytes = label }});
+    try w.writeByte(']');
+}
+
+test "unresolved footnote renderer fallback escapes the literal label" {
+    var ast = try markdown_backend.parse(
+        std.testing.allocator,
+        "Text[^unsafe&label].\n\n[^unsafe&label]: Body.\n",
+        .{},
+    );
+    defer markdown_backend.deinit(&ast, std.testing.allocator);
+
+    var reference: ?markdown_backend.Node = null;
+    var iterator = Iter.init(markdown_backend.root(&ast));
+    defer iterator.deinit();
+    while (iterator.next()) |event| {
+        if (event.dir == .enter and event.node.nodeType() == .FOOTNOTE_REFERENCE) {
+            reference = event.node;
+            break;
+        }
+    }
+    try std.testing.expect(ast.footnotes.orderedRemove("unsafe&label"));
+
+    var output: Writer.Allocating = .init(std.testing.allocator);
+    defer output.deinit();
+    try renderFootnoteReference(ast, reference.?, &output.writer);
+    try std.testing.expectEqualStrings("[^unsafe&amp;label]", output.written());
 }
 
 fn renderDirective(
