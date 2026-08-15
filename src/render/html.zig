@@ -119,7 +119,16 @@ pub fn html(
                 }),
             },
             .ITEM => switch (ev.dir) {
-                .enter => try w.print("<li>", .{}),
+                .enter => {
+                    try w.writeAll("<li>");
+                    if (node.tasklistItemChecked()) |checked| {
+                        if (checked) {
+                            try w.writeAll("<input type=\"checkbox\" checked=\"\" disabled=\"\" /> ");
+                        } else {
+                            try w.writeAll("<input type=\"checkbox\" disabled=\"\" /> ");
+                        }
+                    }
+                },
                 .exit => try w.print("</li>", .{}),
             },
             .HTML_BLOCK => switch (ev.dir) {
