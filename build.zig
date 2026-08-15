@@ -309,6 +309,17 @@ pub fn build(b: *std.Build) !void {
         setupReleaseStep(b, release, check_release_targets, version, translate_c);
     }
 
+    const verify_release_archives = b.addSystemCommand(&.{"sh"});
+    verify_release_archives.addFileArg(b.path("build/verify_release_archives.sh"));
+    verify_release_archives.addDirectoryArg(b.graph.path(.install_prefix, "releases"));
+    verify_release_archives.step.dependOn(release);
+    verify_release_archives.setName("verify release archive contents");
+    const verify_release = b.step(
+        "verify-release",
+        "Create and verify every release archive",
+    );
+    verify_release.dependOn(&verify_release_archives.step);
+
     const archive_tool_isolation = b.addSystemCommand(&.{"sh"});
     archive_tool_isolation.addFileArg(b.path("build/archive_tool_isolation.sh"));
     archive_tool_isolation.addArg(b.root.root_dir.path.?);
