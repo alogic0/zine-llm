@@ -13,6 +13,7 @@ const ScriptyVM = scripty.VM(supermd.Value);
 const SyntaxAst = @import("Ast.zig");
 const Document = @import("Document.zig");
 const Parser = @import("Parser.zig");
+const Source = @import("Source.zig");
 
 pub const Markdown = SyntaxAst.Contract(supermd.Directive);
 pub const Node = Markdown.Node;
@@ -21,6 +22,23 @@ pub const Footnote = struct {
     node: Node,
     def_id: []const u8,
     ref_ids: [][]const u8,
+};
+
+pub const Error = struct {
+    main: SyntaxAst.Range,
+    kind: Kind,
+
+    pub const Kind = union(enum) {
+        inline_html,
+        heading_section_missing_id,
+        invalid_ref,
+        no_alt_in_links,
+        expression_in_image_syntax,
+        empty_expression,
+        duplicate_id: struct { id: []const u8, original: Node },
+        scripty: struct { len: u32, span: Source.Span, err: []const u8 },
+        heading_skip: struct { have: u8, last: ?Node },
+    };
 };
 
 pub const Options = struct {
@@ -61,6 +79,7 @@ pub const Ast = struct {
     referenced_ids: std.StringArrayHashMapUnmanaged(Node) = .{},
     sections: std.StringArrayHashMapUnmanaged(Node) = .{},
     footnotes: std.StringArrayHashMapUnmanaged(Footnote) = .{},
+    errors: []const Error = &.{},
 
     pub fn init(gpa: Allocator, source: []const u8, options: Options) !Ast {
         var parser = try Parser.init(gpa);
@@ -76,6 +95,7 @@ pub const Ast = struct {
         };
         errdefer result.deinit();
 
+        var errors: std.ArrayList(Error) = .empty;
         var analyzer: Analyzer = .{
             .allocator = result.md.allocator(),
             .options = options,
@@ -85,8 +105,10 @@ pub const Ast = struct {
             .referenced_ids = &result.referenced_ids,
             .sections = &result.sections,
             .footnotes = &result.footnotes,
+            .errors = &errors,
         };
         try analyzer.run(result.md.root());
+        result.errors = try errors.toOwnedSlice(result.md.allocator());
         return result;
     }
 
@@ -109,7 +131,9 @@ const Analyzer = struct {
     referenced_ids: *std.StringArrayHashMapUnmanaged(Node),
     sections: *std.StringArrayHashMapUnmanaged(Node),
     footnotes: *std.StringArrayHashMapUnmanaged(Footnote),
+    errors: *std.ArrayList(Error),
     vm: ScriptyVM = .{},
+    sectioned: bool = false,
 
     fn run(analyzer: *Analyzer, root: Node) !void {
         _ = analyzer.options;
@@ -121,9 +145,15 @@ const Analyzer = struct {
             .exit => {},
         };
         try analyzer.buildFootnotes(root);
+        try analyzer.validateTopLevel(root);
+        try analyzer.validateReferences();
     }
 
     fn enter(analyzer: *Analyzer, node: Node) !void {
+        switch (node.nodeType()) {
+            .HTML_BLOCK, .HTML_INLINE => try analyzer.addError(node.range(), .inline_html),
+            else => {},
+        }
         const is_image = switch (node.nodeType()) {
             .LINK => false,
             .IMAGE => true,
@@ -139,14 +169,34 @@ const Analyzer = struct {
         };
         try analyzer.destinations.put(analyzer.allocator, node.index, destination);
         try analyzer.attach(node, destination);
-        if (node.getDirective()) |directive| try analyzer.indexDirective(node, directive);
+        if (node.getDirective()) |directive| {
+            if (try directive.validate(analyzer.allocator, node)) |validation| {
+                if (validation == .err) try analyzer.addError(destination.range, .{ .scripty = .{
+                    .len = @intCast(destination.value.len),
+                    .span = .{ .start = 0, .end = @intCast(destination.value.len) },
+                    .err = validation.err,
+                } });
+            }
+            try analyzer.indexDirective(node, directive);
+        }
     }
 
     fn indexDirective(analyzer: *Analyzer, node: Node, directive: *supermd.Directive) !void {
         const target = semanticTarget(node, directive);
+        if (directive.kind == .section) {
+            analyzer.sectioned = true;
+            if (directive.id == null) {
+                try analyzer.addError(node.range(), .heading_section_missing_id);
+            }
+        }
         if (directive.id) |id| {
             const result = try analyzer.ids.getOrPut(analyzer.allocator, id);
-            if (!result.found_existing) result.value_ptr.* = target;
+            if (result.found_existing) {
+                try analyzer.addError(node.range(), .{ .duplicate_id = .{
+                    .id = id,
+                    .original = result.value_ptr.*,
+                } });
+            } else result.value_ptr.* = target;
             if (directive.kind == .section) {
                 try analyzer.sections.put(analyzer.allocator, id, target);
             }
@@ -158,6 +208,32 @@ const Analyzer = struct {
                 try analyzer.referenced_ids.put(analyzer.allocator, link.ref.?, node);
             }
         }
+    }
+
+    fn validateTopLevel(analyzer: *Analyzer, root: Node) !void {
+        if (analyzer.sectioned) return;
+        var last_level: i32 = 0;
+        var last_heading: ?Node = null;
+        var node = root.firstChild();
+        while (node) |current| : (node = current.nextSibling()) {
+            if (current.nodeType() != .HEADING) continue;
+            const level = current.headingLevel();
+            if (level > last_level + 1) try analyzer.addError(current.range(), .{
+                .heading_skip = .{ .have = @intCast(level), .last = last_heading },
+            });
+            last_level = level;
+            last_heading = current;
+        }
+    }
+
+    fn validateReferences(analyzer: *Analyzer) !void {
+        for (analyzer.referenced_ids.keys(), analyzer.referenced_ids.values()) |id, node| {
+            if (!analyzer.ids.contains(id)) try analyzer.addError(node.range(), .invalid_ref);
+        }
+    }
+
+    fn addError(analyzer: *Analyzer, range: SyntaxAst.Range, kind: Error.Kind) !void {
+        try analyzer.errors.append(analyzer.allocator, .{ .main = range, .kind = kind });
     }
 
     fn buildFootnotes(analyzer: *Analyzer, root: Node) !void {
@@ -227,6 +303,17 @@ const Analyzer = struct {
     }
 
     fn attach(analyzer: *Analyzer, node: Node, destination: Destination) !void {
+        if (node.nodeType() == .IMAGE and destination.syntax == .expression_image) {
+            try analyzer.addError(destination.range, .expression_in_image_syntax);
+            return;
+        }
+        if (destination.syntax == .empty) {
+            try analyzer.addError(destination.range, .empty_expression);
+            return;
+        }
+        if (node.nodeType() == .LINK and node.title() != null) {
+            try analyzer.addError(destination.range, .no_alt_in_links);
+        }
         if (destination.syntax == .expression) {
             const directive = try analyzer.evaluate(node, destination.value) orelse return;
             _ = try node.setDirective(analyzer.allocator, directive, false);
@@ -286,6 +373,16 @@ const Analyzer = struct {
             .empty, .expression_image => return,
             .expression => unreachable,
         };
+        if (destination.syntax == .url) {
+            _ = std.Uri.parse(destination.value) catch {
+                try analyzer.addError(destination.range, .{ .scripty = .{
+                    .len = @intCast(destination.value.len),
+                    .span = .{ .start = 0, .end = @intCast(destination.value.len) },
+                    .err = "invalid URL",
+                } });
+                return;
+            };
+        }
         _ = try node.setDirective(analyzer.allocator, &directive, true);
     }
 
@@ -300,6 +397,14 @@ const Analyzer = struct {
                 stored.* = directive.*;
                 try analyzer.evaluated.put(analyzer.allocator, node.index, stored);
                 return stored;
+            },
+            .err => |message| {
+                try analyzer.addError(node.range(), .{ .scripty = .{
+                    .len = @intCast(source.len),
+                    .span = .{ .start = result.loc.start, .end = result.loc.end },
+                    .err = message,
+                } });
+                return null;
             },
             else => return null,
         }
@@ -476,4 +581,37 @@ test "semantic analysis builds IDs, references, sections, and footnotes" {
     try std.testing.expectEqualStrings("fn-1", footnote.def_id);
     try std.testing.expectEqual(@as(usize, 2), footnote.ref_ids.len);
     try std.testing.expect(footnote.node.nodeType() == .FOOTNOTE_DEFINITION);
+}
+
+test "semantic validation errors retain pure parser ranges" {
+    const source =
+        \\## Skipped
+        \\[first]($text.id('same')) [second]($text.id('same'))
+        \\[missing](#unknown) ![bad]($image)
+        \\<span>raw</span>
+    ;
+    var ast = try Ast.init(std.testing.allocator, source, .{});
+    defer ast.deinit();
+
+    var saw_skip = false;
+    var saw_duplicate = false;
+    var saw_invalid_ref = false;
+    var saw_image_expression = false;
+    var saw_inline_html = false;
+    for (ast.errors) |semantic_error| {
+        try std.testing.expect(semantic_error.main.isKnown());
+        switch (semantic_error.kind) {
+            .heading_skip => saw_skip = true,
+            .duplicate_id => saw_duplicate = true,
+            .invalid_ref => saw_invalid_ref = true,
+            .expression_in_image_syntax => saw_image_expression = true,
+            .inline_html => saw_inline_html = true,
+            else => {},
+        }
+    }
+    try std.testing.expect(saw_skip);
+    try std.testing.expect(saw_duplicate);
+    try std.testing.expect(saw_invalid_ref);
+    try std.testing.expect(saw_image_expression);
+    try std.testing.expect(saw_inline_html);
 }
