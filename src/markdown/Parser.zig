@@ -84,6 +84,8 @@ const Block = struct {
         thematic_break,
         /// Data is `none`.
         html_block,
+        /// Data is `footnote_definition`.
+        footnote_definition,
     };
 
     const Data = union {
@@ -112,6 +114,10 @@ const Block = struct {
             fence_len: usize,
             indent: usize,
         },
+        footnote_definition: struct {
+            label: StringIndex,
+            continuation_indent: usize,
+        },
 
         const ListMarker = enum {
             @"-",
@@ -135,6 +141,7 @@ const Block = struct {
             .list_item,
             .table,
             .blockquote,
+            .footnote_definition,
             => .blocks,
 
             .heading,
@@ -181,6 +188,12 @@ const Block = struct {
                 }
             },
             .html_block => if (unindented.len > 0) line else null,
+            .footnote_definition => if (indent >= b.data.footnote_definition.continuation_indent)
+                line[b.data.footnote_definition.continuation_indent..]
+            else if (unindented.len == 0)
+                ""
+            else
+                null,
             .blockquote => if (mem.startsWith(u8, unindented, ">"))
                 unindented[1..]
             else
@@ -423,6 +436,8 @@ const BlockStart = struct {
         thematic_break,
         /// Data is `none`.
         html_block,
+        /// Data is `footnote_definition`.
+        footnote_definition,
     };
 
     const Data = union {
@@ -444,6 +459,10 @@ const BlockStart = struct {
             tag: StringIndex,
             fence_len: usize,
             indent: usize,
+        },
+        footnote_definition: struct {
+            label: StringIndex,
+            continuation_indent: usize,
         },
     };
 };
@@ -555,6 +574,10 @@ fn appendBlockStart(p: *Parser, block_start: BlockStart) !void {
         .paragraph => .{ .paragraph, .{ .none = {} } },
         .thematic_break => .{ .thematic_break, .{ .none = {} } },
         .html_block => .{ .html_block, .{ .none = {} } },
+        .footnote_definition => .{ .footnote_definition, .{ .footnote_definition = .{
+            .label = block_start.data.footnote_definition.label,
+            .continuation_indent = block_start.data.footnote_definition.continuation_indent,
+        } } },
     };
 
     try p.pending_blocks.append(p.allocator, .{
@@ -655,6 +678,16 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
             .rest = unindented,
             .source_start = source_start,
         };
+    } else if (try p.startFootnoteDefinition(unindented, indent)) |footnote| {
+        return .{
+            .tag = .footnote_definition,
+            .data = .{ .footnote_definition = .{
+                .label = footnote.label,
+                .continuation_indent = footnote.continuation_indent,
+            } },
+            .rest = footnote.rest,
+            .source_start = source_start,
+        };
     } else if (startBlockquote(unindented)) |rest| {
         return .{
             .tag = .blockquote,
@@ -665,6 +698,26 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
     } else {
         return null;
     }
+}
+
+const FootnoteDefinitionStart = struct {
+    label: StringIndex,
+    continuation_indent: usize,
+    rest: []const u8,
+};
+
+fn startFootnoteDefinition(p: *Parser, line: []const u8, indent: usize) !?FootnoteDefinitionStart {
+    if (!mem.startsWith(u8, line, "[^")) return null;
+    const close = mem.findScalar(u8, line[2..], ']') orelse return null;
+    const close_pos = close + 2;
+    if (close_pos == 2 or close_pos + 1 >= line.len or line[close_pos + 1] != ':') return null;
+    var rest_pos = close_pos + 2;
+    if (rest_pos < line.len and (line[rest_pos] == ' ' or line[rest_pos] == '\t')) rest_pos += 1;
+    return .{
+        .label = try p.addString(line[2..close_pos]),
+        .continuation_indent = indent + 4,
+        .rest = line[rest_pos..],
+    };
 }
 
 fn hasOpenTable(p: *Parser) bool {
@@ -1165,6 +1218,17 @@ fn closeLastBlock(p: *Parser) !void {
                 .data = .{ .text = .{ .content = try p.addString(content) } },
             }, b.source_span);
         },
+        .footnote_definition => footnote_definition: {
+            assert(b.string_start == p.scratch_string.items.len);
+            const children = try p.addExtraChildren(@ptrCast(p.scratch_extra.items[b.extra_start..]));
+            break :footnote_definition try p.addNode(.{
+                .tag = .footnote_definition,
+                .data = .{ .footnote_definition = .{
+                    .label = b.data.footnote_definition.label,
+                    .children = children,
+                } },
+            }, b.source_span);
+        },
     };
     p.scratch_string.items.len = b.string_start;
     p.scratch_source_spans.items.len = b.string_start;
@@ -1237,11 +1301,13 @@ const InlineParser = struct {
         while (ip.pos < ip.content.len) : (ip.pos += 1) {
             switch (ip.content[ip.pos]) {
                 '\\' => ip.pos += 1,
-                '[' => try ip.pending_inlines.append(ip.parent.allocator, .{
-                    .tag = .link,
-                    .data = .{ .none = {} },
-                    .start = ip.pos,
-                }),
+                '[' => if (!try ip.parseFootnoteReference()) {
+                    try ip.pending_inlines.append(ip.parent.allocator, .{
+                        .tag = .link,
+                        .data = .{ .none = {} },
+                        .start = ip.pos,
+                    });
+                },
                 '!' => if (ip.pos + 1 < ip.content.len and ip.content[ip.pos + 1] == '[') {
                     try ip.pending_inlines.append(ip.parent.allocator, .{
                         .tag = .image,
@@ -1326,6 +1392,27 @@ const InlineParser = struct {
             .start = opener.start,
             .len = ip.pos - opener.start + 1,
         });
+    }
+
+    fn parseFootnoteReference(ip: *InlineParser) !bool {
+        const start = ip.pos;
+        if (start + 3 >= ip.content.len or ip.content[start + 1] != '^') return false;
+        const close = mem.findScalarPos(u8, ip.content, start + 2, ']') orelse return false;
+        if (close == start + 2) return false;
+        const label = ip.content[start + 2 .. close];
+        if (mem.findAny(u8, label, " \t\n") != null) return false;
+
+        const node = try ip.parent.addNode(.{
+            .tag = .footnote_reference,
+            .data = .{ .text = .{ .content = try ip.parent.addString(label) } },
+        }, ip.sourceSpan(start, close + 1));
+        try ip.completed_inlines.append(ip.parent.allocator, .{
+            .node = node,
+            .start = start,
+            .len = close + 1 - start,
+        });
+        ip.pos = close;
+        return true;
     }
 
     /// Parses a raw inline HTML tag, comment, declaration, or processing

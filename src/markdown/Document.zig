@@ -53,6 +53,8 @@ pub const Node = struct {
         thematic_break,
         /// Data is `text`.
         html_block,
+        /// Data is `footnote_definition`.
+        footnote_definition,
 
         // Inlines
         /// Data is `link`.
@@ -77,6 +79,8 @@ pub const Node = struct {
         soft_break,
         /// Data is `text`.
         html_inline,
+        /// Data is `text`.
+        footnote_reference,
     };
 
     pub const Data = union {
@@ -114,6 +118,10 @@ pub const Node = struct {
         },
         link: struct {
             target: StringIndex,
+            children: ExtraIndex,
+        },
+        footnote_definition: struct {
+            label: StringIndex,
             children: ExtraIndex,
         },
 

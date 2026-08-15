@@ -105,6 +105,7 @@ pub fn Contract(comptime Directive: type) type {
                     .table_cell => store.document.extraChildren(data.table_cell.children),
                     .heading => store.document.extraChildren(data.heading.children),
                     .link, .image => store.document.extraChildren(data.link.children),
+                    .footnote_definition => store.document.extraChildren(data.footnote_definition.children),
                     .code_block,
                     .thematic_break,
                     .html_block,
@@ -114,6 +115,7 @@ pub fn Contract(comptime Directive: type) type {
                     .line_break,
                     .soft_break,
                     .html_inline,
+                    .footnote_reference,
                     => &.{},
                 };
             }
@@ -269,6 +271,7 @@ pub fn Contract(comptime Directive: type) type {
                     .paragraph => .PARAGRAPH,
                     .thematic_break => .THEMATIC_BREAK,
                     .html_block => .HTML_BLOCK,
+                    .footnote_definition => .FOOTNOTE_DEFINITION,
                     .link => .LINK,
                     .autolink => .LINK,
                     .image => .IMAGE,
@@ -280,13 +283,14 @@ pub fn Contract(comptime Directive: type) type {
                     .line_break => .LINEBREAK,
                     .soft_break => .SOFTBREAK,
                     .html_inline => .HTML_INLINE,
+                    .footnote_reference => .FOOTNOTE_REFERENCE,
                 };
             }
 
             pub fn literal(node: Node) ?[]const u8 {
                 const data = node.store.syntaxData(node.index);
                 return switch (node.store.syntaxTag(node.index)) {
-                    .autolink, .code_span, .text, .html_inline, .html_block => node.store.document.string(data.text.content),
+                    .autolink, .code_span, .text, .html_inline, .html_block, .footnote_reference => node.store.document.string(data.text.content),
                     .code_block => node.store.document.string(data.code_block.content),
                     else => null,
                 };
@@ -297,6 +301,15 @@ pub fn Contract(comptime Directive: type) type {
                 return switch (node.store.syntaxTag(node.index)) {
                     .link, .image => node.store.document.string(data.link.target),
                     .autolink => node.store.document.string(data.text.content),
+                    else => null,
+                };
+            }
+
+            pub fn footnoteLabel(node: Node) ?[]const u8 {
+                const data = node.store.syntaxData(node.index);
+                return switch (node.store.syntaxTag(node.index)) {
+                    .footnote_definition => node.store.document.string(data.footnote_definition.label),
+                    .footnote_reference => node.store.document.string(data.text.content),
                     else => null,
                 };
             }
@@ -502,7 +515,7 @@ pub fn Contract(comptime Directive: type) type {
                     if (event.dir != .enter) continue;
                     const current = event.node;
                     switch (current.store.syntaxTag(current.index)) {
-                        .autolink, .code_span, .text, .code_block, .html_inline, .html_block => {
+                        .autolink, .code_span, .text, .code_block, .html_inline, .html_block, .footnote_reference => {
                             output.writer.writeAll(current.literal().?) catch return error.OutOfMemory;
                         },
                         .line_break, .soft_break => output.writer.writeByte('\n') catch return error.OutOfMemory,
@@ -564,6 +577,7 @@ pub fn Contract(comptime Directive: type) type {
                     .strong,
                     .emphasis,
                     .strikethrough,
+                    .footnote_definition,
                     => true,
                     .code_block,
                     .thematic_break,
@@ -574,6 +588,7 @@ pub fn Contract(comptime Directive: type) type {
                     .line_break,
                     .soft_break,
                     .html_inline,
+                    .footnote_reference,
                     => false,
                 };
             }
@@ -779,6 +794,18 @@ test "task list state is exposed on item nodes" {
     try std.testing.expectEqual(@as(?bool, true), checked.tasklistItemChecked());
     try std.testing.expectEqual(@as(?bool, null), ordinary.tasklistItemChecked());
     try expectRange(checked, 11, 21, 2, 1, 2, 10);
+}
+
+test "footnote definitions and references expose labels and ranges" {
+    var ast = try parseTestAst("Text[^note].\n\n[^note]: Footnote body.\n");
+    defer ast.deinit();
+
+    const reference = findType(ast.root(), .FOOTNOTE_REFERENCE).?;
+    const definition = findType(ast.root(), .FOOTNOTE_DEFINITION).?;
+    try std.testing.expectEqualStrings("note", reference.footnoteLabel().?);
+    try std.testing.expectEqualStrings("note", definition.footnoteLabel().?);
+    try expectRange(reference, 4, 11, 1, 5, 1, 11);
+    try std.testing.expectEqualStrings("Footnote body.", try definition.renderPlaintext());
 }
 
 test "source ranges cover nested blocks and fenced code" {

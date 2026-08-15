@@ -953,6 +953,20 @@ test "GFM task list items" {
     );
 }
 
+test "GFM footnotes" {
+    try testRender(
+        "Text[^note].\n\n[^note]: Footnote *body*.\n    Continued.\n",
+        "<p>Text<sup class=\"footnote-ref\"><a href=\"#fn-note\" id=\"fnref-note\" data-footnote-ref>1</a></sup>.</p>\n" ++
+            "<section class=\"footnotes\" data-footnotes>\n" ++
+            "<ol>\n" ++
+            "<li id=\"fn-note\">\n" ++
+            "<p>Footnote <em>body</em>.\nContinued.</p>\n" ++
+            "</li>\n" ++
+            "</ol>\n" ++
+            "</section>\n",
+    );
+}
+
 test "images" {
     try testRender(
         \\![Alt text](https://example.com/image.png)

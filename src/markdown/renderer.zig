@@ -35,8 +35,19 @@ pub fn Renderer(comptime Context: type) type {
             switch (doc.nodes.items(.tag)[@backingInt(node)]) {
                 .root => {
                     for (doc.extraChildren(data.container.children)) |child| {
+                        if (doc.nodes.items(.tag)[@backingInt(child)] == .footnote_definition) continue;
                         try r.renderFn(r, doc, child, writer);
                     }
+                    var wrote_section = false;
+                    for (doc.extraChildren(data.container.children)) |child| {
+                        if (doc.nodes.items(.tag)[@backingInt(child)] != .footnote_definition) continue;
+                        if (!wrote_section) {
+                            try writer.writeAll("<section class=\"footnotes\" data-footnotes>\n<ol>\n");
+                            wrote_section = true;
+                        }
+                        try r.renderFn(r, doc, child, writer);
+                    }
+                    if (wrote_section) try writer.writeAll("</ol>\n</section>\n");
                 },
                 .list => {
                     if (data.list.start.asNumber()) |start| {
@@ -143,6 +154,14 @@ pub fn Renderer(comptime Context: type) type {
                     try writer.writeAll(doc.string(data.text.content));
                     try writer.writeByte('\n');
                 },
+                .footnote_definition => {
+                    const label = doc.string(data.footnote_definition.label);
+                    try writer.print("<li id=\"fn-{f}\">\n", .{fmtHtml(label)});
+                    for (doc.extraChildren(data.footnote_definition.children)) |child| {
+                        try r.renderFn(r, doc, child, writer);
+                    }
+                    try writer.writeAll("</li>\n");
+                },
                 .link => {
                     const target = doc.string(data.link.target);
                     try writer.print("<a href=\"{f}\">", .{fmtHtml(target)});
@@ -197,6 +216,13 @@ pub fn Renderer(comptime Context: type) type {
                 },
                 .soft_break => try writer.writeByte('\n'),
                 .html_inline => try writer.writeAll(doc.string(data.text.content)),
+                .footnote_reference => {
+                    const label = doc.string(data.text.content);
+                    try writer.print(
+                        "<sup class=\"footnote-ref\"><a href=\"#fn-{0f}\" id=\"fnref-{0f}\" data-footnote-ref>{1d}</a></sup>",
+                        .{ fmtHtml(label), footnoteOrdinal(doc, label) },
+                    );
+                },
             }
         }
     };
@@ -223,6 +249,7 @@ pub fn renderInlineNodeText(
         .paragraph,
         .thematic_break,
         .html_block,
+        .footnote_definition,
         => unreachable, // Blocks
 
         .link, .image => {
@@ -240,7 +267,7 @@ pub fn renderInlineNodeText(
                 try renderInlineNodeText(doc, child, writer);
             }
         },
-        .autolink, .code_span, .text, .html_inline => {
+        .autolink, .code_span, .text, .html_inline, .footnote_reference => {
             const content = doc.string(data.text.content);
             try writer.print("{f}", .{fmtHtml(content)});
         },
@@ -248,6 +275,18 @@ pub fn renderInlineNodeText(
             try writer.writeAll("\n");
         },
     }
+}
+
+fn footnoteOrdinal(doc: Document, label: []const u8) usize {
+    var ordinal: usize = 0;
+    const tags = doc.nodes.items(.tag);
+    const datas = doc.nodes.items(.data);
+    for (tags, 0..) |tag, i| {
+        if (tag != .footnote_definition) continue;
+        ordinal += 1;
+        if (std.ascii.eqlIgnoreCase(doc.string(datas[i].footnote_definition.label), label)) return ordinal;
+    }
+    return 0;
 }
 
 pub fn fmtHtml(bytes: []const u8) std.fmt.Alt([]const u8, formatHtml) {
