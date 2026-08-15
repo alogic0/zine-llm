@@ -204,3 +204,20 @@ Netpbm, NIE, QOI, TGA, and WBMP autosizing was intentionally removed. SVG and
 static AVIF autosizing was added, as was support for the direct lossy and
 extended WebP fixtures the legacy Wuffs configuration path rejected. All
 probe failures remain non-fatal and leave dimensions unset.
+
+## Full validation run
+
+After adding permanent optimization-mode coverage at commit `799c53e`, the
+following migration gates passed together on 2026-08-15:
+
+```sh
+./build.sh test
+./build.sh check
+./build.sh check-release-targets -Dpreview=true
+./build.sh test-release-tool-isolation
+./build.sh verify-release -Dpreview=true
+```
+
+This validates the complete snapshot suite, the native executable, every
+configured release target, archive contents, and the rule that ordinary build
+steps do not require release packaging tools.
