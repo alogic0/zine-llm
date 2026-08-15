@@ -404,7 +404,7 @@ all configured release targets build without cmark.
    - `src/worker.zig`
    - `src/context/Page.zig`
    - `src/render/html.zig`
-   - `src/wuffs.zig`
+   - the image helper then located at `src/wuffs.zig`
 4. Replace the external `supermd` dependency or update it to the pure-Zig implementation.
 5. Remove cmark registration and extension initialization.
 6. Remove cmark libraries and C compilation from native and release build paths.

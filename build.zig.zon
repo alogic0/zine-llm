@@ -16,9 +16,6 @@
             .url = "git+https://github.com/kristoff-it/mime#a2ed0cba3b1463217168034ffed8c1604e72598d",
             .hash = "mime-3.0.0-zwmL--0gAAByELrj57sRm2EFBRzjKLFrMgHQcs7sFZev",
         },
-        .wuffs = .{
-            .path = "vendor/wuffs",
-        },
         .frameworks = .{
             .url = "git+https://code.hexops.org/hexops/xcode-frameworks.git#8a1cfb373587ea4c9bb1468b7c986462d8d4e10e",
             .hash = "N-V-__8AALShqgXkvqYU6f__FrA22SMWmi2TXCJjNTO1m8XJ",

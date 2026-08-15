@@ -286,10 +286,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const wuffs = b.dependency("wuffs", .{
-        .target = target,
-        .optimize = optimize,
-    });
     const translate_c = b.dependency("translate_c", .{
         .optimize = .fast,
     });
@@ -474,38 +470,16 @@ pub fn build(b: *std.Build) !void {
         }),
     });
     const run_image_dimensions_file_tests = b.addRunArtifact(image_dimensions_file_tests);
-    const legacy_wuffs_oracle_module = b.createModule(.{
-        .root_source_file = b.path("src/wuffs.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    legacy_wuffs_oracle_module.addImport("supermd", supermd);
-    legacy_wuffs_oracle_module.addImport("scripty", scripty);
-    legacy_wuffs_oracle_module.addImport("superhtml", superhtml);
-    legacy_wuffs_oracle_module.addImport("wuffs", wuffs.module("wuffs"));
-    const wuffs_oracle_module = b.createModule(.{
-        .root_source_file = b.path("src/wuffs_oracle_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    wuffs_oracle_module.addImport("legacy_wuffs", legacy_wuffs_oracle_module);
-    wuffs_oracle_module.addImport("image_dimensions", image_dimensions_module);
-    const wuffs_oracle_tests = b.addTest(.{
-        .root_module = wuffs_oracle_module,
-    });
-    const run_wuffs_oracle_tests = b.addRunArtifact(wuffs_oracle_tests);
     const test_image_dimensions_step = b.step(
         "test-image-dimensions",
-        "Run image-dimension compatibility tests",
+        "Run image-dimension parser and file-probe tests",
     );
     test_image_dimensions_step.dependOn(&run_image_dimensions_tests.step);
     test_image_dimensions_step.dependOn(&run_image_dimensions_property_tests.step);
     test_image_dimensions_step.dependOn(&run_image_dimensions_file_tests.step);
-    test_image_dimensions_step.dependOn(&run_wuffs_oracle_tests.step);
     test_step.dependOn(&run_image_dimensions_tests.step);
     test_step.dependOn(&run_image_dimensions_property_tests.step);
     test_step.dependOn(&run_image_dimensions_file_tests.step);
-    test_step.dependOn(&run_wuffs_oracle_tests.step);
     const markdown_tests = b.addTest(.{
         .root_module = markdown,
     });
