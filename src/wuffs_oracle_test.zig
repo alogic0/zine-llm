@@ -15,6 +15,8 @@ const cases = [_]Case{
     .{ .name = "png", .bytes = &fixtures.png, .first_complete_prefix = 41 },
     .{ .name = "gif", .bytes = &fixtures.gif, .first_complete_prefix = 22 },
     .{ .name = "jpeg SOF0", .bytes = &fixtures.jpeg, .first_complete_prefix = fixtures.jpeg.len },
+    .{ .name = "jpeg APP1 before SOF0", .bytes = &fixtures.jpeg_app, .first_complete_prefix = fixtures.jpeg_app.len },
+    .{ .name = "jpeg progressive SOF2", .bytes = &fixtures.jpeg_progressive, .first_complete_prefix = fixtures.jpeg_progressive.len },
     .{ .name = "BMP INFOHEADER", .bytes = &fixtures.bmp_info, .first_complete_prefix = fixtures.bmp_info.len },
     .{ .name = "BMP COREHEADER", .bytes = &fixtures.bmp_core, .first_complete_prefix = fixtures.bmp_core.len },
     .{ .name = "WebP VP8", .bytes = &fixtures.webp_vp8, .width = 1, .height = 1, .first_complete_prefix = null },
@@ -89,4 +91,11 @@ test "fixed-layout Zig results match Wuffs" {
         try std.testing.expectEqual(old.w, new.dimensions.width);
         try std.testing.expectEqual(old.h, new.dimensions.height);
     }
+}
+
+test "JPEG Zig result matches Wuffs" {
+    const old = try legacy.parseImageSize(std.testing.allocator, &fixtures.jpeg);
+    const new = try image_dimensions.parse(&fixtures.jpeg);
+    try std.testing.expectEqual(old.w, new.dimensions.width);
+    try std.testing.expectEqual(old.h, new.dimensions.height);
 }

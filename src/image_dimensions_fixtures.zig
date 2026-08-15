@@ -6,6 +6,8 @@ pub const height: u32 = 23;
 pub const png = makePng(width, height);
 pub const gif = makeGif(width, height);
 pub const jpeg = makeJpeg(width, height);
+pub const jpeg_app = makeJpegWithApp(width, height);
+pub const jpeg_progressive = makeJpegMarker(width, height, 0xC2);
 pub const bmp_info = makeBmpInfo(width, height);
 pub const bmp_core = makeBmpCore(width, height);
 pub const webp_vp8 = makeWebpVp8();
@@ -38,13 +40,26 @@ fn makeGif(w: u16, h: u16) [23]u8 {
 }
 
 fn makeJpeg(w: u16, h: u16) [15]u8 {
+    return makeJpegMarker(w, h, 0xC0);
+}
+
+fn makeJpegMarker(w: u16, h: u16, marker: u8) [15]u8 {
     var bytes: [15]u8 = @splat(0);
-    bytes[0..5].* = .{ 0xFF, 0xD8, 0xFF, 0xC0, 0x00 };
+    bytes[0..5].* = .{ 0xFF, 0xD8, 0xFF, marker, 0x00 };
     bytes[5] = 11;
     bytes[6] = 8;
     std.mem.writeInt(u16, bytes[7..9], h, .big);
     std.mem.writeInt(u16, bytes[9..11], w, .big);
     bytes[11..15].* = .{ 1, 1, 0x11, 0 };
+    return bytes;
+}
+
+fn makeJpegWithApp(w: u16, h: u16) [24]u8 {
+    var bytes: [24]u8 = @splat(0);
+    bytes[0..4].* = .{ 0xFF, 0xD8, 0xFF, 0xE1 };
+    std.mem.writeInt(u16, bytes[4..6], 7, .big);
+    bytes[6..11].* = "Exif\x00".*;
+    bytes[11..24].* = makeJpeg(w, h)[2..15].*;
     return bytes;
 }
 

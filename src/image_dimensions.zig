@@ -54,6 +54,12 @@ pub fn parse(bytes: []const u8) ProbeError!Result {
         .different => {},
     }
 
+    switch (signature(bytes, &.{ 0xFF, 0xD8 })) {
+        .match => return .{ .format = .jpeg, .dimensions = try parseJpeg(bytes) },
+        .prefix => return error.Truncated,
+        .different => {},
+    }
+
     return error.UnsupportedFormat;
 }
 
@@ -145,6 +151,57 @@ fn parseBmp(bytes: []const u8) ProbeError!Dimensions {
     return dimensions;
 }
 
+fn parseJpeg(bytes: []const u8) ProbeError!Dimensions {
+    var offset: usize = 2;
+    while (true) {
+        try requireLen(bytes, std.math.add(usize, offset, 2) catch return error.DimensionOverflow);
+        if (bytes[offset] != 0xFF) return error.Malformed;
+
+        while (offset < bytes.len and bytes[offset] == 0xFF) : (offset += 1) {}
+        if (offset == bytes.len) return error.Truncated;
+
+        const marker = bytes[offset];
+        offset += 1;
+        switch (marker) {
+            0x00 => return error.Malformed,
+            0x01, 0xD0...0xD7 => continue,
+            0xD8 => return error.Malformed,
+            0xD9, 0xDA => return error.Malformed,
+            else => {},
+        }
+
+        try requireLen(bytes, std.math.add(usize, offset, 2) catch return error.DimensionOverflow);
+        const segment_len = readU16Be(bytes, offset);
+        if (segment_len < 2) return error.Malformed;
+        const segment_end = std.math.add(usize, offset, segment_len) catch return error.DimensionOverflow;
+        try requireLen(bytes, segment_end);
+
+        if (isJpegSof(marker)) {
+            if (segment_len < 8) return error.Malformed;
+            const precision = bytes[offset + 2];
+            const height = readU16Be(bytes, offset + 3);
+            const width = readU16Be(bytes, offset + 5);
+            const component_count = bytes[offset + 7];
+            if (precision == 0 or width == 0 or height == 0 or component_count == 0) {
+                return error.Malformed;
+            }
+            const component_bytes = std.math.mul(u16, component_count, 3) catch return error.DimensionOverflow;
+            const expected_len = std.math.add(u16, 8, component_bytes) catch return error.DimensionOverflow;
+            if (segment_len != expected_len) return error.Malformed;
+            return .{ .width = width, .height = height };
+        }
+
+        offset = segment_end;
+    }
+}
+
+fn isJpegSof(marker: u8) bool {
+    return switch (marker) {
+        0xC0...0xC3, 0xC5...0xC7, 0xC9...0xCB, 0xCD...0xCF => true,
+        else => false,
+    };
+}
+
 fn validateBmpBitDepth(bit_depth: u16) ProbeError!void {
     switch (bit_depth) {
         1, 4, 8, 16, 24, 32 => {},
@@ -158,6 +215,10 @@ fn requireLen(bytes: []const u8, required: usize) ProbeError!void {
 
 fn readU16Le(bytes: []const u8, offset: usize) u16 {
     return std.mem.readInt(u16, bytes[offset..][0..2], .little);
+}
+
+fn readU16Be(bytes: []const u8, offset: usize) u16 {
+    return std.mem.readInt(u16, bytes[offset..][0..2], .big);
 }
 
 fn readU32Le(bytes: []const u8, offset: usize) u32 {

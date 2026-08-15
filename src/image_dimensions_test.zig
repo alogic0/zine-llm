@@ -11,6 +11,9 @@ test "fixed-layout fixtures" {
         .{ .bytes = &fixtures.gif, .format = Format.gif },
         .{ .bytes = &fixtures.bmp_info, .format = Format.bmp },
         .{ .bytes = &fixtures.bmp_core, .format = Format.bmp },
+        .{ .bytes = &fixtures.jpeg, .format = Format.jpeg },
+        .{ .bytes = &fixtures.jpeg_app, .format = Format.jpeg },
+        .{ .bytes = &fixtures.jpeg_progressive, .format = Format.jpeg },
     };
 
     inline for (cases) |case| {
@@ -27,6 +30,8 @@ test "fixed-layout required-header truncations" {
         .{ .bytes = &fixtures.gif, .required = 13 },
         .{ .bytes = &fixtures.bmp_info, .required = fixtures.bmp_info.len },
         .{ .bytes = &fixtures.bmp_core, .required = fixtures.bmp_core.len },
+        .{ .bytes = &fixtures.jpeg, .required = fixtures.jpeg.len },
+        .{ .bytes = &fixtures.jpeg_app, .required = fixtures.jpeg_app.len },
     };
 
     inline for (cases) |case| {
@@ -81,4 +86,26 @@ test "fixed-layout malformed and unsupported headers" {
     try std.testing.expectError(error.UnsupportedVariant, parse(&bmp));
 
     try std.testing.expectError(error.UnsupportedFormat, parse("not an image"));
+}
+
+test "JPEG marker walking" {
+    var with_fill_and_tem: [19]u8 = @splat(0);
+    with_fill_and_tem[0..6].* = .{ 0xFF, 0xD8, 0xFF, 0x01, 0xFF, 0xFF };
+    with_fill_and_tem[6..19].* = fixtures.jpeg[2..15].*;
+    const result = try parse(&with_fill_and_tem);
+    try std.testing.expectEqual(Format.jpeg, result.format);
+    try std.testing.expectEqual(fixtures.width, result.dimensions.width);
+    try std.testing.expectEqual(fixtures.height, result.dimensions.height);
+
+    var bad_length = fixtures.jpeg_app;
+    std.mem.writeInt(u16, bad_length[4..6], 1, .big);
+    try std.testing.expectError(error.Malformed, parse(&bad_length));
+
+    var zero_height = fixtures.jpeg;
+    std.mem.writeInt(u16, zero_height[7..9], 0, .big);
+    try std.testing.expectError(error.Malformed, parse(&zero_height));
+
+    try std.testing.expectError(error.Malformed, parse(&.{ 0xFF, 0xD8, 0xFF, 0xD9 }));
+    try std.testing.expectError(error.Malformed, parse(&.{ 0xFF, 0xD8, 0xFF, 0xDA, 0, 2 }));
+    try std.testing.expectError(error.Truncated, parse(&.{ 0xFF, 0xD8, 0xFF, 0xE1, 0, 20 }));
 }
