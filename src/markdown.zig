@@ -978,6 +978,21 @@ test "tilde fenced code blocks" {
     );
 }
 
+test "reference links and images" {
+    try testRender(
+        "[first][id] [id][] [id] ![alt][id]\n\n[id]: /target\n",
+        "<p><a href=\"/target\">first</a> <a href=\"/target\">id</a> " ++
+            "<a href=\"/target\">id</a> <img src=\"/target\" alt=\"alt\" /></p>\n",
+    );
+}
+
+test "Setext headings" {
+    try testRender(
+        "Level one\n=========\n\nLevel two *with inline*\n---\n",
+        "<h1>Level one</h1>\n<h2>Level two <em>with inline</em></h2>\n",
+    );
+}
+
 test "images" {
     try testRender(
         \\![Alt text](https://example.com/image.png)

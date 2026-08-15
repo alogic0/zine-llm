@@ -818,6 +818,25 @@ test "tilde fenced code retains info and full fence range" {
     try expectRange(code, 0, 16, 1, 1, 3, 4);
 }
 
+test "forward reference links resolve before inline parsing" {
+    var ast = try parseTestAst("[first][id]\n\n[id]: /target\n");
+    defer ast.deinit();
+
+    const link = findType(ast.root(), .LINK).?;
+    try std.testing.expectEqualStrings("/target", link.link().?);
+    try expectRange(link, 0, 11, 1, 1, 1, 11);
+}
+
+test "Setext headings include underline source range" {
+    var ast = try parseTestAst("Heading\n=======\n");
+    defer ast.deinit();
+
+    const heading = findType(ast.root(), .HEADING).?;
+    try std.testing.expectEqual(@as(i32, 1), heading.headingLevel());
+    try std.testing.expectEqualStrings("Heading", try heading.renderPlaintext());
+    try expectRange(heading, 0, 15, 1, 1, 2, 7);
+}
+
 test "source ranges cover nested blocks and fenced code" {
     const source = "> - item\r\n>   continued\r\n\r\n```zig\r\nconst \xCF\x80 = 1;\r\n```\r\n";
     var ast = try parseTestAst(source);

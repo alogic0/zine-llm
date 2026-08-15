@@ -41,6 +41,7 @@ scratch_source_spans: ArrayList(Source.Span) = .empty,
 pending_blocks: ArrayList(Block) = .empty,
 spans: ArrayList(Source.Span) = .empty,
 line_starts: ArrayList(u32) = .empty,
+references: ArrayList(Reference) = .empty,
 source_len: u32 = 0,
 current_line: []const u8 = "",
 current_line_start: u32 = 0,
@@ -49,6 +50,11 @@ current_line_ending_len: u2 = 0,
 allocator: Allocator,
 
 const Parser = @This();
+
+const Reference = struct {
+    label: StringIndex,
+    target: StringIndex,
+};
 
 /// An arbitrary limit on the maximum number of columns in a table so that
 /// table-related metadata maintained by the parser does not require dynamic
@@ -227,6 +233,7 @@ pub fn deinit(p: *Parser) void {
     p.pending_blocks.deinit(p.allocator);
     p.spans.deinit(p.allocator);
     p.line_starts.deinit(p.allocator);
+    p.references.deinit(p.allocator);
     p.* = undefined;
 }
 
@@ -242,6 +249,8 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
     p.current_line_end = line_start + @as(u32, @intCast(line.len)) + line_ending_len;
     p.source_len = @max(p.source_len, p.current_line_end);
 
+    if (try p.consumeReferenceDefinition(line)) return;
+    if (try p.promoteParagraphToSetext(line)) return;
     if (try p.promoteParagraphToTable(line)) return;
 
     var rest_line = line;
@@ -364,6 +373,7 @@ pub fn feedLine(p: *Parser, line: []const u8, line_start: u32, line_ending_len: 
 
 /// Feeds a complete source buffer while preserving LF/CRLF byte widths.
 pub fn feed(p: *Parser, source: []const u8) Allocator.Error!void {
+    try p.scanReferenceDefinitions(source);
     var line_start: usize = 0;
     var pos: usize = 0;
     while (pos < source.len) : (pos += 1) {
@@ -785,6 +795,98 @@ const TableRowStart = struct {
     cells_buffer: [max_table_columns][]const u8,
     cells_len: usize,
 };
+
+const ReferenceDefinition = struct {
+    label: []const u8,
+    target: []const u8,
+};
+
+fn parseReferenceDefinition(line_arg: []const u8) ?ReferenceDefinition {
+    const line = mem.trimStart(u8, line_arg, " \t");
+    if (line.len < 5 or line[0] != '[' or line[1] == '^') return null;
+    const close = mem.findScalar(u8, line[1..], ']') orelse return null;
+    const close_pos = close + 1;
+    if (close_pos == 1 or close_pos + 1 >= line.len or line[close_pos + 1] != ':') return null;
+    var rest = mem.trimStart(u8, line[close_pos + 2 ..], " \t");
+    if (rest.len == 0) return null;
+    const target = if (rest[0] == '<') target: {
+        const end = mem.findScalar(u8, rest[1..], '>') orelse return null;
+        break :target rest[1 .. end + 1];
+    } else target: {
+        const end = mem.findAny(u8, rest, " \t") orelse rest.len;
+        break :target rest[0..end];
+    };
+    return .{ .label = line[1..close_pos], .target = target };
+}
+
+fn registerReference(p: *Parser, definition: ReferenceDefinition) !void {
+    if (p.lookupReference(definition.label) != null) return;
+    try p.references.append(p.allocator, .{
+        .label = try p.addString(definition.label),
+        .target = try p.addString(definition.target),
+    });
+}
+
+fn lookupReference(p: *Parser, label: []const u8) ?Reference {
+    for (p.references.items) |reference| {
+        if (std.ascii.eqlIgnoreCase(p.string(reference.label), label)) return reference;
+    }
+    return null;
+}
+
+fn string(p: Parser, index: StringIndex) []const u8 {
+    const start: usize = @backingInt(index);
+    const end = mem.findScalarPos(u8, p.string_bytes.items, start, 0).?;
+    return p.string_bytes.items[start..end];
+}
+
+fn scanReferenceDefinitions(p: *Parser, source: []const u8) !void {
+    var lines = mem.splitScalar(u8, source, '\n');
+    while (lines.next()) |raw_line| {
+        const line = mem.trimEnd(u8, raw_line, "\r");
+        if (parseReferenceDefinition(line)) |definition| try p.registerReference(definition);
+    }
+}
+
+fn consumeReferenceDefinition(p: *Parser, line: []const u8) !bool {
+    const definition = parseReferenceDefinition(line) orelse return false;
+    while (p.pending_blocks.items.len > 0) try p.closeLastBlock();
+    try p.registerReference(definition);
+    return true;
+}
+
+fn promoteParagraphToSetext(p: *Parser, delimiter_line: []const u8) !bool {
+    if (p.pending_blocks.items.len == 0 or p.pending_blocks.last().?.tag != .paragraph) return false;
+    const delimiter = mem.trim(u8, delimiter_line, " \t");
+    if (delimiter.len == 0) return false;
+    const level: u3 = switch (delimiter[0]) {
+        '=' => 1,
+        '-' => 2,
+        else => return false,
+    };
+    for (delimiter) |c| if (c != delimiter[0]) return false;
+
+    const paragraph = p.pending_blocks.last().?;
+    const content_with_newline = p.scratch_string.items[paragraph.string_start..];
+    if (content_with_newline.len == 0 or content_with_newline[content_with_newline.len - 1] != '\n') return false;
+    const content = content_with_newline[0 .. content_with_newline.len - 1];
+    if (mem.findScalar(u8, content, '\n') != null) return false;
+
+    _ = p.pending_blocks.pop();
+    const children = try p.parseInlines(
+        content,
+        p.scratch_source_spans.items[paragraph.string_start..][0..content.len],
+    );
+    const heading = try p.addNode(.{
+        .tag = .heading,
+        .data = .{ .heading = .{ .level = level, .children = children } },
+    }, .{ .start = paragraph.source_span.start, .end = p.currentContentEnd() });
+    p.scratch_string.items.len = paragraph.string_start;
+    p.scratch_source_spans.items.len = paragraph.string_start;
+    p.scratch_extra.items.len = paragraph.extra_start;
+    try p.addScratchExtraNode(heading);
+    return true;
+}
 
 fn promoteParagraphToTable(p: *Parser, delimiter_line: []const u8) !bool {
     if (p.pending_blocks.items.len == 0 or p.pending_blocks.last().?.tag != .paragraph) return false;
@@ -1365,27 +1467,42 @@ const InlineParser = struct {
             else => unreachable,
         };
 
-        if (ip.pos + 1 >= ip.content.len or ip.content[ip.pos + 1] != '(') return;
         const text_end = ip.pos;
-
-        const target_start = text_end + 2;
-        var target_end = target_start;
-        var nesting_level: usize = 1;
-        while (target_end < ip.content.len) : (target_end += 1) {
-            switch (ip.content[target_end]) {
-                '\\' => target_end += 1,
-                '(' => nesting_level += 1,
-                ')' => {
-                    if (nesting_level == 1) break;
-                    nesting_level -= 1;
-                },
-                else => {},
+        var target: StringIndex = undefined;
+        var link_end: usize = undefined;
+        if (ip.pos + 1 < ip.content.len and ip.content[ip.pos + 1] == '(') {
+            const target_start = text_end + 2;
+            var target_end = target_start;
+            var nesting_level: usize = 1;
+            while (target_end < ip.content.len) : (target_end += 1) {
+                switch (ip.content[target_end]) {
+                    '\\' => target_end += 1,
+                    '(' => nesting_level += 1,
+                    ')' => {
+                        if (nesting_level == 1) break;
+                        nesting_level -= 1;
+                    },
+                    else => {},
+                }
+            } else return;
+            target = try ip.encodeLinkTarget(target_start, target_end);
+            link_end = target_end + 1;
+        } else {
+            var label = ip.content[text_start..text_end];
+            var end = text_end + 1;
+            if (text_end + 1 < ip.content.len and ip.content[text_end + 1] == '[') {
+                const label_end = mem.findScalarPos(u8, ip.content, text_end + 2, ']') orelse return;
+                const explicit_label = ip.content[text_end + 2 .. label_end];
+                if (explicit_label.len > 0) label = explicit_label;
+                end = label_end + 1;
             }
-        } else return;
-        ip.pos = target_end;
+            const resolved = ip.parent.lookupReference(label) orelse return;
+            target = resolved.target;
+            link_end = end;
+        }
+        ip.pos = link_end - 1;
 
         const children = try ip.encodeChildren(text_start, text_end);
-        const target = try ip.encodeLinkTarget(target_start, target_end);
 
         const link = try ip.parent.addNode(.{
             .tag = switch (opener.tag) {
@@ -1397,11 +1514,11 @@ const InlineParser = struct {
                 .target = target,
                 .children = children,
             } },
-        }, ip.sourceSpan(opener.start, ip.pos + 1));
+        }, ip.sourceSpan(opener.start, link_end));
         try ip.completed_inlines.append(ip.parent.allocator, .{
             .node = link,
             .start = opener.start,
-            .len = ip.pos - opener.start + 1,
+            .len = link_end - opener.start,
         });
     }
 
