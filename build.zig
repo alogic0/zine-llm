@@ -455,6 +455,24 @@ pub fn build(b: *std.Build) !void {
     );
     test_markdown_concurrency_step.dependOn(&run_markdown_concurrency_tests.step);
     test_step.dependOn(&run_markdown_concurrency_tests.step);
+    const markdown_property_module = b.createModule(.{
+        .root_source_file = b.path("src/markdown_property_test.zig"),
+        .target = target,
+        .optimize = .debug,
+    });
+    markdown_property_module.addImport("supermd", supermd);
+    markdown_property_module.addImport("scripty", scripty);
+    markdown_property_module.addImport("superhtml", superhtml);
+    const markdown_property_tests = b.addTest(.{
+        .root_module = markdown_property_module,
+    });
+    const run_markdown_property_tests = b.addRunArtifact(markdown_property_tests);
+    const test_markdown_properties_step = b.step(
+        "test-markdown-properties",
+        "Property-test malformed and generated Markdown inputs",
+    );
+    test_markdown_properties_step.dependOn(&run_markdown_property_tests.step);
+    test_step.dependOn(&run_markdown_property_tests.step);
     const markdown_benchmark = b.addExecutable(.{
         .name = "markdown-benchmark",
         .root_module = b.createModule(.{

@@ -551,11 +551,14 @@ fn stripTrailingSlash(path: []const u8) []const u8 {
 }
 
 fn sourceRange(source: []const u8, start: u32, end: u32) SyntaxAst.Range {
+    const source_len: u32 = @intCast(source.len);
+    const bounded_start = @min(start, source_len);
+    const bounded_end = @max(bounded_start, @min(end, source_len));
     return .{
-        .start = sourcePosition(source, start),
-        .end = sourcePosition(source, end),
-        .start_byte = start,
-        .end_byte = end,
+        .start = sourcePosition(source, bounded_start),
+        .end = sourcePosition(source, bounded_end),
+        .start_byte = bounded_start,
+        .end_byte = bounded_end,
     };
 }
 
@@ -882,6 +885,17 @@ test "inline HTML policy permits inline HTML but rejects HTML blocks" {
     try std.testing.expectEqual(@as(usize, 1), block_ast.errors.len);
     try std.testing.expect(block_ast.errors[0].kind == .inline_html);
     try std.testing.expect(block_ast.errors[0].main.isKnown());
+}
+
+test "fenced HTML diagnostics stay within truncated source" {
+    const source = "```=html\n<";
+    var ast = try Ast.init(std.testing.allocator, source, .{});
+    defer ast.deinit();
+
+    try std.testing.expectEqual(@as(usize, 1), ast.errors.len);
+    try std.testing.expect(ast.errors[0].kind == .html);
+    try std.testing.expect(ast.errors[0].main.isKnown());
+    try std.testing.expect(ast.errors[0].main.end_byte <= source.len);
 }
 
 test "link titles are separated before Scripty evaluation" {
