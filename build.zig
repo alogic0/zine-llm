@@ -465,6 +465,26 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_semantic_markdown_tests.step);
     test_step.dependOn(&run_markdown_backend_tests.step);
 
+    const test_markdown_modes_step = b.step(
+        "test-markdown-modes",
+        "Run Markdown tests in debug, safe, fast, and small modes",
+    );
+    for ([_]std.builtin.OptimizeMode{ .debug, .safe, .fast, .small }) |mode| {
+        const mode_module = b.createModule(.{
+            .root_source_file = b.path("src/markdown/Backend.zig"),
+            .target = target,
+            .optimize = mode,
+        });
+        mode_module.addImport("supermd", supermd);
+        mode_module.addImport("scripty", scripty);
+        mode_module.addImport("superhtml", superhtml);
+        const mode_tests = b.addTest(.{ .root_module = mode_module });
+        mode_tests.name = b.fmt("markdown-tests-{s}", .{@tagName(mode)});
+        const run_mode_tests = b.addRunArtifact(mode_tests);
+        run_mode_tests.setName(b.fmt("test Markdown in {s} mode", .{@tagName(mode)}));
+        test_markdown_modes_step.dependOn(&run_mode_tests.step);
+    }
+
     setupSchemaCheck(b, target, zine_mod, test_step);
     try setupSnapshotTesting(b, target, zine_exe, test_step);
 
