@@ -139,7 +139,7 @@ pub const Section = struct {
         const zone = tracy.trace(@src());
         defer zone.end();
 
-        index.parse(io, gpa, worker.cmark, cfg, drafts, null, variant);
+        index.parse(io, gpa, cfg, drafts, null, variant);
         s.active = index._parse.active;
         s.forbid_subsections = index._parse.forbid_subsections;
     }

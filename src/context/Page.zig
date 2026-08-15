@@ -309,7 +309,6 @@ pub fn parse(
     p: *Page,
     io: Io,
     gpa: Allocator,
-    cmark: markdown_backend.ParserContext,
     cfg: *const root.Config,
     drafts: bool,
     progress: ?std.Progress.Node,
@@ -426,7 +425,7 @@ pub fn parse(
 
     // const smd_start = std.mem.indexOf(u8, full_src[meta.doc.end..], "---").? + "---".len + meta.doc.end;
     const smd_start = meta.doc.end;
-    const ast = markdown_backend.parse(gpa, full_src[smd_start..], cmark, .{
+    const ast = markdown_backend.parse(gpa, full_src[smd_start..], .{
         .auto_target_blank = cfg.supermd.auto_target_blank,
     }) catch fatal.oom();
 

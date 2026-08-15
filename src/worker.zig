@@ -202,7 +202,6 @@ inline fn runOneJob(
         .page_parse => |pp| pp.page.parse(
             io,
             gpa,
-            cmark,
             pp.cfg,
             pp.drafts,
             pp.progress,

@@ -26,17 +26,19 @@ pub const ParseOptions = struct {
 pub fn parse(
     gpa: Allocator,
     source: []const u8,
-    cmark: ParserContext,
     parse_options: ParseOptions,
 ) !Ast {
     return if (is_zig)
         Semantic.Ast.init(gpa, source, .{
             .auto_target_blank = parse_options.auto_target_blank,
         })
-    else
-        supermd.Ast.init(gpa, source, cmark, .{
+    else blk: {
+        const cmark = ParserContext.default();
+        defer supermd.c.cmark_parser_free(cmark.parser);
+        break :blk supermd.Ast.init(gpa, source, cmark, .{
             .auto_target_blank = parse_options.auto_target_blank,
         });
+    };
 }
 
 pub fn deinit(ast: *Ast, gpa: Allocator) void {
@@ -266,10 +268,8 @@ test "selected Markdown backend has the compatibility boundary" {
 
 test "selected backend parses and owns its AST" {
     if (!is_zig) supermd.c.cmark_gfm_core_extensions_ensure_registered();
-    const parser: ParserContext = if (is_zig) undefined else .default();
-    defer if (!is_zig) supermd.c.cmark_parser_free(parser.parser);
 
-    var ast = try parse(std.testing.allocator, "# Heading\n", parser, .{});
+    var ast = try parse(std.testing.allocator, "# Heading\n", .{});
     defer deinit(&ast, std.testing.allocator);
     try std.testing.expect(root(&ast).firstChild().?.nodeType() == .HEADING);
 }
