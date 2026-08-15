@@ -322,6 +322,9 @@ Deliverable: every node used in a diagnostic has an accurate range.
 
 ### Phase 4: Reach required CommonMark/GFM syntax coverage
 
+Status: complete. The implemented compatibility surface and deliberate
+boundaries are recorded in `src/markdown/FEATURES.md`.
+
 Implement missing features one at a time, each with parser, AST, renderer, and differential tests:
 
 1. Soft breaks and raw HTML recognition.

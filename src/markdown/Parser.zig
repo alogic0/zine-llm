@@ -1600,7 +1600,7 @@ const InlineParser = struct {
         const string_top = ip.parent.string_bytes.items.len;
         errdefer ip.parent.string_bytes.shrinkRetainingCapacity(string_top);
 
-        var text_iter: TextIterator = .{ .content = ip.content[start..end] };
+        var text_iter: TextIterator = .{ .content = ip.content[start..end], .smart = false };
         while (text_iter.next()) |content| {
             switch (content) {
                 .char => |c| try ip.parent.string_bytes.append(ip.parent.allocator, c),
@@ -2085,6 +2085,7 @@ const InlineParser = struct {
     const TextIterator = struct {
         content: []const u8,
         pos: usize = 0,
+        smart: bool = true,
 
         const Content = union(enum) {
             char: u8,
@@ -2094,12 +2095,44 @@ const InlineParser = struct {
         };
 
         const replacement = "\u{FFFD}";
+        const ellipsis = "\u{2026}";
+        const en_dash = "\u{2013}";
+        const em_dash = "\u{2014}";
+        const left_single_quote = "\u{2018}";
+        const right_single_quote = "\u{2019}";
+        const left_double_quote = "\u{201C}";
+        const right_double_quote = "\u{201D}";
 
         fn next(iter: *TextIterator) ?Content {
             if (iter.pos >= iter.content.len) return null;
             if (iter.content[iter.pos] == '\n') {
                 iter.pos += 1;
                 return .soft_break;
+            }
+            if (iter.smart) {
+                const rest = iter.content[iter.pos..];
+                if (mem.startsWith(u8, rest, "...")) {
+                    iter.pos += 3;
+                    return .{ .text = ellipsis };
+                }
+                if (mem.startsWith(u8, rest, "---")) {
+                    iter.pos += 3;
+                    return .{ .text = em_dash };
+                }
+                if (mem.startsWith(u8, rest, "--")) {
+                    iter.pos += 2;
+                    return .{ .text = en_dash };
+                }
+                if (iter.content[iter.pos] == '\'' or iter.content[iter.pos] == '"') {
+                    const quote = iter.content[iter.pos];
+                    const opens = iter.pos == 0 or isWhitespace(iter.content[iter.pos - 1]) or
+                        isOpeningPunctuation(iter.content[iter.pos - 1]);
+                    iter.pos += 1;
+                    return .{ .text = if (quote == '\'')
+                        (if (opens) left_single_quote else right_single_quote)
+                    else
+                        (if (opens) left_double_quote else right_double_quote) };
+                }
             }
             if (iter.content[iter.pos] == '\\') {
                 iter.pos += 1;
@@ -2147,6 +2180,13 @@ const InlineParser = struct {
         }
     };
 };
+
+fn isOpeningPunctuation(c: u8) bool {
+    return switch (c) {
+        '(', '[', '{', '<' => true,
+        else => false,
+    };
+}
 
 fn parseInlines(p: *Parser, content: []const u8, source_spans: []const Source.Span) !ExtraIndex {
     assert(content.len == source_spans.len);

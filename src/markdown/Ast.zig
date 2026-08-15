@@ -837,6 +837,15 @@ test "Setext headings include underline source range" {
     try expectRange(heading, 0, 15, 1, 1, 2, 7);
 }
 
+test "smart punctuation retains original source range" {
+    var ast = try parseTestAst("\"Hi\" -- it's...\n");
+    defer ast.deinit();
+
+    const paragraph = ast.root().firstChild().?;
+    try std.testing.expectEqualStrings("“Hi” – it’s…", try paragraph.renderPlaintext());
+    try expectRange(paragraph.firstChild().?, 0, 15, 1, 1, 1, 15);
+}
+
 test "source ranges cover nested blocks and fenced code" {
     const source = "> - item\r\n>   continued\r\n\r\n```zig\r\nconst \xCF\x80 = 1;\r\n```\r\n";
     var ast = try parseTestAst(source);

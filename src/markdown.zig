@@ -777,7 +777,7 @@ test "blockquotes" {
     ,
         \\<blockquote>
         \\<blockquote>
-        \\<p>You miss 100% of the shots you don't take.</p>
+        \\<p>You miss 100% of the shots you don’t take.</p>
         \\<p>~ Wayne Gretzky</p>
         \\</blockquote>
         \\<p>~ Michael Scott</p>
@@ -910,11 +910,11 @@ test "text autolinks" {
         \\
     ,
         \\<p>Text autolinks must start with http:// or https://.
-        \\This doesn't count: ftp://example.com.
+        \\This doesn’t count: ftp://example.com.
         \\Example: <a href="https://ziglang.org">https://ziglang.org</a>.
         \\Here is an important link: <strong><a href="http://example.com">http://example.com</a></strong>
         \\(Links may be in parentheses: <a href="https://example.com/?q=(parens)">https://example.com/?q=(parens)</a>)
-        \\Escaping a link so it's plain text: https://example.com</p>
+        \\Escaping a link so it’s plain text: https://example.com</p>
         \\
     );
 }
@@ -993,6 +993,14 @@ test "Setext headings" {
     );
 }
 
+test "smart punctuation excludes code and destinations" {
+    try testRender(
+        "\"Hello,\" she said -- it's... --- ok.\n\n[link](/a--b) `code--...`\n",
+        "<p>“Hello,” she said – it’s… — ok.</p>\n" ++
+            "<p><a href=\"/a--b\">link</a> <code>code--...</code></p>\n",
+    );
+}
+
 test "images" {
     try testRender(
         \\![Alt text](https://example.com/image.png)
@@ -1027,9 +1035,9 @@ test "emphasis" {
         \\<p><em>Emphasis.</em>
         \\<strong>Strong.</strong>
         \\<em><strong>Strong emphasis.</strong></em>
-        \\<em><strong><em>More...</em></strong></em>
-        \\<em><strong><strong>MORE...</strong></strong></em>
-        \\<em><strong><em><strong>Even more...</strong></em></strong></em>
+        \\<em><strong><em>More…</em></strong></em>
+        \\<em><strong><strong>MORE…</strong></strong></em>
+        \\<em><strong><em><strong>Even more…</strong></em></strong></em>
         \\<em><strong><em><strong><em>OK, this is enough.</em></strong></em></strong></em></p>
         \\
     );
@@ -1046,9 +1054,9 @@ test "emphasis" {
         \\<p><em>Emphasis.</em>
         \\<strong>Strong.</strong>
         \\<em><strong>Strong emphasis.</strong></em>
-        \\<em><strong><em>More...</em></strong></em>
-        \\<em><strong><strong>MORE...</strong></strong></em>
-        \\<em><strong><em><strong>Even more...</strong></em></strong></em>
+        \\<em><strong><em>More…</em></strong></em>
+        \\<em><strong><strong>MORE…</strong></strong></em>
+        \\<em><strong><em><strong>Even more…</strong></em></strong></em>
         \\<em><strong><em><strong><em>OK, this is enough.</em></strong></em></strong></em></p>
         \\
     );
