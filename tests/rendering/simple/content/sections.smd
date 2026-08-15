@@ -5,7 +5,7 @@
 .draft = false,
 --- 
 
-# [H1]($section.id('h1'))
+# [H1]($section.id('h1')) <https://example.com/heading>
 Lorem Ipsum 1
 
 ## [H2]($section.id('h2'))

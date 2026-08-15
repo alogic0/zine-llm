@@ -753,6 +753,27 @@ test "semantic directives are attached through AST sidecars" {
     );
 }
 
+test "autolinks retain visible children and honor target blank options" {
+    const source = "<https://example.com/path>\n";
+    var ast = try Ast.init(std.testing.allocator, source, .{
+        .auto_target_blank = true,
+    });
+    defer ast.deinit();
+
+    const link = ast.root().firstChild().?.firstChild().?;
+    const directive = link.getDirective().?;
+    try std.testing.expect(directive.kind == .link);
+    try std.testing.expectEqualStrings(
+        "https://example.com/path",
+        directive.kind.link.src.?.url,
+    );
+    try std.testing.expectEqual(true, directive.kind.link.new.?);
+    try std.testing.expectEqualStrings(
+        "https://example.com/path",
+        link.firstChild().?.literal().?,
+    );
+}
+
 test "semantic analysis builds IDs, references, sections, and footnotes" {
     const source =
         \\# [Intro]($section.id('intro'))

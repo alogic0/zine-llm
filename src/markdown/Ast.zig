@@ -742,6 +742,43 @@ test "source ranges cross CRLF in multiline links" {
     try expectRange(last_text, 7, 10, 2, 2, 2, 4);
 }
 
+test "autolinks expose compatible link children and exact ranges" {
+    const angle_target = "https://example.com";
+    const plain_target = "https://example.org/path";
+    const source = "<" ++ angle_target ++ "> " ++ plain_target ++ ".\n";
+    var ast = try parseTestAst(source);
+    defer ast.deinit();
+
+    const paragraph = ast.root().firstChild().?;
+    const angle_link = paragraph.firstChild().?;
+    const angle_text = angle_link.firstChild().?;
+    try std.testing.expectEqual(NodeType.LINK, angle_link.nodeType());
+    try std.testing.expectEqual(NodeType.TEXT, angle_text.nodeType());
+    try std.testing.expectEqualStrings(angle_target, angle_link.link().?);
+    try std.testing.expectEqualStrings(angle_target, angle_text.literal().?);
+    try std.testing.expect(angle_text.nextSibling() == null);
+    try expectRange(angle_link, 0, angle_target.len + 2, 1, 1, 1, angle_target.len + 2);
+    try expectRange(angle_text, 1, angle_target.len + 1, 1, 2, 1, angle_target.len + 1);
+
+    const separator = angle_link.nextSibling().?;
+    const plain_link = separator.nextSibling().?;
+    const plain_text = plain_link.firstChild().?;
+    const plain_start = angle_target.len + 3;
+    try std.testing.expectEqualStrings(" ", separator.literal().?);
+    try std.testing.expectEqualStrings(plain_target, plain_link.link().?);
+    try std.testing.expectEqualStrings(plain_target, plain_text.literal().?);
+    try expectRange(
+        plain_link,
+        plain_start,
+        plain_start + plain_target.len,
+        1,
+        plain_start + 1,
+        1,
+        plain_start + plain_target.len,
+    );
+    try std.testing.expectEqualStrings(".", plain_link.nextSibling().?.literal().?);
+}
+
 test "raw HTML nodes retain literal content and ranges" {
     var ast = try parseTestAst("<div>\nblock\n</div>\n\nbefore <i>x</i> after\n");
     defer ast.deinit();
