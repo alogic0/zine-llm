@@ -342,6 +342,12 @@ Deliverable: the agreed Zine/CommonMark/GFM feature matrix is green.
 
 ### Phase 5: Port the SuperMD semantic pass
 
+Status: complete. `src/markdown/Semantic.zig` parses directly into the pure-Zig
+AST, evaluates the existing SuperMD/Scripty directive context, attaches semantic
+sidecars and structural transformations, builds Zine's semantic indexes, and
+reports source-backed validation errors. The renderer-independent compatibility
+fixture and snapshot live in `tests/markdown-semantic/`.
+
 1. Run semantic analysis over the pure-Zig document.
 2. Recognize directive-bearing link/image destinations.
 3. Normalize angle-bracket destinations without losing source spans.

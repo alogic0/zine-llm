@@ -1,0 +1,16 @@
+# [Intro]($section.id('intro'))
+
+> # [Note]($block.id('note').collapsible(true))
+> Body.
+
+[Photo]($image.asset('photo.jpg'))
+
+[`x + y`](<$mathtex>)
+
+See [intro](#intro), [missing](#missing), and note[^one] twice[^one].
+
+[duplicate]($text.id('intro'))
+
+<span>raw</span>
+
+[^one]: Footnote body.

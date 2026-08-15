@@ -1,0 +1,28 @@
+directives:
+  3 HEADING 0..31 section id=intro
+  2 LINK 2..31 link
+  9 BLOCK_QUOTE 33..88 block id=note
+  5 LINK 37..80 block id=note
+  11 LINK 90..124 image
+  14 LINK 126..147 mathtex
+  17 LINK 153..168 link
+  19 LINK 170..189 link
+  29 LINK 220..250 text id=intro
+ids:
+  intro -> 3 HEADING
+  note -> 9 BLOCK_QUOTE
+  fn-1 -> 37 FOOTNOTE_DEFINITION
+  fn-1-ref-1 -> 20 FOOTNOTE_REFERENCE
+  fn-1-ref-2 -> 21 FOOTNOTE_REFERENCE
+references:
+  intro -> 17
+  missing -> 19
+sections:
+  intro -> 3
+footnotes:
+  one: def=fn-1 refs=fn-1-ref-1,fn-1-ref-2
+errors:
+  duplicate_id 220..250
+  inline_html 252..258
+  inline_html 261..268
+  invalid_ref 170..189

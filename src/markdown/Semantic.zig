@@ -122,6 +122,56 @@ pub const Ast = struct {
     }
 };
 
+pub fn writeSnapshot(ast: Ast, writer: *std.Io.Writer) std.Io.Writer.Error!void {
+    try writer.writeAll("directives:\n");
+    var iterator = Markdown.Iter.init(ast.root());
+    defer iterator.deinit();
+    while (iterator.next()) |event| {
+        if (event.dir != .enter) continue;
+        const directive = event.node.getDirective() orelse continue;
+        const range = event.node.range();
+        try writer.print("  {} {s} {}..{} {s}", .{
+            @backingInt(event.node.index),
+            @tagName(event.node.nodeType()),
+            range.start_byte,
+            range.end_byte,
+            @tagName(std.meta.activeTag(directive.kind)),
+        });
+        if (directive.id) |id| try writer.print(" id={s}", .{id});
+        try writer.writeByte('\n');
+    }
+
+    try writer.writeAll("ids:\n");
+    for (ast.ids.keys(), ast.ids.values()) |id, node| {
+        try writer.print("  {s} -> {} {s}\n", .{ id, @backingInt(node.index), @tagName(node.nodeType()) });
+    }
+    try writer.writeAll("references:\n");
+    for (ast.referenced_ids.keys(), ast.referenced_ids.values()) |id, node| {
+        try writer.print("  {s} -> {}\n", .{ id, @backingInt(node.index) });
+    }
+    try writer.writeAll("sections:\n");
+    for (ast.sections.keys(), ast.sections.values()) |id, node| {
+        try writer.print("  {s} -> {}\n", .{ id, @backingInt(node.index) });
+    }
+    try writer.writeAll("footnotes:\n");
+    for (ast.footnotes.keys(), ast.footnotes.values()) |label, footnote| {
+        try writer.print("  {s}: def={s} refs=", .{ label, footnote.def_id });
+        for (footnote.ref_ids, 0..) |ref_id, index| {
+            if (index != 0) try writer.writeByte(',');
+            try writer.writeAll(ref_id);
+        }
+        try writer.writeByte('\n');
+    }
+    try writer.writeAll("errors:\n");
+    for (ast.errors) |semantic_error| {
+        try writer.print("  {s} {}..{}\n", .{
+            @tagName(std.meta.activeTag(semantic_error.kind)),
+            semantic_error.main.start_byte,
+            semantic_error.main.end_byte,
+        });
+    }
+}
+
 const Analyzer = struct {
     allocator: Allocator,
     options: Options,
@@ -141,7 +191,14 @@ const Analyzer = struct {
         var iterator = Markdown.Iter.init(root);
         defer iterator.deinit();
         while (iterator.next()) |event| switch (event.dir) {
-            .enter => try analyzer.enter(event.node),
+            .enter => {
+                try analyzer.enter(event.node);
+                if (event.node.getDirective()) |directive| {
+                    // Math validation detaches the queued code child. Resume
+                    // after the link instead of following that stale event.
+                    if (directive.kind == .mathtex) iterator.reset(event.node, .exit);
+                }
+            },
             .exit => {},
         };
         try analyzer.buildFootnotes(root);
@@ -683,4 +740,29 @@ test "semantic transformations preserve sections blocks captions and math" {
     try std.testing.expect(math.getDirective().?.kind == .mathtex);
     try std.testing.expectEqualStrings("x + y", math.getDirective().?.kind.mathtex.formula);
     try std.testing.expect(math.firstChild() == null);
+}
+
+test "semantic snapshot is independent of HTML rendering" {
+    const gpa = std.testing.allocator;
+    const source = try std.Io.Dir.cwd().readFileAlloc(
+        std.testing.io,
+        "tests/markdown-semantic/semantic.smd",
+        gpa,
+        .limited(1024 * 1024),
+    );
+    defer gpa.free(source);
+    const expected = try std.Io.Dir.cwd().readFileAlloc(
+        std.testing.io,
+        "tests/markdown-semantic/semantic.snapshot",
+        gpa,
+        .limited(1024 * 1024),
+    );
+    defer gpa.free(expected);
+
+    var ast = try Ast.init(gpa, source, .{});
+    defer ast.deinit();
+    var output: std.Io.Writer.Allocating = .init(gpa);
+    defer output.deinit();
+    try writeSnapshot(ast, &output.writer);
+    try std.testing.expectEqualStrings(expected, output.written());
 }
