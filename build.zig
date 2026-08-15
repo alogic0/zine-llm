@@ -372,6 +372,39 @@ pub fn build(b: *std.Build) !void {
     check.dependOn(&zine_exe.step);
     b.installArtifact(zine_exe);
 
+    const test_workflows_step = b.step(
+        "test-workflows",
+        "Smoke-test disk release and the live development server",
+    );
+    const workflow_release = b.addRunArtifact(zine_exe);
+    workflow_release.addArg("release");
+    workflow_release.addArg("--force");
+    const workflow_release_output = workflow_release.addPrefixedOutputDirectoryArg(
+        "--output=",
+        "workflow-release",
+    );
+    workflow_release.setCwd(b.path("tests/rendering/simple"));
+    workflow_release.has_side_effects = true;
+    const verify_workflow_release = b.addSystemCommand(&.{ "test", "-f" });
+    verify_workflow_release.addFileArg(workflow_release_output.path(b, "index.html"));
+    verify_workflow_release.setName("verify disk release output");
+    test_workflows_step.dependOn(&verify_workflow_release.step);
+
+    const serve_smoke = b.addSystemCommand(&.{"sh"});
+    serve_smoke.addFileArg(b.path("build/serve_smoke.sh"));
+    serve_smoke.addArtifactArg2(zine_exe, .{ .make_absolute = true });
+    serve_smoke.addDirectoryArg2(
+        b.path("tests/rendering/simple"),
+        .{ .make_absolute = true },
+    );
+    _ = serve_smoke.addOutputFileArg2(
+        "serve-smoke.log",
+        .{ .make_absolute = true },
+    );
+    serve_smoke.addArg("19131");
+    serve_smoke.setName("smoke-test live development server");
+    test_workflows_step.dependOn(&serve_smoke.step);
+
     const run_step = b.step("run", "run the standalone zine executable");
     const zine_run = b.addRunArtifact(zine_exe);
     zine_run.setCwd(b.path("standalone-test"));
@@ -619,7 +652,7 @@ fn setupSnapshotTesting(
                 "snapshot",
             });
 
-            _ = b.run(&.{ "rm", "-rf", snapshot_path });
+            const remove_snapshot = b.addSystemCommand(&.{ "rm", "-rf", snapshot_path });
 
             const run_zine = b.addRunArtifact(zine_exe);
             run_zine.addArg("release");
@@ -627,6 +660,7 @@ fn setupSnapshotTesting(
             run_zine.addArg("--output=snapshot");
             run_zine.setCwd(b.path(src_path));
             run_zine.has_side_effects = true;
+            run_zine.step.dependOn(&remove_snapshot.step);
 
             const stderr_out = run_zine.captureStdErr(.{});
             const update_snap = b.addUpdateSourceFiles();
@@ -659,7 +693,7 @@ fn setupSnapshotTesting(
                 "snapshot",
             });
 
-            _ = b.run(&.{ "rm", "-rf", snapshot_path });
+            const remove_snapshot = b.addSystemCommand(&.{ "rm", "-rf", snapshot_path });
 
             const run_zine = b.addRunArtifact(zine_exe);
             run_zine.addArg("release");
@@ -668,6 +702,7 @@ fn setupSnapshotTesting(
             run_zine.addArg("--output=snapshot");
             run_zine.setCwd(b.path(src_path));
             run_zine.has_side_effects = true;
+            run_zine.step.dependOn(&remove_snapshot.step);
 
             const stderr_out = run_zine.captureStdErr(.{});
             const update_snap = b.addUpdateSourceFiles();
