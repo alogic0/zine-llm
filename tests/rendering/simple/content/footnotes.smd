@@ -1,0 +1,22 @@
+---
+.title = "Footnotes",
+.date = .date("2020-07-06T00:00:00"),
+.layout = "footnotes.shtml",
+.draft = false,
+---
+
+Undefined reference stays literal[^missing].
+
+Truncated reference stays literal [^truncated.
+
+[^before]: This definition appears before its reference.
+
+Definition before reference[^before].
+
+Forward reference[^Forward] and repeated reference[^FORWARD].
+
+> Nested reference[^nested].
+
+[^forward]: Forward definition with **formatting**.
+
+[^nested]: Nested definition.

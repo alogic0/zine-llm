@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title :text="$site.title"></title>
+  </head>
+  <body>
+    <h1 :text="$page.title"></h1>
+    <div :html="$page.content()"></div>
+<ctx :if="$page.footnotes?()">
+<ol class="footnotes" :loop="$if">
+<li id="$loop.it.def_id">
+<ctx :html="$loop.it.html()"></ctx>
+<ctx :loop="$loop.it.ref_ids">
+<a href="$loop.it.prefix('#')" :html="$loop.idx"></a>
+</ctx>
+</li>
+</ol>
+</ctx>
+  </body>
+</html>

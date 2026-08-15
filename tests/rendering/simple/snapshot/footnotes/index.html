@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Simple Test Website</title>
+  </head>
+  <body>
+    <h1>Footnotes</h1>
+    <div><p>Undefined reference stays literal[^missing].</p><p>Truncated reference stays literal [^truncated.</p><p>Definition before reference<sup class="footnote-ref"><a href="#fn-1" id="fn-1-ref-1">1</a></sup>.</p><p>Forward reference<sup class="footnote-ref"><a href="#fn-2" id="fn-2-ref-1">2</a></sup> and repeated reference<sup class="footnote-ref"><a href="#fn-2" id="fn-2-ref-2">2</a></sup>.</p><blockquote><p>Nested reference<sup class="footnote-ref"><a href="#fn-3" id="fn-3-ref-1">3</a></sup>.</p></blockquote></div>
+
+<ol class="footnotes">
+<li id="fn-1">
+<p>This definition appears before its reference.</p>
+
+<a href="#fn-1-ref-1">1</a>
+
+</li>
+
+<li id="fn-2">
+<p>Forward definition with <strong>formatting</strong>.</p>
+
+<a href="#fn-2-ref-1">1</a>
+
+<a href="#fn-2-ref-2">2</a>
+
+</li>
+
+<li id="fn-3">
+<p>Nested definition.</p>
+
+<a href="#fn-3-ref-1">1</a>
+
+</li>
+</ol>
+
+  </body>
+</html>
