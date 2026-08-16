@@ -1,23 +1,40 @@
-<h1 align="center">Zine</h1>
-<h3 align="center"><em>Fast, Scalable, Flexible Static Site Generator (SSG)</em></h3>
-<p align="center">Zine is pronounced like in <a href="https://en.wikipedia.org/wiki/Zine">fan<em>zine</em></a></a>.</p>
+<h1 align="center">Zine — LLM-Assisted Fork</h1>
+<h3 align="center"><em>Fast, scalable, flexible static site generator</em></h3>
 
-## Development Status
-Zine is still a young project, not yet at feature parity with more popular
-alternatives (e.g. Hugo), but it's perfectly able to handle a personal website
-with a blog.
+This repository is an experimental fork of
+[kristoff-it/zine](https://github.com/kristoff-it/zine). For the original
+project, its official releases, documentation, and contribution policy, visit
+the [upstream repository](https://github.com/kristoff-it/zine).
 
-## Getting Started
-Go to https://zine-ssg.io to get started.
+## About This Fork
 
-## GitHub Actions
-If you plan to build your website with GitHub Actions, take a look at [kristoff-it/setup-zine](https://github.com/marketplace/actions/setup-zine), the official
-GitHub Action to get access to Zine in your runner.
+Development of this fork uses large language models (LLMs) as engineering
+tools. They assist with code exploration, implementation, refactoring, tests,
+documentation, and review. LLM-generated work is not assumed to be correct:
+changes are inspected and validated with the project's test and release gates
+before they are committed.
 
-We also have more complete guides at https://zine-ssg.io/docs/.
+This development approach is specific to this fork and differs from the
+upstream project's contribution policy. This fork is not endorsed by or
+affiliated with the upstream maintainers beyond being derived from their work.
 
+## Project Status
 
-## Contributing
+The fork remains a work in progress and may diverge from upstream in behavior,
+dependencies, and supported Zig versions. Issues and changes in this repository
+should not be assumed to apply to the original project.
 
-- Ask before embarking on doing complicated work that might not be upstreamed.
-- No LLMs, thank you.
+## Documentation
+
+The upstream website at [zine-ssg.io](https://zine-ssg.io) is the best
+introduction to Zine's concepts and usage. Because this fork can diverge,
+verify commands and behavior against the files and documentation in this
+repository.
+
+For the original GitHub Actions integration, see
+[kristoff-it/setup-zine](https://github.com/marketplace/actions/setup-zine).
+
+## License and Attribution
+
+This fork retains the original project's license and attribution. See
+[LICENSE](LICENSE) for details.
