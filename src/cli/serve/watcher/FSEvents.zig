@@ -17,10 +17,11 @@ pub const Api = struct {
         errdefer core_services.close();
 
         var symbols: Symbols = undefined;
-        inline for (@typeInfo(Symbols).@"struct".fields) |field| {
-            @field(symbols, field.name) = core_services.lookup(
-                field.type,
-                field.name,
+        const symbols_info = @typeInfo(Symbols).@"struct";
+        inline for (symbols_info.field_names, symbols_info.field_types) |field_name, field_type| {
+            @field(symbols, field_name) = core_services.lookup(
+                field_type,
+                field_name,
             ) orelse return error.MissingCoreServicesSymbol;
         }
 

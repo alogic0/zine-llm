@@ -16,9 +16,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  ZIG_VERSION: 0.17.0-dev.1756+613c03321
-
 jobs:
   native-tests:
     name: Native tests (${{ matrix.os }})
@@ -38,18 +35,16 @@ jobs:
 
       - name: Set up pinned Zig
         uses: mlugg/setup-zig@v2
-        with:
-          version: ${{ env.ZIG_VERSION }}
 
       - name: Verify Zig version
         run: zig version
 
       - name: Run native tests
-        run: zig build test
+        run: zig build test -Dno-git-version
 
       - name: Exercise the macOS live-reload watcher
         if: runner.os == 'macOS'
-        run: zig build test-workflows
+        run: zig build test-workflows -Dno-git-version
 
   release-targets:
     name: Compile release targets
@@ -63,14 +58,12 @@ jobs:
 
       - name: Set up pinned Zig
         uses: mlugg/setup-zig@v2
-        with:
-          version: ${{ env.ZIG_VERSION }}
 
       - name: Compile all supported release targets
-        run: zig build check-release-targets -Dpreview=true
+        run: zig build check-release-targets -Dpreview=true -Dno-git-version
 
       - name: Verify archive-tool isolation
-        run: zig build test-release-tool-isolation
+        run: zig build test-release-tool-isolation -Dno-git-version
 
   release-archives:
     name: Build and verify release archives
@@ -84,8 +77,11 @@ jobs:
 
       - name: Set up pinned Zig
         uses: mlugg/setup-zig@v2
-        with:
-          version: ${{ env.ZIG_VERSION }}
 
-      - name: Build and verify all release archives
+      - name: Build and verify tagged release archives
+        if: startsWith(github.ref, 'refs/tags/v')
         run: zig build verify-release -Dpreview=true
+
+      - name: Build and verify preview release archives
+        if: github.event_name == 'workflow_dispatch'
+        run: zig build verify-release -Dpreview=true -Dno-git-version
