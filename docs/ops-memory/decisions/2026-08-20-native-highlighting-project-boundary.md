@@ -50,7 +50,7 @@ concerns and can benefit consumers other than Zine.
 
 ## Evidence And Verification
 
-- Initial package: `/home/oleg/prog/zig-native-syntax`.
+- Initial package: independent `zig-native-syntax` repository.
 - Zine experiment branch: `experiment/native-highlighting`.
 - Existing Zine integration points: `src/highlight.zig`, `src/worker.zig`,
   `build.zig`, and `build.zig.zon`.
