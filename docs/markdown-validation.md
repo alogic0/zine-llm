@@ -60,7 +60,8 @@ This creates a disk release in a build-owned output directory and verifies its
 index page. The fixture includes production-rendered autolinks, resolved and
 undefined footnotes, `$page.footnotes?()` output, and tight, loose, and nested
 task lists. The gate also starts the development server, fetches a rendered
-page over HTTP, verifies live-reload injection, and shuts the server down.
+page over HTTP, verifies live-reload injection, changes a source file, waits
+for the watcher to rebuild the page, and shuts the server down.
 
 ## CI and release validation
 

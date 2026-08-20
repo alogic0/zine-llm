@@ -53,7 +53,7 @@ verification with these commands:
 ./build.sh verify-release -Dpreview=true
 ```
 
-Historical Wuffs references remain in the migration plan and baseline report.
-Live source, tests, manifests, and vendored packages contain no Wuffs module,
-C source, translated header, or package dependency. The independent
-`translate_c` dependency remains for `src/c.h`.
+Historical Wuffs and `translate_c` references remain in migration plans and
+baseline reports. Live source, tests, manifests, and vendored packages contain
+neither dependency. The macOS watcher uses a small Zig FSEvents ABI module and
+dynamically loads CoreServices at runtime.

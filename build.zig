@@ -286,10 +286,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const translate_c = b.dependency("translate_c", .{
-        .optimize = .fast,
-    });
-
     const release = b.step("release", "Create release builds of Zine");
     const check_release_targets = b.step(
         "check-release-targets",
@@ -303,7 +299,7 @@ pub fn build(b: *std.Build) !void {
         release.dependOn(&preview_required.step);
         check_release_targets.dependOn(&preview_required.step);
     } else {
-        setupReleaseStep(b, release, check_release_targets, version, translate_c);
+        setupReleaseStep(b, release, check_release_targets, version);
     }
 
     const verify_release_archives = b.addSystemCommand(&.{"sh"});
@@ -358,25 +354,7 @@ pub fn build(b: *std.Build) !void {
             // zine_exe.linkSystemLibrary("inotify");
         },
         .windows => {},
-        .macos => {
-            const Translator = @import("translate_c").Translator;
-            const t: Translator = .init(translate_c, .{
-                .c_source_file = b.path("src/c.h"),
-                .target = target,
-                .optimize = optimize,
-            });
-
-            const frameworks = b.lazyDependency("frameworks", .{}) orelse return;
-            zine_mod.addIncludePath(frameworks.path("include"));
-            zine_mod.addFrameworkPath(frameworks.path("Frameworks"));
-            zine_mod.addLibraryPath(frameworks.path("lib"));
-            zine_mod.linkFramework("CoreServices", .{});
-            t.addIncludePath(frameworks.path("include"));
-            t.addFrameworkPath(frameworks.path("Frameworks"));
-            t.mod.addLibraryPath(frameworks.path("lib"));
-            t.mod.linkFramework("CoreServices", .{});
-            zine_mod.addImport("c", t.mod);
-        },
+        .macos => {},
     }
 
     zine_mod.addImport("ziggy", ziggy);
@@ -437,6 +415,16 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&zine_run.step);
 
     const test_step = b.step("test", "build snapshot tests and diff the results");
+    const macos_fsevents_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/cli/serve/watcher/FSEvents.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const run_macos_fsevents_tests = b.addRunArtifact(macos_fsevents_tests);
+    run_macos_fsevents_tests.setName("test macOS FSEvents ABI");
+    test_step.dependOn(&run_macos_fsevents_tests.step);
     const image_dimensions_module = b.createModule(.{
         .root_source_file = b.path("src/image_dimensions.zig"),
         .target = target,
@@ -918,7 +906,6 @@ fn setupReleaseStep(
     release_step: *std.Build.Step,
     check_release_targets: *std.Build.Step,
     version: []const u8,
-    translate_c: *std.Build.Dependency,
 ) void {
     const targets: []const std.Target.Query = &.{
         .{ .cpu_arch = .aarch64, .os_tag = .macos },
@@ -1001,13 +988,6 @@ fn setupReleaseStep(
             break :blk options.createModule();
         };
 
-        const Translator = @import("translate_c").Translator;
-        const tr: Translator = .init(translate_c, .{
-            .c_source_file = b.path("src/c.h"),
-            .target = target,
-            .optimize = optimize,
-        });
-
         const zine_exe_release = b.addExecutable(.{
             .name = "zine",
             .root_module = b.createModule(.{
@@ -1038,22 +1018,7 @@ fn setupReleaseStep(
                 // zine_exe_release.linkSystemLibrary("inotify");
             },
             .windows => {},
-            .macos => {
-                const frameworks = b.lazyDependency("frameworks", .{
-                    .target = target,
-                    .optimize = optimize,
-                }) orelse return;
-                zine_exe_release.root_module.addIncludePath(frameworks.path("include"));
-                zine_exe_release.root_module.addFrameworkPath(frameworks.path("Frameworks"));
-                zine_exe_release.root_module.addLibraryPath(frameworks.path("lib"));
-                zine_exe_release.root_module.linkFramework("CoreServices", .{});
-                tr.addIncludePath(frameworks.path("include"));
-                tr.addFrameworkPath(frameworks.path("Frameworks"));
-                tr.mod.addLibraryPath(frameworks.path("lib"));
-                tr.mod.linkFramework("CoreServices", .{});
-
-                zine_exe_release.root_module.addImport("c", tr.mod);
-            },
+            .macos => {},
         }
 
         switch (t.os_tag.?) {

@@ -47,6 +47,10 @@ jobs:
       - name: Run native tests
         run: zig build test
 
+      - name: Exercise the macOS live-reload watcher
+        if: runner.os == 'macOS'
+        run: zig build test-workflows
+
   release-targets:
     name: Compile release targets
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

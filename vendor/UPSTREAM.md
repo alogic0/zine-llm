@@ -9,6 +9,5 @@ by Zine's semantic pass.
 | --- | --- | --- | --- |
 | `superhtml` | `kristoff-it/superhtml@23ef2f44ca0df2d2e05a0be3874370553c5b591d` | `superhtml-0.7.0-Y7MdPHKkJgA1s7ycx0okrfwclJaChKuAbTrsjmQ3uGlM` | Replace two removed `ArrayList.getLast()` calls with `last()`. |
 | `supermd` | `kristoff-it/supermd@28af383ecbb4ee861b8b45024475eb74f71b283e` | `supermd-0.1.0-3Mco3OS8WADDwP6qVCK2_GSoTLrjv_vUdM39eKqiFnfO` | Retain the directive/Scripty context only; remove the cmark AST, C header, libraries, and cmark-only dependencies. |
-| `translate-c` | `ziglang/translate-c@330c97b4af783b724586c7ff626cf512afb19c21` | `translate_c-0.0.0-Q_BUWn1CBwC9g-axMDfnTrjyLYRyX-dr34bIHjPPz2Go` | None. Its manifest selects `ziglang/arocc@a4e99cedda3bff1e3a3a388e9f6ed05bbd36e441`. |
 
 The upstream license files are retained inside each package directory.
