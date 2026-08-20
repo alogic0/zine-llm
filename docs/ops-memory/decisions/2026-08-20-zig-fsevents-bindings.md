@@ -48,6 +48,8 @@ a local reference for the dynamic-loading and ABI patterns used here.
 - Runtime workflow: `build/serve_smoke.sh` and `.github/workflows/ci.yml`.
 - Native verification: `./build.sh check`, `./build.sh test`, and
   `./build.sh test-workflows`.
+- Cross-target semantic-check lesson:
+  `../learnings/2026-08-20-macos-target-semantic-check.md`.
 - Authoritative macOS and release-target verification runs in GitHub CI.
 
 ## Revisit When
