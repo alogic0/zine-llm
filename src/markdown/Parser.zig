@@ -689,7 +689,7 @@ fn startBlock(p: *Parser, line: []const u8) !?BlockStart {
             .rest = "",
             .source_start = source_start,
         };
-    } else if (isHtmlBlockStart(unindented)) {
+    } else if (isRawHtmlBlockStart(unindented)) {
         return .{
             .tag = .html_block,
             .data = .{ .none = {} },
@@ -1252,7 +1252,7 @@ fn isThematicBreak(line: []const u8) bool {
     return count >= 3;
 }
 
-fn isHtmlBlockStart(line: []const u8) bool {
+fn isRawHtmlBlockStart(line: []const u8) bool {
     if (line.len < 2 or line[0] != '<') return false;
     if (mem.startsWith(u8, line, "<!--") or
         mem.startsWith(u8, line, "<?") or
@@ -1501,7 +1501,7 @@ const InlineParser = struct {
                     ip.pos += 1;
                 },
                 ']' => try ip.parseLink(),
-                '<' => if (!try ip.parseHtml()) try ip.parseAutolink(),
+                '<' => if (!try ip.parseRawHtmlInline()) try ip.parseAutolink(),
                 '*', '_' => try ip.parseEmphasis(),
                 '~' => try ip.parseStrikethrough(),
                 '`' => try ip.parseCodeSpan(),
@@ -1616,7 +1616,7 @@ const InlineParser = struct {
 
     /// Parses a raw inline HTML tag, comment, declaration, or processing
     /// instruction. Returns whether a node was emitted.
-    fn parseHtml(ip: *InlineParser) !bool {
+    fn parseRawHtmlInline(ip: *InlineParser) !bool {
         const start = ip.pos;
         if (start + 1 >= ip.content.len) return false;
 
