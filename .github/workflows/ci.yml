@@ -1,18 +1,27 @@
 name: CI
+
 on:
   pull_request:
   push:
     branches:
       - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
 concurrency:
-  # Cancels pending runs when a PR gets updated.
-  group: ${{ github.head_ref || github.run_id }}-${{ github.actor }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 permissions:
-  # Sets permission policy for `GITHUB_TOKEN`
   contents: read
+
+env:
+  ZIG_VERSION: 0.17.0-dev.1756+613c03321
+
 jobs:
-  tests:
+  native-tests:
+    name: Native tests (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -20,16 +29,59 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: No autocrlf
+      - name: Disable automatic line-ending conversion
         run: git config --global core.autocrlf false
-        
+
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Change if you need git info
+          fetch-depth: 0
 
-      - name: Setup Zig
+      - name: Set up pinned Zig
         uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
 
-      - name: Build
-        run: zig build test 
-          
+      - name: Verify Zig version
+        run: zig version
+
+      - name: Run native tests
+        run: zig build test
+
+  release-targets:
+    name: Compile release targets
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: native-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pinned Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Compile all supported release targets
+        run: zig build check-release-targets -Dpreview=true
+
+      - name: Verify archive-tool isolation
+        run: zig build test-release-tool-isolation
+
+  release-archives:
+    name: Build and verify release archives
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    needs: native-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pinned Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Build and verify all release archives
+        run: zig build verify-release -Dpreview=true

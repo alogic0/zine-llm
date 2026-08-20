@@ -41,7 +41,10 @@ recorded next to the base64 fixture. Workflow binary inputs are materialized
 from those same arrays into the build cache, so the repository does not carry
 duplicate generated binaries.
 
-Before release, run the cross-target and packaging gates:
+Cross-target and packaging validation runs in GitHub CI, not as part of normal
+local development. Pushes to `main` run the cross-target compilation and
+archive-tool-isolation gates. Version tags and manual CI dispatches run archive
+verification with these commands:
 
 ```sh
 ./build.sh check

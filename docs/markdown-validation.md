@@ -1,8 +1,9 @@
 # Markdown production validation
 
 The pure-Zig Markdown and SuperMD pipeline has dedicated performance,
-concurrency, robustness, workflow, and release gates. Run commands from the
-repository root through `build.sh` so they use the pinned Zig compiler.
+concurrency, robustness, workflow, and release gates. Run local commands from
+the repository root through `build.sh` so they use the pinned Zig compiler.
+Normal local validation builds and tests only the current host architecture.
 
 ## Performance and memory
 
@@ -61,7 +62,7 @@ undefined footnotes, `$page.footnotes?()` output, and tight, loose, and nested
 task lists. The gate also starts the development server, fetches a rendered
 page over HTTP, verifies live-reload injection, and shuts the server down.
 
-## Release targets
+## CI and release validation
 
 ```sh
 ./build.sh test-release-tool-isolation
@@ -69,6 +70,11 @@ page over HTTP, verifies live-reload injection, and shuts the server down.
 ./build.sh release -Dpreview=true
 ./build.sh verify-release -Dpreview=true
 ```
+
+These all-target commands belong to GitHub CI and release automation; normal
+local development does not require them. Pushes to `main` run the compile-only
+and archive-tool-isolation gates. Version tags and manual CI dispatches build
+and verify the release archives.
 
 The archive-tool isolation gate removes `tar`, `gtar`, `zip`, and `xz` from
 `PATH`; it proves that `check`, `test`, and `check-release-targets` still pass
