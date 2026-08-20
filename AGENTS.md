@@ -4,6 +4,25 @@ When creating a commit, first create a temporary file and write the complete com
 into that file. Then create the commit with `git commit -F path_to_temp_file`. Do not use
 `git commit -m`. Remove the temporary file after the commit succeeds.
 
+## Pinned Zig And Target-Specific Validation
+
+Treat `.minimum_zig_version` in `build.zig.zon` as the compiler source of truth
+and use `./build.sh` for normal local build and test commands. Do not assume that
+`zig` on `PATH` is the pinned compiler.
+
+Host tests are insufficient for code eliminated by target-specific comptime
+branches. When changing macOS-only watcher code, use the compiler executable
+declared in `build.sh` to run this compile-only check before relying on CI:
+
+```sh
+<pinned-zig> test src/cli/serve/watcher/FSEvents.zig \
+  -target aarch64-macos -fno-emit-bin
+```
+
+This check verifies target-specific semantic analysis but does not replace the
+native macOS CI tests for symbol resolution and live-reload behavior. See
+`docs/ops-memory/learnings/2026-08-20-macos-target-semantic-check.md`.
+
 ## Shared Engineering Memory
 
 `docs/ops-memory/` is durable engineering memory shared by human and AI-assisted
