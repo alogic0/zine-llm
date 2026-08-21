@@ -183,6 +183,30 @@ Incomplete:
 RUN echo ${NAME
 ```
 
+# [Python Code]($section.id('python'))
+```python
+@decorator
+class Entry:
+    enabled: bool = True
+
+    def render(self, count: int = 1_000) -> str:
+        return f"{count} <&>\n"
+```
+
+Malformed:
+
+```python
+def broken(x:
+    return "unterminated\n<&>
+```
+
+Incomplete:
+
+```python
+text = """unfinished
+<&>
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

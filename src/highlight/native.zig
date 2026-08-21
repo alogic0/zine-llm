@@ -13,6 +13,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     }
     if (std.mem.eql(u8, name, "dockerfile")) return core.languages.dockerfile.backend;
     if (std.mem.eql(u8, name, "json")) return core.languages.json.backend;
+    if (std.mem.eql(u8, name, "python")) return core.languages.python.backend;
     if (std.mem.eql(u8, name, "rust")) return core.languages.rust.backend;
     if (std.mem.eql(u8, name, "toml")) return core.languages.toml.backend;
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
@@ -65,12 +66,13 @@ test "only completed canonical languages use native backends" {
         "css",
         "superhtml",
         "markdown",
+        "python",
     };
     for (native_languages) |language| {
         try std.testing.expect(backendFor(language) != null);
     }
 
-    try std.testing.expectEqual(null, backendFor("python"));
+    try std.testing.expectEqual(null, backendFor("java"));
     try std.testing.expectEqual(null, backendFor("shtml"));
 }
 
@@ -149,8 +151,8 @@ test "native routing renders completed languages and declines fallback languages
     defer fallback_output.deinit();
     try std.testing.expect(!try render(
         std.testing.allocator,
-        "python",
-        "def main(): pass",
+        "java",
+        "class Main {}",
         &fallback_output.writer,
     ));
     try std.testing.expectEqual(@as(usize, 0), fallback_output.written().len);

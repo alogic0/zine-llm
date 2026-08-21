@@ -268,7 +268,7 @@ test "native-only renders unsupported languages as escaped plain text" {
     try run(
         std.testing.io,
         std.testing.allocator,
-        "python",
+        "java",
         "<tag>&",
         &out.writer,
     );

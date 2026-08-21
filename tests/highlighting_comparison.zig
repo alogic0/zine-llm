@@ -160,6 +160,36 @@ test "native Dockerfile recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native Python recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "@decorator\nclass Entry:\n    def render(self, value: int = 1_000) -> str:\n        return f\"{value} <&>\\n\"\n",
+            .native_scopes = &.{ .attribute, .keyword, .type, .function, .variable, .builtin, .number, .string, .escape, .operator, .punctuation },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "def broken(x:\n    return \"unterminated\\n<&>\n",
+            .native_scopes = &.{ .keyword, .function, .variable, .string, .escape },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "text = \"\"\"unfinished\n<&>\n",
+            .native_scopes = &.{ .variable, .string, .operator },
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("python", case.source, case.native_scopes);
+        const tree = try createTree("python", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -171,6 +201,8 @@ fn expectNativeScopes(
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))
         native.languages.dockerfile.backend
+    else if (std.mem.eql(u8, language, "python"))
+        native.languages.python.backend
     else
         return error.UnknownNativeComparisonLanguage;
     var sink: native.CaptureSink = .init(std.testing.allocator, source.len);

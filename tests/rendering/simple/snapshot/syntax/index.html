@@ -106,6 +106,19 @@ name=<span class="syntax-variable">${name:-&quot;&lt;&amp;&gt;&quot;}</span>
 </code></pre>
 <p>Incomplete:</p><pre><code class="dockerfile"><span class="syntax-keyword">RUN</span> echo <span class="syntax-variable">${NAME</span>
 </code></pre>
+</div><div id="python"><h1><a class="" href="#python">Python Code</a></h1><pre><code class="python"><span class="syntax-attribute">@decorator</span>
+<span class="syntax-keyword">class</span> <span class="syntax-type">Entry</span><span class="syntax-operator">:</span>
+    <span class="syntax-variable">enabled</span><span class="syntax-operator">:</span> <span class="syntax-builtin syntax-type">bool</span> <span class="syntax-operator">=</span> <span class="syntax-boolean">True</span>
+
+    <span class="syntax-keyword">def</span> <span class="syntax-function">render</span><span class="syntax-punctuation">(</span><span class="syntax-variable">self</span><span class="syntax-punctuation">,</span> <span class="syntax-variable">count</span><span class="syntax-operator">:</span> <span class="syntax-builtin syntax-type">int</span> <span class="syntax-operator">=</span> <span class="syntax-number">1_000</span><span class="syntax-punctuation">)</span> <span class="syntax-operator">-&gt;</span> <span class="syntax-builtin syntax-type">str</span><span class="syntax-operator">:</span>
+        <span class="syntax-keyword">return</span> <span class="syntax-string">f&quot;{count} &lt;&amp;&gt;</span><span class="syntax-escape syntax-string">\n</span><span class="syntax-string">&quot;</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="python"><span class="syntax-keyword">def</span> <span class="syntax-function">broken</span><span class="syntax-punctuation">(</span><span class="syntax-variable">x</span><span class="syntax-operator">:</span>
+    <span class="syntax-keyword">return</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\n</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="python"><span class="syntax-variable">text</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&quot;&quot;unfinished
+&lt;&amp;&gt;
+</span></code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p><p><figure><pre><code class="json"><span class="syntax-punctuation">{</span><span class="syntax-property">&quot;directive&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-string">&quot;&lt;native &amp; JSON&gt;&quot;</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;enabled&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-boolean">true</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;value&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-number">42</span><span class="syntax-punctuation">}</span>

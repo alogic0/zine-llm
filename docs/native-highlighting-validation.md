@@ -22,15 +22,15 @@ Zine routes these exact canonical language names through native backends:
 - `css`;
 - `superhtml`;
 - `toml`;
-- `markdown`.
+- `markdown`;
+- `python`.
 
 Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
-`diff`, and `md`,
-`smd`, and `supermd` to `markdown`. `zig-native-syntax` exposes only canonical
-backend names.
+`diff`, and `md`, `smd`, and `supermd` to `markdown`. `zig-native-syntax`
+exposes only canonical backend names.
 
 The default `native-first` mode sends every other language through the existing
-`flow-syntax` and Tree-sitter path. The focused routing test uses Python as
+`flow-syntax` and Tree-sitter path. The focused routing test uses Java as
 fallback evidence; the current generated-site rendering fixture no longer
 requires a Tree-sitter language. Alias policy remains Zine-owned.
 
@@ -72,7 +72,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all fifteen native languages,
+The rendering snapshot covers fenced blocks for all sixteen native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -103,6 +103,11 @@ recovers assignment classification after the malformed table line.
 Dockerfile comparison covers parser directives, build stages, flags, variables,
 JSON-form commands, malformed strings, and an incomplete braced variable. It
 does not claim to parse the shell command language embedded in instructions.
+
+Python comparison covers decorators, declarations, annotations, prefixed
+strings, malformed function syntax, and an unterminated triple string. Native
+highlighting remains lexical and does not interpret indentation or f-string
+expressions.
 
 ## First-spike comparison
 
