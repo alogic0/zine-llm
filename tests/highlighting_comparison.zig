@@ -190,6 +190,36 @@ test "native Python recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native SQL recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "SELECT u.\"name\", count(*) FROM users u WHERE enabled = true AND id > :minimum LIMIT 10;\n",
+            .native_scopes = &.{ .keyword, .property, .variable, .function, .boolean, .parameter, .number, .operator, .punctuation },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "SELECT /* open\n name FROM t WHERE value = 'unterminated <&>\n",
+            .native_scopes = &.{ .keyword, .comment },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "SELECT $body$unfinished\n<&>\n",
+            .native_scopes = &.{ .keyword, .string },
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("sql", case.source, case.native_scopes);
+        const tree = try createTree("sql", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -203,6 +233,8 @@ fn expectNativeScopes(
         native.languages.dockerfile.backend
     else if (std.mem.eql(u8, language, "python"))
         native.languages.python.backend
+    else if (std.mem.eql(u8, language, "sql"))
+        native.languages.sql.backend
     else
         return error.UnknownNativeComparisonLanguage;
     var sink: native.CaptureSink = .init(std.testing.allocator, source.len);

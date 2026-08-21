@@ -119,6 +119,17 @@ name=<span class="syntax-variable">${name:-&quot;&lt;&amp;&gt;&quot;}</span>
 <p>Incomplete:</p><pre><code class="python"><span class="syntax-variable">text</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&quot;&quot;unfinished
 &lt;&amp;&gt;
 </span></code></pre>
+</div><div id="sql"><h1><a class="" href="#sql">SQL Code</a></h1><pre><code class="sql"><span class="syntax-keyword">SELECT</span> <span class="syntax-variable">u</span><span class="syntax-punctuation">.</span><span class="syntax-property">&quot;name&quot;</span><span class="syntax-punctuation">,</span> <span class="syntax-function">count</span><span class="syntax-punctuation">(</span><span class="syntax-operator">*</span><span class="syntax-punctuation">)</span> <span class="syntax-keyword">AS</span> <span class="syntax-variable">total</span>
+<span class="syntax-keyword">FROM</span> <span class="syntax-variable">users</span> <span class="syntax-keyword">AS</span> <span class="syntax-variable">u</span>
+<span class="syntax-keyword">WHERE</span> <span class="syntax-variable">u</span><span class="syntax-punctuation">.</span><span class="syntax-variable">enabled</span> <span class="syntax-operator">=</span> <span class="syntax-boolean">true</span> <span class="syntax-keyword">AND</span> <span class="syntax-variable">u</span><span class="syntax-punctuation">.</span><span class="syntax-variable">id</span> <span class="syntax-operator">&gt;</span> <span class="syntax-parameter">:minimum</span>
+<span class="syntax-keyword">LIMIT</span> <span class="syntax-number">10</span><span class="syntax-punctuation">;</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="sql"><span class="syntax-keyword">SELECT</span> <span class="syntax-comment">/* open
+name FROM users WHERE value = &#39;unterminated &lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="sql"><span class="syntax-keyword">SELECT</span> <span class="syntax-string">$body$unfinished
+&lt;&amp;&gt;
+</span></code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p><p><figure><pre><code class="json"><span class="syntax-punctuation">{</span><span class="syntax-property">&quot;directive&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-string">&quot;&lt;native &amp; JSON&gt;&quot;</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;enabled&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-boolean">true</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;value&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-number">42</span><span class="syntax-punctuation">}</span>

@@ -20,6 +20,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     if (std.mem.eql(u8, name, "ziggy")) return @import("native_syntax_ziggy").backend;
     if (std.mem.eql(u8, name, "ziggy-schema")) return @import("native_syntax_ziggy_schema").backend;
     if (std.mem.eql(u8, name, "scripty")) return @import("native_syntax_scripty").backend;
+    if (std.mem.eql(u8, name, "sql")) return core.languages.sql.backend;
     if (std.mem.eql(u8, name, "html")) return @import("native_syntax_html").backend;
     if (std.mem.eql(u8, name, "xml")) return @import("native_syntax_xml").backend;
     if (std.mem.eql(u8, name, "css")) return @import("native_syntax_css").backend;
@@ -61,6 +62,7 @@ test "only completed canonical languages use native backends" {
         "ziggy",
         "ziggy-schema",
         "scripty",
+        "sql",
         "html",
         "xml",
         "css",

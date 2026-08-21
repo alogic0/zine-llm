@@ -207,6 +207,28 @@ text = """unfinished
 <&>
 ```
 
+# [SQL Code]($section.id('sql'))
+```sql
+SELECT u."name", count(*) AS total
+FROM users AS u
+WHERE u.enabled = true AND u.id > :minimum
+LIMIT 10;
+```
+
+Malformed:
+
+```sql
+SELECT /* open
+name FROM users WHERE value = 'unterminated <&>
+```
+
+Incomplete:
+
+```sql
+SELECT $body$unfinished
+<&>
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

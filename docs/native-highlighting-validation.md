@@ -17,6 +17,7 @@ Zine routes these exact canonical language names through native backends:
 - `ziggy`;
 - `ziggy-schema`;
 - `scripty`;
+- `sql`;
 - `html`;
 - `xml`;
 - `css`;
@@ -72,7 +73,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all sixteen native languages,
+The rendering snapshot covers fenced blocks for all seventeen native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -108,6 +109,10 @@ Python comparison covers decorators, declarations, annotations, prefixed
 strings, malformed function syntax, and an unterminated triple string. Native
 highlighting remains lexical and does not interpret indentation or f-string
 expressions.
+
+SQL comparison covers common query tokens, quoted identifiers, functions,
+parameters, an unterminated block comment, and an unterminated dollar-quoted
+body. The native scanner remains deliberately dialect-neutral.
 
 ## First-spike comparison
 
