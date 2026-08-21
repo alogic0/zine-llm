@@ -15,7 +15,11 @@ Zine routes these exact canonical language names through native backends:
 - `html`;
 - `xml`;
 - `css`;
-- `superhtml`.
+- `superhtml`;
+- `markdown`.
+
+Zine also maps the consumer-owned aliases `md`, `smd`, and `supermd` to the
+canonical Markdown backend. `zig-native-syntax` exposes only `markdown`.
 
 Every other language continues through the existing `flow-syntax` and
 Tree-sitter path. In particular, the rendering fixture retains Rust as
@@ -30,10 +34,11 @@ The focused and host-architecture gates are:
 ./build.sh test-workflows
 ```
 
-The rendering snapshot covers fenced blocks for all eight native languages,
-HTML-sensitive source bytes, a `$code.siteAsset(...).language('zig')`
-directive, and `String.syntaxHighlight('zig')`. A build test also requires the
-starter stylesheet to mention every stable native scope class.
+The rendering snapshot covers fenced blocks for all nine native languages,
+including Markdown structural scopes and escaped raw HTML, HTML-sensitive
+source bytes, a `$code.siteAsset(...).language('zig')` directive, and
+`String.syntaxHighlight('zig')`. A build test also requires the starter
+stylesheet to mention every stable native scope class.
 
 ## First-spike comparison
 
@@ -91,6 +96,13 @@ did expose these integration constraints:
 - Zine must configure and import each selected optional backend explicitly.
   This is consistent with keeping unused parser packages out of core-only
   consumers.
+- Markdown highlighting consumes the independent `zig-markdown-parser`
+  package through its public read-only traversal API. Zine retains SuperMD
+  semantics and aliases, so no dependency path leads back from the highlighter
+  into Zine.
+- Raw HTML is initially classified as embedded Markdown content, and fenced
+  code is classified as one Markdown code region. Nested HTML and language
+  composition remain deferred consumer-configuration work.
 - Zine's existing `highlight` build option currently enables the combined
   native-plus-Tree-sitter graph. Separating native selection from fallback
   removal belongs to the later backend-selection migration, not this spike.

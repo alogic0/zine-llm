@@ -45,6 +45,9 @@ concerns and can benefit consumers other than Zine.
   malformed or incomplete snippets.
 - Language backends should be selectable so consumers do not compile unused
   parsers.
+- A reusable parser needed by both Zine and a highlighting adapter must have an
+  independent package boundary; adapters must not depend back on Zine-owned
+  semantic layers.
 - Removing Tree-sitter remains a separate compatibility decision because the
   native package does not initially cover all currently supported languages.
 
@@ -55,8 +58,10 @@ concerns and can benefit consumers other than Zine.
 - Existing Zine integration points: `src/highlight.zig`, `src/worker.zig`,
   `build.zig`, and `build.zig.zon`.
 - Initial package verification: `./build.sh test` from the package root.
-- The first integration spike routes eight canonical languages natively while
-  retaining Tree-sitter for Rust and every other unsupported language.
+- The integration routes nine canonical languages natively while retaining
+  Tree-sitter for Rust and every other unsupported language. Markdown uses the
+  independent `zig-markdown-parser` package, while Zine owns its `md`, `smd`,
+  and `supermd` aliases and SuperMD semantics.
 - Focused commands, first-spike measurements, output checks, and API findings
   are recorded in
   [Native Highlighting Integration Validation](../../native-highlighting-validation.md).
