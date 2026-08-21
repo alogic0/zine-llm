@@ -6,6 +6,10 @@ const Writer = std.Io.Writer;
 const options = @import("options");
 const tracy = @import("tracy");
 const HtmlSafe = @import("superhtml").HtmlSafe;
+const native = if (options.enable_treesitter)
+    @import("highlight/native.zig")
+else
+    struct {};
 
 pub const DotsToUnderscores = struct {
     bytes: []const u8,
@@ -114,6 +118,13 @@ pub fn run(
         return;
     }
 
+    const handled_natively = native.render(arena, lang_name, code, w) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        error.WriteFailed => return error.WriteFailed,
+        else => return error.Unknown,
+    };
+    if (handled_natively) return;
+
     // Horrible hack
     query_cache.io = io;
 
@@ -209,6 +220,11 @@ pub fn run(
         try current_classes.getClasses(arena, &class_list);
         try printSpan(arena, w, code, current_pos, code.len, class_list.items);
     }
+}
+
+pub fn hasNativeBackend(language: []const u8) bool {
+    if (!options.enable_treesitter) return false;
+    return native.backendFor(language) != null;
 }
 
 pub fn runConsole(w: *Writer, source: []const u8) Writer.Error!void {

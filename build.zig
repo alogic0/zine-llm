@@ -196,7 +196,7 @@ pub fn build(b: *std.Build) !void {
     const highlight = b.option(
         bool,
         "highlight",
-        "Include treesitter grammars for build-time syntax highlighting (enabled by default). Disabling reduces executable size significantly.",
+        "Include native and Tree-sitter build-time syntax highlighting (enabled by default). Disabling reduces executable size significantly.",
     ) orelse true;
     const zine_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
@@ -280,6 +280,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     const treez = ts.module("treez");
+    const native_syntax = nativeSyntaxDependency(b, target, optimize);
 
     const mime = b.dependency("mime", .{
         .target = target,
@@ -368,6 +369,7 @@ pub fn build(b: *std.Build) !void {
     if (highlight) {
         zine_mod.addImport("syntax", syntax.module("syntax"));
         zine_mod.addImport("treez", treez);
+        addNativeSyntaxImports(zine_mod, native_syntax);
     }
 
     const check = b.step("check", "check the standalone zine executable");
@@ -415,6 +417,23 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&zine_run.step);
 
     const test_step = b.step("test", "build snapshot tests and diff the results");
+    const native_highlight_test_module = b.createModule(.{
+        .root_source_file = b.path("src/highlight/native.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    addNativeSyntaxImports(native_highlight_test_module, native_syntax);
+    const native_highlight_tests = b.addTest(.{
+        .root_module = native_highlight_test_module,
+    });
+    const run_native_highlight_tests = b.addRunArtifact(native_highlight_tests);
+    run_native_highlight_tests.setName("test native highlighting routing");
+    const test_native_highlighting_step = b.step(
+        "test-native-highlighting",
+        "Run native highlighting integration tests",
+    );
+    test_native_highlighting_step.dependOn(&run_native_highlight_tests.step);
+    test_step.dependOn(&run_native_highlight_tests.step);
     const macos_fsevents_tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/cli/serve/watcher/FSEvents.zig"),
@@ -968,6 +987,7 @@ fn setupReleaseStep(
         });
 
         const treez = ts.module("treez");
+        const native_syntax = nativeSyntaxDependency(b, target, optimize);
 
         const mime = b.dependency("mime", .{
             .target = target,
@@ -1006,6 +1026,7 @@ fn setupReleaseStep(
         zine_exe_release.root_module.addImport("zeit", zeit);
         zine_exe_release.root_module.addImport("syntax", syntax.module("syntax"));
         zine_exe_release.root_module.addImport("treez", treez);
+        addNativeSyntaxImports(zine_exe_release.root_module, native_syntax);
         zine_exe_release.root_module.addImport("tracy", tracy.module("tracy"));
         zine_exe_release.root_module.addImport("mime", mime.module("mime"));
 
@@ -1069,6 +1090,38 @@ fn setupReleaseStep(
             },
         }
     }
+}
+
+fn nativeSyntaxDependency(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) *std.Build.Dependency {
+    return b.dependency("zig_native_syntax", .{
+        .target = target,
+        .optimize = optimize,
+        .@"backend-ziggy" = true,
+        .@"backend-ziggy-schema" = true,
+        .@"backend-scripty" = true,
+        .@"backend-html" = true,
+        .@"backend-xml" = true,
+        .@"backend-css" = true,
+        .@"backend-superhtml" = true,
+    });
+}
+
+fn addNativeSyntaxImports(
+    module: *std.Build.Module,
+    dependency: *std.Build.Dependency,
+) void {
+    module.addImport("native_syntax", dependency.module("native_syntax"));
+    module.addImport("native_syntax_ziggy", dependency.module("native_syntax_ziggy"));
+    module.addImport("native_syntax_ziggy_schema", dependency.module("native_syntax_ziggy_schema"));
+    module.addImport("native_syntax_scripty", dependency.module("native_syntax_scripty"));
+    module.addImport("native_syntax_html", dependency.module("native_syntax_html"));
+    module.addImport("native_syntax_xml", dependency.module("native_syntax_xml"));
+    module.addImport("native_syntax_css", dependency.module("native_syntax_css"));
+    module.addImport("native_syntax_superhtml", dependency.module("native_syntax_superhtml"));
 }
 
 fn getVersion(b: *std.Build, no_git_version: bool) []const u8 {

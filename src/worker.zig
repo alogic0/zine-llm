@@ -1200,6 +1200,7 @@ pub fn languageExists(language: ?[]const u8) bool {
     if (std.mem.eql(u8, lang, "=html")) return true;
     if (std.mem.eql(u8, lang, "=mathtex")) return true;
     if (std.mem.eql(u8, lang, "console")) return true;
+    if (highlight.hasNativeBackend(lang)) return true;
 
     const syntax = @import("syntax");
     if (syntax.FileType.get_by_name_static(lang) == null) {
