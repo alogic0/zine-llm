@@ -13,6 +13,7 @@ Zine routes these exact canonical language names through native backends:
 - `diff`;
 - `dockerfile`;
 - `json`;
+- `javascript`;
 - `rust`;
 - `zig`;
 - `ziggy`;
@@ -28,8 +29,8 @@ Zine routes these exact canonical language names through native backends:
 - `python`.
 
 Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
-`diff`, and `md`, `smd`, and `supermd` to `markdown`. `zig-native-syntax`
-exposes only canonical backend names.
+`diff`, `js` to `javascript`, and `md`, `smd`, and `supermd` to `markdown`.
+`zig-native-syntax` exposes only canonical backend names.
 
 The default `native-first` mode sends every other language through the existing
 `flow-syntax` and Tree-sitter path. The focused routing test uses Java as
@@ -74,7 +75,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all eighteen native languages,
+The rendering snapshot covers fenced blocks for all nineteen native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -119,6 +120,11 @@ C comparison covers preprocessing lines, documentation comments, declarations,
 literal escapes, malformed macro/function input, and an unterminated block
 comment. The native backend remains independent of the compiler-grade Aro
 pipeline.
+
+JavaScript comparison covers classes, private properties, async methods,
+templates, malformed function/template input, and an unterminated block
+comment through the `js` alias. Regex disambiguation and JSX remain outside the
+lexical backend.
 
 ## First-spike comparison
 

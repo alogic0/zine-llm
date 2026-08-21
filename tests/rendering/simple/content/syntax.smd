@@ -254,6 +254,30 @@ Incomplete:
 int hidden(void);
 ```
 
+# [JavaScript Code]($section.id('javascript'))
+```javascript
+/** Documentation <&>. */
+export class Entry {
+  #value = 1_000;
+  async render(ok = true) {
+    return `${this.#value} <&>\n`;
+  }
+}
+```
+
+Malformed:
+
+```javascript
+function broken(value { return `unfinished ${value}\n<&>
+```
+
+Incomplete alias:
+
+```js
+/* unfinished
+const hidden = true;
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 
