@@ -331,6 +331,38 @@ text: |
 next: false
 ```
 
+# [HCL Code]($section.id('hcl'))
+```hcl
+variable "image" {
+  type    = string
+  default = null
+}
+
+locals {
+  enabled = true
+  name    = format("service-${var.image}<&>")
+  text    = <<-EOF
+    line <&>
+  EOF
+}
+```
+
+Malformed:
+
+```hcl
+root {
+  value = "unterminated\u12<&>
+  next = true
+}
+```
+
+Incomplete heredoc:
+
+```hcl
+text = <<-EOF
+  unfinished <&>
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

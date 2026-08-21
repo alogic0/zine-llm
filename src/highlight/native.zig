@@ -13,6 +13,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
         return core.languages.diff.backend;
     }
     if (std.mem.eql(u8, name, "dockerfile")) return core.languages.dockerfile.backend;
+    if (std.mem.eql(u8, name, "hcl")) return core.languages.hcl.backend;
     if (std.mem.eql(u8, name, "json")) return core.languages.json.backend;
     if (std.mem.eql(u8, name, "javascript") or std.mem.eql(u8, name, "js")) {
         return core.languages.javascript.backend;
@@ -66,6 +67,7 @@ test "only completed canonical languages use native backends" {
         "c",
         "diff",
         "dockerfile",
+        "hcl",
         "json",
         "javascript",
         "rust",
