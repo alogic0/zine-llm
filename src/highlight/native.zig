@@ -8,6 +8,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     {
         return core.languages.bash.backend;
     }
+    if (std.mem.eql(u8, name, "rust")) return core.languages.rust.backend;
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
     if (std.mem.eql(u8, name, "ziggy")) return @import("native_syntax_ziggy").backend;
     if (std.mem.eql(u8, name, "ziggy-schema")) return @import("native_syntax_ziggy_schema").backend;
@@ -44,6 +45,7 @@ pub fn render(
 test "only completed canonical languages use native backends" {
     const native_languages = [_][]const u8{
         "bash",
+        "rust",
         "zig",
         "ziggy",
         "ziggy-schema",
@@ -58,7 +60,7 @@ test "only completed canonical languages use native backends" {
         try std.testing.expect(backendFor(language) != null);
     }
 
-    try std.testing.expectEqual(null, backendFor("rust"));
+    try std.testing.expectEqual(null, backendFor("python"));
     try std.testing.expectEqual(null, backendFor("shtml"));
 }
 
@@ -96,8 +98,8 @@ test "native routing renders completed languages and declines fallback languages
     defer fallback_output.deinit();
     try std.testing.expect(!try render(
         std.testing.allocator,
-        "rust",
-        "fn main() {}",
+        "python",
+        "def main(): pass",
         &fallback_output.writer,
     ));
     try std.testing.expectEqual(@as(usize, 0), fallback_output.written().len);
