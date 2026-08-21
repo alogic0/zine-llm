@@ -83,6 +83,17 @@ name=<span class="syntax-variable">${name:-&quot;&lt;&amp;&gt;&quot;}</span>
 </code></pre>
 <p>Incomplete:</p><pre><code class="patch"><span class="syntax-operator">+</span>++
 </code></pre>
+</div><div id="toml"><h1><a class="" href="#toml">TOML Code</a></h1><pre><code class="toml"><span class="syntax-property">title</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;Zine &lt;&amp;&gt;&quot;</span>
+<span class="syntax-property">enabled</span> <span class="syntax-operator">=</span> <span class="syntax-boolean">true</span>
+<span class="syntax-property">count</span> <span class="syntax-operator">=</span> <span class="syntax-number">1_024</span>
+<span class="syntax-punctuation">[</span><span class="syntax-namespace">package</span><span class="syntax-punctuation">.</span><span class="syntax-namespace">metadata</span><span class="syntax-punctuation">]</span>
+<span class="syntax-property">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;line</span><span class="syntax-escape syntax-string">\n</span><span class="syntax-string">quote=</span><span class="syntax-escape syntax-string">\&quot;</span><span class="syntax-string">&quot;</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="toml"><span class="syntax-punctuation">[</span><span class="syntax-namespace">package</span>
+<span class="syntax-property">value</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="toml"><span class="syntax-property">enabled</span> <span class="syntax-operator">=</span> tru
+</code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p><p><figure><pre><code class="json"><span class="syntax-punctuation">{</span><span class="syntax-property">&quot;directive&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-string">&quot;&lt;native &amp; JSON&gt;&quot;</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;enabled&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-boolean">true</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;value&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-number">42</span><span class="syntax-punctuation">}</span>

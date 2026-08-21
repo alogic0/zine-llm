@@ -20,6 +20,7 @@ Zine routes these exact canonical language names through native backends:
 - `xml`;
 - `css`;
 - `superhtml`;
+- `toml`;
 - `markdown`.
 
 Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
@@ -70,7 +71,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all thirteen native languages,
+The rendering snapshot covers fenced blocks for all fourteen native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -93,6 +94,10 @@ Diff comparison covers complete, malformed, and incomplete unified-patch
 lines. The native backend intentionally classifies patch structure only and
 leaves changed payload plain, avoiding false claims about the embedded source
 language.
+
+TOML comparison covers complete tables and scalars, an unterminated table and
+string with a partial escape, and an incomplete boolean. The native backend
+recovers assignment classification after the malformed table line.
 
 ## First-spike comparison
 

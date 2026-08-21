@@ -138,6 +138,28 @@ Incomplete:
 +++
 ```
 
+# [TOML Code]($section.id('toml'))
+```toml
+title = "Zine <&>"
+enabled = true
+count = 1_024
+[package.metadata]
+escaped = "line\nquote=\""
+```
+
+Malformed:
+
+```toml
+[package
+value = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```toml
+enabled = tru
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

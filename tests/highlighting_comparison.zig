@@ -100,6 +100,36 @@ test "native Diff recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native TOML recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "title = \"Zine <&>\"\nenabled = true\n[package.meta]\nvalue = 1.5e2\n",
+            .native_scopes = &.{ .property, .namespace, .string, .boolean, .number, .operator, .punctuation },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "[package\nvalue = \"unterminated\\u12<&>\n",
+            .native_scopes = &.{ .namespace, .property, .string, .escape },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "enabled = tru\n",
+            .native_scopes = &.{ .property, .operator },
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("toml", case.source, case.native_scopes);
+        const tree = try createTree("toml", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -107,6 +137,8 @@ fn expectNativeScopes(
 ) !void {
     const backend = if (std.mem.eql(u8, language, "diff"))
         native.languages.diff.backend
+    else if (std.mem.eql(u8, language, "toml"))
+        native.languages.toml.backend
     else
         return error.UnknownNativeComparisonLanguage;
     var sink: native.CaptureSink = .init(std.testing.allocator, source.len);
