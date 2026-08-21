@@ -23,6 +23,9 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     if (std.mem.eql(u8, name, "typescript") or std.mem.eql(u8, name, "ts")) {
         return core.languages.typescript.backend;
     }
+    if (std.mem.eql(u8, name, "yaml") or std.mem.eql(u8, name, "yml")) {
+        return core.languages.yaml.backend;
+    }
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
     if (std.mem.eql(u8, name, "ziggy")) return @import("native_syntax_ziggy").backend;
     if (std.mem.eql(u8, name, "ziggy-schema")) return @import("native_syntax_ziggy_schema").backend;
@@ -68,6 +71,7 @@ test "only completed canonical languages use native backends" {
         "rust",
         "toml",
         "typescript",
+        "yaml",
         "zig",
         "ziggy",
         "ziggy-schema",
@@ -86,6 +90,13 @@ test "only completed canonical languages use native backends" {
 
     try std.testing.expectEqual(null, backendFor("java"));
     try std.testing.expectEqual(null, backendFor("shtml"));
+}
+
+test "Zine-owned yml alias shares the native YAML backend" {
+    const canonical = backendFor("yaml").?;
+    const aliased = backendFor("yml").?;
+    try std.testing.expectEqualStrings(canonical.info.canonical_name, aliased.info.canonical_name);
+    try std.testing.expectEqual(core.BackendKind.lexical, aliased.info.kind);
 }
 
 test "Zine-owned ts alias shares the native TypeScript backend" {

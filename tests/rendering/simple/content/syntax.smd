@@ -301,6 +301,36 @@ Incomplete alias:
 type = string
 ```
 
+# [YAML Code]($section.id('yaml'))
+```yaml
+%YAML 1.2
+---
+defaults: &defaults
+  enabled: true
+service:
+  value: *defaults
+  escaped: "line\n<&>"
+  description: |
+    first line <&>
+    second line
+```
+
+Malformed:
+
+```yaml
+root:
+  value: "unterminated\u12<&>
+next: true
+```
+
+Incomplete alias:
+
+```yml
+text: |
+  unfinished <&>
+next: false
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

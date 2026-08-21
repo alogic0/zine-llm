@@ -310,6 +310,36 @@ test "native TypeScript recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native YAML recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "%YAML 1.2\n---\ndefaults: &defaults\n  enabled: true\nservice:\n  value: *defaults\n  text: |\n    line <&>\n",
+            .native_scopes = &.{ .special, .property, .label, .variable, .boolean, .operator, .string },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "root:\n  value: \"unterminated\\u12<&>\nnext: true\n",
+            .native_scopes = &.{ .property, .string, .escape, .boolean, .operator },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "text: |\n  unfinished <&>\nnext: false\n",
+            .native_scopes = &.{ .property, .operator, .string, .boolean },
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("yaml", case.source, case.native_scopes);
+        const tree = try createTree("yaml", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -323,6 +353,8 @@ fn expectNativeScopes(
         native.languages.javascript.backend
     else if (std.mem.eql(u8, language, "typescript"))
         native.languages.typescript.backend
+    else if (std.mem.eql(u8, language, "yaml"))
+        native.languages.yaml.backend
     else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))

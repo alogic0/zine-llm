@@ -26,12 +26,13 @@ Zine routes these exact canonical language names through native backends:
 - `superhtml`;
 - `toml`;
 - `typescript`;
+- `yaml`;
 - `markdown`;
 - `python`.
 
 Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
 `diff`, `js` to `javascript`, `ts` to `typescript`, and `md`, `smd`, and
-`supermd` to `markdown`.
+`supermd` to `markdown`; `yml` maps to `yaml`.
 `zig-native-syntax` exposes only canonical backend names.
 
 The default `native-first` mode sends every other language through the existing
@@ -77,7 +78,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all twenty native languages,
+The rendering snapshot covers fenced blocks for all twenty-one native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -132,6 +133,11 @@ TypeScript comparison covers interfaces, type aliases, generic punctuation,
 primitive types, malformed interface/template input, and declaration-context
 recovery through the `ts` alias. TSX and type-expression parsing remain out of
 scope.
+
+YAML comparison covers directives, document markers, mappings, anchors,
+aliases, quoted and block scalars, line-bounded malformed strings, and block
+scalar dedentation through the `yml` alias. Schema resolution remains outside
+the highlighter.
 
 ## First-spike comparison
 
