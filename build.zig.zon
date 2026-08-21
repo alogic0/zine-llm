@@ -28,8 +28,8 @@
             .hash = "flow_syntax-0.7.2-X8jOoSuMAQBanH2g5oW4BQmkW6s5AdfrRUE2byWrMVKp",
         },
         .markdown_parser = .{
-            .url = "git+https://github.com/alogic0/zig-markdown-parser#7a893351ce4943ff2b576977811916afc8014f05",
-            .hash = "zig_markdown_parser-0.1.0-Hjn7-DV0AgAvHpLmKciB5ZimBjCFTqicOXu-DixVfYl5",
+            .url = "git+https://github.com/alogic0/zig-markdown-parser#0842913426dde83d2527650bce238cd03b3b4103",
+            .hash = "zig_markdown_parser-0.1.1-Hjn7-LWAAgBbOyNf5p_kYUKkgBYpN4U0MpHfSzt42BTk",
         },
         .zig_native_syntax = .{
             .path = "../zig-native-syntax",
