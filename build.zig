@@ -60,7 +60,7 @@ pub const Options = struct {
     force: bool = false,
 
     /// Syntax-highlighting backend policy used by the Zine executable.
-    highlight_mode: HighlightMode = .@"native-first",
+    highlight_mode: HighlightMode = .native,
 
     /// Whether Zine should be built from source or grabbed from the
     /// environment. In ephemeral environments like CI runners you might
@@ -208,14 +208,14 @@ pub fn build(b: *std.Build) !void {
     const legacy_highlight = b.option(
         bool,
         "highlight",
-        "Deprecated compatibility option: true selects native-first and false selects off.",
+        "Deprecated compatibility option: true selects native and false selects off.",
     );
     const highlight_mode = b.option(
         HighlightMode,
         "highlight-mode",
-        "Highlighting backend: off, tree-sitter, native-first (default), or native-only.",
+        "Highlighting mode: native (default) or off.",
     ) orelse if (legacy_highlight orelse true)
-        HighlightMode.@"native-first"
+        HighlightMode.native
     else
         HighlightMode.off;
     const highlight_mode_module = b.createModule(.{
@@ -299,14 +299,6 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     }).module("zeit");
-    const syntax = if (highlight_mode.usesTreeSitter()) b.dependency("flow_syntax", .{
-        .target = target,
-        .optimize = optimize,
-    }) else null;
-    const treez = if (syntax) |dep| dep.builder.dependency("tree_sitter", .{
-        .target = target,
-        .optimize = optimize,
-    }).module("treez") else null;
     const native_syntax = nativeSyntaxDependency(b, target, optimize);
 
     const mime = b.dependency("mime", .{
@@ -395,10 +387,6 @@ pub fn build(b: *std.Build) !void {
     zine_mod.addImport("tracy", tracy.module("tracy"));
     zine_mod.addImport("mime", mime.module("mime"));
     zine_mod.addImport("markdown_parser", markdown_parser);
-    if (syntax) |dep| {
-        zine_mod.addImport("syntax", dep.module("syntax"));
-        zine_mod.addImport("treez", treez.?);
-    }
     if (highlight_mode.usesNative()) {
         addNativeSyntaxImports(zine_mod, native_syntax);
     }
@@ -460,45 +448,45 @@ pub fn build(b: *std.Build) !void {
     const run_highlight_mode_tests = b.addRunArtifact(highlight_mode_tests);
     run_highlight_mode_tests.setName("test highlighting backend selection policy");
 
-    const native_only_options = b.addOptions();
-    try native_only_options.contents.print(b.allocator,
+    const native_options = b.addOptions();
+    try native_options.contents.print(b.allocator,
         \\const highlight = @import("highlight_mode");
-        \\pub const highlight_mode: highlight.Mode = .@"native-only";
+        \\pub const highlight_mode: highlight.Mode = .native;
         \\
     , .{});
-    const native_only_options_module = native_only_options.createModule();
-    native_only_options_module.addImport("highlight_mode", highlight_mode_module);
-    const native_only_highlight_test_module = b.createModule(.{
+    const native_options_module = native_options.createModule();
+    native_options_module.addImport("highlight_mode", highlight_mode_module);
+    const native_highlight_behavior_test_module = b.createModule(.{
         .root_source_file = b.path("src/highlight.zig"),
         .target = target,
         .optimize = optimize,
     });
-    native_only_highlight_test_module.addImport("options", native_only_options_module);
-    native_only_highlight_test_module.addImport("highlight_mode", highlight_mode_module);
-    native_only_highlight_test_module.addImport("tracy", tracy.module("tracy"));
-    native_only_highlight_test_module.addImport("superhtml", superhtml);
-    addNativeSyntaxImports(native_only_highlight_test_module, native_syntax);
-    const native_only_highlight_test_options = b.addOptions();
-    native_only_highlight_test_options.addOption(
+    native_highlight_behavior_test_module.addImport("options", native_options_module);
+    native_highlight_behavior_test_module.addImport("highlight_mode", highlight_mode_module);
+    native_highlight_behavior_test_module.addImport("tracy", tracy.module("tracy"));
+    native_highlight_behavior_test_module.addImport("superhtml", superhtml);
+    addNativeSyntaxImports(native_highlight_behavior_test_module, native_syntax);
+    const native_highlight_behavior_test_options = b.addOptions();
+    native_highlight_behavior_test_options.addOption(
         []const u8,
         "starter_theme",
         @embedFile("src/cli/init/assets/highlight.css"),
     );
-    native_only_highlight_test_module.addOptions(
+    native_highlight_behavior_test_module.addOptions(
         "native_highlight_test_options",
-        native_only_highlight_test_options,
+        native_highlight_behavior_test_options,
     );
-    const native_only_highlight_tests = b.addTest(.{
-        .root_module = native_only_highlight_test_module,
+    const native_highlight_behavior_tests = b.addTest(.{
+        .root_module = native_highlight_behavior_test_module,
     });
-    const run_native_only_highlight_tests = b.addRunArtifact(native_only_highlight_tests);
-    run_native_only_highlight_tests.setName("test native-only highlighting fallback");
+    const run_native_highlight_behavior_tests = b.addRunArtifact(native_highlight_behavior_tests);
+    run_native_highlight_behavior_tests.setName("test native highlighting fallback");
     const test_highlight_modes_step = b.step(
         "test-highlight-modes",
-        "Test highlighting backend selection and native-only fallback",
+        "Test native and disabled highlighting behavior",
     );
     test_highlight_modes_step.dependOn(&run_highlight_mode_tests.step);
-    test_highlight_modes_step.dependOn(&run_native_only_highlight_tests.step);
+    test_highlight_modes_step.dependOn(&run_native_highlight_behavior_tests.step);
     test_step.dependOn(test_highlight_modes_step);
     const native_highlight_test_module = b.createModule(.{
         .root_source_file = b.path("src/highlight/native.zig"),
@@ -527,26 +515,6 @@ pub fn build(b: *std.Build) !void {
     );
     test_native_highlighting_step.dependOn(&run_native_highlight_tests.step);
     test_step.dependOn(&run_native_highlight_tests.step);
-    if (syntax) |tree_sitter_syntax| {
-        const json_comparison_module = b.createModule(.{
-            .root_source_file = b.path("tests/highlighting_comparison.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "native_syntax", .module = native_syntax.module("native_syntax") },
-                .{ .name = "syntax", .module = tree_sitter_syntax.module("syntax") },
-                .{ .name = "treez", .module = treez.? },
-            },
-        });
-        json_comparison_module.link_libc = true;
-        const json_comparison_tests = b.addTest(.{
-            .root_module = json_comparison_module,
-        });
-        const run_json_comparison_tests = b.addRunArtifact(json_comparison_tests);
-        run_json_comparison_tests.setName("compare native and Tree-sitter JSON highlighting");
-        test_native_highlighting_step.dependOn(&run_json_comparison_tests.step);
-        test_step.dependOn(&run_json_comparison_tests.step);
-    }
     const macos_fsevents_tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/cli/serve/watcher/FSEvents.zig"),
@@ -1099,15 +1067,6 @@ fn setupReleaseStep(
             .optimize = optimize,
         }).module("zeit");
 
-        const syntax = if (highlight_mode.usesTreeSitter()) b.dependency("flow_syntax", .{
-            .target = target,
-            .optimize = optimize,
-        }) else null;
-
-        const treez = if (syntax) |dep| dep.builder.dependency("tree_sitter", .{
-            .target = target,
-            .optimize = optimize,
-        }).module("treez") else null;
         const native_syntax = if (highlight_mode.usesNative())
             nativeSyntaxDependency(b, target, optimize)
         else
@@ -1158,10 +1117,6 @@ fn setupReleaseStep(
         zine_exe_release.root_module.addImport("supermd", supermd);
         zine_exe_release.root_module.addImport("superhtml", superhtml);
         zine_exe_release.root_module.addImport("zeit", zeit);
-        if (syntax) |dep| {
-            zine_exe_release.root_module.addImport("syntax", dep.module("syntax"));
-            zine_exe_release.root_module.addImport("treez", treez.?);
-        }
         if (native_syntax) |dep| addNativeSyntaxImports(zine_exe_release.root_module, dep);
         zine_exe_release.root_module.addImport("tracy", tracy.module("tracy"));
         zine_exe_release.root_module.addImport("mime", mime.module("mime"));
