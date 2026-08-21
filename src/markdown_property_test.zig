@@ -1,5 +1,5 @@
 const std = @import("std");
-const markdown = @import("markdown.zig");
+const markdown = @import("markdown_parser");
 const Semantic = @import("markdown/Semantic.zig");
 const RenderSafety = @import("markdown/RenderSafety.zig");
 

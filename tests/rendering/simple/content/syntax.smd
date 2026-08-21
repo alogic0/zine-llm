@@ -1,8 +1,12 @@
 ---
 .title = "Sections",
 .date = .date("2020-07-06T00:00:00"),
-.layout = "index.shtml",
+.layout = "syntax.shtml",
 .draft = false,
+.custom = .{
+    .highlight_source = "const escaped = \"<&>\";",
+    .highlight_json = "{\"escaped\":\"<&>\",\"ok\":true}",
+},
 --- 
 
 # [Zig Code]($section.id('zig'))
@@ -22,6 +26,1578 @@ pub inline fn main() anyerror!void {
     SampleFunction(1, &sample);
 }
 ```
+
+# [Ziggy Code]($section.id('ziggy'))
+```ziggy
+.config = .{
+    .enabled = true,
+    .name = "<site & docs>",
+}
+```
+
+# [Ziggy Schema Code]($section.id('ziggy-schema'))
+```ziggy-schema
+$ = Config
+
+struct Config {
+    enabled: bool,
+    name: bytes,
+}
+```
+
+# [Scripty Code]($section.id('scripty'))
+```scripty
+$page.title.escape()
+```
+
+# [HTML Code]($section.id('html'))
+```html
+<div data-value="<unsafe>">&amp;</div>
+```
+
+# [XML Code]($section.id('xml'))
+```xml
+<?xml version="1.0"?>
+<item key="<unsafe>">&amp;</item>
+```
+
+# [CSS Code]($section.id('css'))
+```css
+.card::before {
+    content: "<unsafe>&";
+    color: #c678dd;
+}
+```
+
+# [SuperHTML Code]($section.id('superhtml'))
+```superhtml
+<p :if="$page.title" :text="$page.title"></p>
+```
+
+# [Markdown Source]($section.id('markdown'))
+```markdown
+## Source heading
+
+- [x] **complete** with [a link](https://example.com)
+
+<span title="<unsafe>">embedded</span>
+```
+
+# [Bash Code]($section.id('bash'))
+```bash
+#!/usr/bin/env bash
+name=${name:-"<&>"}
+if [[ -n "$name" ]]; then
+    printf '%s\n' "$(printf '%s' "$name")"
+fi
+```
+
+# [JSON Code]($section.id('json'))
+```json
+{
+  "name": "Zine <&>",
+  "escaped": "line\nquote=\"",
+  "enabled": true,
+  "missing": null,
+  "value": -1.25e2
+}
+```
+
+Malformed:
+
+```json
+{"unicode":"\u12<&>
+```
+
+Incomplete:
+
+```json
+[tru
+```
+
+# [Diff Code]($section.id('diff'))
+```diff
+diff --git a/old.txt b/new.txt
+--- a/old.txt
++++ b/new.txt
+@@ -1 +1 @@
+-old <&>
++new "value"
+```
+
+Malformed:
+
+```diff
+@@ -1 +1
++unterminated <&>
+```
+
+Incomplete:
+
+```patch
++++
+```
+
+# [TOML Code]($section.id('toml'))
+```toml
+title = "Zine <&>"
+enabled = true
+count = 1_024
+[package.metadata]
+escaped = "line\nquote=\""
+```
+
+Malformed:
+
+```toml
+[package
+value = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```toml
+enabled = tru
+```
+
+# [Dockerfile Code]($section.id('dockerfile'))
+```dockerfile
+# syntax=docker/dockerfile:1
+ARG VERSION=latest
+FROM alpine:${VERSION} AS build
+COPY --chown=1000:1000 . .
+RUN printf '%s' "<&> ${VERSION}" && echo done
+CMD ["/bin/app", "--serve"]
+```
+
+Malformed:
+
+```dockerfile
+FROM alpine AS
+RUN echo "unterminated ${NAME} <&>
+```
+
+Incomplete:
+
+```dockerfile
+RUN echo ${NAME
+```
+
+# [Python Code]($section.id('python'))
+```python
+@decorator
+class Entry:
+    enabled: bool = True
+
+    def render(self, count: int = 1_000) -> str:
+        return f"{count} <&>\n"
+```
+
+Malformed:
+
+```python
+def broken(x:
+    return "unterminated\n<&>
+```
+
+Incomplete:
+
+```python
+text = """unfinished
+<&>
+```
+
+# [SQL Code]($section.id('sql'))
+```sql
+SELECT u."name", count(*) AS total
+FROM users AS u
+WHERE u.enabled = true AND u.id > :minimum
+LIMIT 10;
+```
+
+Malformed:
+
+```sql
+SELECT /* open
+name FROM users WHERE value = 'unterminated <&>
+```
+
+Incomplete:
+
+```sql
+SELECT $body$unfinished
+<&>
+```
+
+# [C Code]($section.id('c'))
+```c
+#include <stdint.h>
+#define SCALE(x) ((x) * 2)
+/** Documentation <&>. */
+static int render(const char *text) {
+    return text != NULL ? SCALE(0xffu) : 0;
+}
+```
+
+Malformed:
+
+```c
+#define OPEN(x) \
+  ((x) + 1
+int main( { return "unterminated\n<&>
+```
+
+Incomplete:
+
+```c
+/* unfinished
+int hidden(void);
+```
+
+# [JavaScript Code]($section.id('javascript'))
+```javascript
+/** Documentation <&>. */
+export class Entry {
+  #value = 1_000;
+  async render(ok = true) {
+    return `${this.#value} <&>\n`;
+  }
+}
+```
+
+Malformed:
+
+```javascript
+function broken(value { return `unfinished ${value}\n<&>
+```
+
+Incomplete alias:
+
+```js
+/* unfinished
+const hidden = true;
+```
+
+# [TypeScript Code]($section.id('typescript'))
+```typescript
+/** Documentation <&>. */
+export interface Entry<T extends object> {
+  readonly value: T;
+  enabled?: boolean;
+}
+export type Result<T> = Promise<T | null>;
+```
+
+Malformed:
+
+```typescript
+interface Broken<T extends { value: string
+const text = `unfinished ${value}\n<&>
+```
+
+Incomplete alias:
+
+```ts
+type = string
+```
+
+# [YAML Code]($section.id('yaml'))
+```yaml
+%YAML 1.2
+---
+defaults: &defaults
+  enabled: true
+service:
+  value: *defaults
+  escaped: "line\n<&>"
+  description: |
+    first line <&>
+    second line
+```
+
+Malformed:
+
+```yaml
+root:
+  value: "unterminated\u12<&>
+next: true
+```
+
+Incomplete alias:
+
+```yml
+text: |
+  unfinished <&>
+next: false
+```
+
+# [HCL Code]($section.id('hcl'))
+```hcl
+variable "image" {
+  type    = string
+  default = null
+}
+
+locals {
+  enabled = true
+  name    = format("service-${var.image}<&>")
+  text    = <<-EOF
+    line <&>
+  EOF
+}
+```
+
+Malformed:
+
+```hcl
+root {
+  value = "unterminated\u12<&>
+  next = true
+}
+```
+
+Incomplete heredoc:
+
+```hcl
+text = <<-EOF
+  unfinished <&>
+```
+
+# [Make Code]($section.id('make'))
+```make
+include config.mk
+CC := cc
+MESSAGE = "hello\n<&>"
+
+all: build
+	$(CC) -o app main.c
+```
+
+Malformed:
+
+```make
+VALUE = "unterminated\q<&>
+next: dep
+```
+
+Incomplete recipe:
+
+```make
+target: dep
+	@echo $(VALUE) <&>
+```
+
+# [CMake Code]($section.id('cmake'))
+```cmake
+cmake_minimum_required(VERSION 3.28)
+project(Demo)
+set(NAME "demo\n<&>")
+if(ON)
+  add_executable(app main.cpp)
+endif()
+```
+
+Malformed:
+
+```cmake
+set(NAME "unterminated\q<&>
+if(ON)
+```
+
+Incomplete function:
+
+```cmake
+function(build name)
+  message(STATUS "<&>")
+```
+
+
+# [Java Code]($section.id('java'))
+```java
+public class Demo { int n = 42; String s = "x<&>"; }
+```
+
+Malformed:
+
+```java
+String s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```java
+/** incomplete <&>
+```
+
+# [C# Code]($section.id('c-sharp'))
+```c-sharp
+public class Demo { int N = 42; string S = "x<&>"; }
+```
+
+Malformed:
+
+```c-sharp
+string s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```c-sharp
+/* incomplete <&>
+```
+
+# [C++ Code]($section.id('cpp'))
+```cpp
+#include <string>
+class Demo { public: int n = 42; };
+```
+
+Malformed:
+
+```cpp
+const char* s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```cpp
+/* incomplete <&>
+```
+
+# [Go Code]($section.id('go'))
+```go
+package main
+func run() string { return "x<&>" }
+```
+
+Malformed:
+
+```go
+var s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```go
+/* incomplete <&>
+```
+
+# [PowerShell Code]($section.id('powershell'))
+```powershell
+function Test-X { param([string]$Name) Write-Output($Name) }
+```
+
+Malformed:
+
+```powershell
+$x = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```powershell
+<# incomplete <&>
+```
+
+# [PHP Code]($section.id('php'))
+```php
+<?php function run(string $x): bool { return true; }
+```
+
+Malformed:
+
+```php
+$x = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```php
+/* incomplete <&>
+```
+
+# [Lua Code]($section.id('lua'))
+```lua
+local n = 42
+function run() return "x<&>" end
+```
+
+Malformed:
+
+```lua
+local s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```lua
+--[[ incomplete <&>
+```
+
+# [Kotlin Code]($section.id('kotlin'))
+```kotlin
+class Demo { val n: Int = 42; fun run(): String = "x<&>" }
+```
+
+Malformed:
+
+```kotlin
+val s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```kotlin
+/* incomplete <&>
+```
+
+# [Ruby Code]($section.id('ruby'))
+```ruby
+class Demo
+  def run()
+    puts("x<&>")
+  end
+end
+```
+
+Malformed:
+
+```ruby
+s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```ruby
+# incomplete <&>
+```
+
+# [Swift Code]($section.id('swift'))
+```swift
+struct Demo { let n: Int = 42; func run() -> String { "x<&>" } }
+```
+
+Malformed:
+
+```swift
+let s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```swift
+/* incomplete <&>
+```
+
+# [Assembly Code]($section.id('asm'))
+```asm
+start:
+  mov rax, 42
+  ret
+```
+
+Malformed:
+
+```asm
+msg: .ascii "unterminated\u12<&>
+```
+
+Incomplete:
+
+```asm
+# incomplete <&>
+```
+
+# [NASM Code]($section.id('nasm'))
+```nasm
+section .text
+start:
+  mov rax, 42
+  ret
+```
+
+Malformed:
+
+```nasm
+msg: db "unterminated\u12<&>
+```
+
+Incomplete:
+
+```nasm
+; incomplete <&>
+```
+
+# [Objective-C Code]($section.id('objc'))
+```objc
+#import <Foundation/Foundation.h>
+@interface Demo
+@end
+```
+
+Malformed:
+
+```objc
+NSString *s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```objc
+/* incomplete <&>
+```
+
+# [Vue Code]($section.id('vue'))
+```vue
+<template><div class="x">{{ value }}<&></div></template>
+```
+
+Malformed:
+
+```vue
+<template><div title="open<&>
+```
+
+Incomplete:
+
+```vue
+<!-- incomplete <&>
+```
+
+# [Astro Code]($section.id('astro'))
+```astro
+---
+const x = 1;
+---
+<main class="x"><&></main>
+```
+
+Malformed:
+
+```astro
+---
+const x = '<&>'
+<div>
+```
+
+Incomplete:
+
+```astro
+<!-- incomplete <&>
+```
+
+# [JSDoc Code]($section.id('jsdoc'))
+```jsdoc
+/** @param {string} value `code` <&> */
+```
+
+Malformed:
+
+```jsdoc
+/** @param {string value <&>
+```
+
+Incomplete:
+
+```jsdoc
+/** @returns {bool}
+```
+
+# [Regular Expression Code]($section.id('regex'))
+```regex
+^(?<name>[A-Za-z_]\w+)$
+```
+
+Malformed:
+
+```regex
+^(unterminated[<&>\d+
+```
+
+Incomplete:
+
+```regex
+foo(bar|baz
+```
+
+# [Protocol Buffers Code]($section.id('proto'))
+```proto
+syntax = "proto3"; message Entry { string name = 1; }
+```
+
+Malformed:
+
+```proto
+string name = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```proto
+/* incomplete <&>
+```
+
+# [KDL Code]($section.id('kdl'))
+```kdl
+node key="x\n<&>" count=42 enabled=true // comment
+```
+
+Malformed:
+
+```kdl
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```kdl
+// incomplete <&>
+```
+
+# [Nix Code]($section.id('nix'))
+```nix
+let value = "x\n<&>"; count = 42; enabled = true; # comment
+```
+
+Malformed:
+
+```nix
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```nix
+# incomplete <&>
+```
+
+# [Fish Code]($section.id('fish'))
+```fish
+function run; set value "x\n<&>"; end # comment
+```
+
+Malformed:
+
+```fish
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```fish
+# incomplete <&>
+```
+
+# [Nushell Code]($section.id('nu'))
+```nu
+def run [] { let value = "x\n<&>" } # comment
+```
+
+Malformed:
+
+```nu
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```nu
+# incomplete <&>
+```
+
+# [AWK Code]($section.id('awk'))
+```awk
+BEGIN { value = "x\n<&>"; print(value) } # comment
+```
+
+Malformed:
+
+```awk
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```awk
+# incomplete <&>
+```
+
+# [SSH Config Code]($section.id('ssh-config'))
+```ssh-config
+Host demo
+    HostName "x\n<&>" # comment
+```
+
+Malformed:
+
+```ssh-config
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```ssh-config
+# incomplete <&>
+```
+
+# [Git Commit Code]($section.id('gitcommit'))
+```gitcommit
+feat: render "x\n<&>" 42 true
+# comment
+```
+
+Malformed:
+
+```gitcommit
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```gitcommit
+# incomplete <&>
+```
+
+# [Git Rebase Code]($section.id('git-rebase'))
+```git-rebase
+pick 42 feat "x\n<&>"
+# comment
+```
+
+Malformed:
+
+```git-rebase
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```git-rebase
+# incomplete <&>
+```
+
+# [Gettext PO Code]($section.id('po'))
+```po
+msgid "x\n<&>"
+msgstr "value"
+# comment
+```
+
+Malformed:
+
+```po
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```po
+# incomplete <&>
+```
+
+# [reStructuredText Code]($section.id('rst'))
+```rst
+note "x\n<&>" 42 true
+.. comment
+```
+
+Malformed:
+
+```rst
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```rst
+.. incomplete <&>
+```
+
+# [LaTeX Code]($section.id('latex'))
+```latex
+section { "x\n<&>" 42 true } % comment
+```
+
+Malformed:
+
+```latex
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```latex
+% incomplete <&>
+```
+
+# [Typst Code]($section.id('typst'))
+```typst
+let value = "x\n<&>"; // comment
+```
+
+Malformed:
+
+```typst
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```typst
+/* incomplete <&>
+```
+
+# [Org Mode Code]($section.id('org'))
+```org
+TODO "x\n<&>" 42 true
+# comment
+```
+
+Malformed:
+
+```org
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```org
+# incomplete <&>
+```
+
+# [DTD Code]($section.id('dtd'))
+```dtd
+ELEMENT note (PCDATA) "x\n<&>" <!-- comment
+```
+
+Malformed:
+
+```dtd
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```dtd
+<!-- incomplete <&>
+```
+
+# [E-mail Code]($section.id('mail'))
+```mail
+Subject: "x\n<&>" 42 true
+> comment
+```
+
+Malformed:
+
+```mail
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```mail
+> incomplete <&>
+```
+
+# [Hurl Code]($section.id('hurl'))
+```hurl
+GET "x\n<&>"
+status = 42 # comment
+```
+
+Malformed:
+
+```hurl
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```hurl
+# incomplete <&>
+```
+
+# [Ninja Code]($section.id('ninja'))
+```ninja
+rule run
+    command = "x\n<&>" # comment
+```
+
+Malformed:
+
+```ninja
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```ninja
+# incomplete <&>
+```
+
+# [RPM Spec Code]($section.id('rpmspec'))
+```rpmspec
+Name = "x\n<&>"
+Version = 42 # comment
+```
+
+Malformed:
+
+```rpmspec
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```rpmspec
+# incomplete <&>
+```
+
+# [RPM Bash Code]($section.id('rpmbash'))
+```rpmbash
+if true; then
+    value="x\n<&>"
+    echo %{name}
+fi # comment
+```
+
+Malformed:
+
+```rpmbash
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```rpmbash
+# incomplete <&>
+```
+
+# [GDScript Code]($section.id('gdscript'))
+```gdscript
+func run(): var value = "x\n<&>" # comment
+```
+
+Malformed:
+
+```gdscript
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```gdscript
+# incomplete <&>
+```
+
+# [Perl Code]($section.id('perl'))
+```perl
+sub run { my $value = "x\n<&>"; } # comment
+```
+
+Malformed:
+
+```perl
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```perl
+# incomplete <&>
+```
+
+# [Elixir Code]($section.id('elixir'))
+```elixir
+def run do value = "x\n<&>" end # comment
+```
+
+Malformed:
+
+```elixir
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```elixir
+# incomplete <&>
+```
+
+# [F Sharp Code]($section.id('fsharp'))
+```fsharp
+let run () = let value = "x\n<&>" in value // comment
+```
+
+Malformed:
+
+```fsharp
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```fsharp
+// incomplete <&>
+```
+
+# [OCaml Code]($section.id('ocaml'))
+```ocaml
+let run () = let value = "x\n<&>" in value (* comment *)
+```
+
+Malformed:
+
+```ocaml
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```ocaml
+(* incomplete <&>
+```
+
+# [Haskell Code]($section.id('haskell'))
+```haskell
+run = let value = "x\n<&>" in value -- comment
+```
+
+Malformed:
+
+```haskell
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```haskell
+-- incomplete <&>
+```
+
+# [Gleam Code]($section.id('gleam'))
+```gleam
+pub fn run() { let value = "x\n<&>" } // comment
+```
+
+Malformed:
+
+```gleam
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```gleam
+// incomplete <&>
+```
+
+# [Common Lisp Code]($section.id('commonlisp'))
+```commonlisp
+(defun run () (let ((value "x\n<&>")) value)) ; comment
+```
+
+Malformed:
+
+```commonlisp
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```commonlisp
+; incomplete <&>
+```
+
+# [Scheme Code]($section.id('scheme'))
+```scheme
+(define (run) (let ((value "x\n<&>")) value)) ; comment
+```
+
+Malformed:
+
+```scheme
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```scheme
+; incomplete <&>
+```
+
+# [Julia Code]($section.id('julia'))
+```julia
+function run() value = "x\n<&>"; end # comment
+```
+
+Malformed:
+
+```julia
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```julia
+# incomplete <&>
+```
+
+# [Elm Code]($section.id('elm'))
+```elm
+run = let value = "x\n<&>" in value -- comment
+```
+
+Malformed:
+
+```elm
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```elm
+-- incomplete <&>
+```
+
+# [PureScript Code]($section.id('purescript'))
+```purescript
+run = let value = "x\n<&>" in value -- comment
+```
+
+Malformed:
+
+```purescript
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```purescript
+-- incomplete <&>
+```
+
+# [Nim Code]($section.id('nim'))
+```nim
+proc run() = let value = "x\n<&>" # comment
+```
+
+Malformed:
+
+```nim
+value = "bad\q<&>
+next = true
+```
+
+Incomplete:
+
+```nim
+# incomplete <&>
+```
+
+
+# [D Code]($section.id('d'))
+```d
+module demo; struct Item { string value = "x\n<&>"; bool enabled = true; } // comment
+```
+
+Malformed:
+
+```d
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```d
+/* incomplete <&>
+```
+
+# [V Code]($section.id('v'))
+```v
+module main
+struct Item { value string }
+value := "x\n<&>" // comment
+```
+
+Malformed:
+
+```v
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```v
+/* incomplete <&>
+```
+
+# [Odin Code]($section.id('odin'))
+```odin
+package main
+Item :: struct { value: string }
+value := "x\n<&>" // comment
+```
+
+Malformed:
+
+```odin
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```odin
+/* incomplete <&>
+```
+
+# [C3 Code]($section.id('c3'))
+```c3
+module demo; struct Item { string value; } string value = "x\n<&>"; // comment
+```
+
+Malformed:
+
+```c3
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```c3
+/* incomplete <&>
+```
+
+# [SystemVerilog Code]($section.id('systemverilog'))
+```systemverilog
+module demo; string value = "x\n<&>"; logic enabled = true; // comment
+endmodule
+```
+
+Malformed:
+
+```systemverilog
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```systemverilog
+/* incomplete <&>
+```
+
+# [LLVM IR Code]($section.id('llvm'))
+```llvm
+@text = private constant [3 x i8] c"x\0A<&>"
+define i32 @main() { ret i32 42 } ; comment
+```
+
+Malformed:
+
+```llvm
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```llvm
+; incomplete <&>
+```
+
+# [OpenSCAD Code]($section.id('openscad'))
+```openscad
+module demo() { value = "x\n<&>"; enabled = true; } // comment
+```
+
+Malformed:
+
+```openscad
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```openscad
+/* incomplete <&>
+```
+
+# [Nickel Code]($section.id('nickel'))
+```nickel
+let item = { value = "x\n<&>", enabled = true } in item # comment
+```
+
+Malformed:
+
+```nickel
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```nickel
+/* incomplete <&>
+```
+
+# [Hare Code]($section.id('hare'))
+```hare
+export fn main() void = { let value: str = "x\n<&>"; }; // comment
+```
+
+Malformed:
+
+```hare
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```hare
+/* incomplete <&>
+```
+
+# [Agda Code]($section.id('agda'))
+```agda
+module Demo where
+data Item : Set where
+  item : Item
+text = "x\n<&>" -- comment
+```
+
+Malformed:
+
+```agda
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```agda
+{- incomplete <&>
+```
+
+# [Tree-sitter Query Code]($section.id('query'))
+```query
+(function_definition name: (identifier) @function (#match? @function "^x\n<&>")) ; comment
+```
+
+Malformed:
+
+```query
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```query
+; incomplete <&>
+```
+
+# [Vimscript Code]($section.id('vim'))
+```vim
+function Demo()
+  let value = 'x\n<&>'
+  let enabled = v:true
+endfunction
+" comment
+```
+
+Malformed:
+
+```vim
+let value = 'bad\q<&>
+let enabled = v:true
+```
+
+Incomplete:
+
+```vim
+" incomplete <&>
+```
+
+# [Uxntal Code]($section.id('uxntal'))
+```uxntal
+|0100 @main #2a #01 ADD "x\n
+BRK ( comment )
+```
+
+Malformed:
+
+```uxntal
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```uxntal
+( incomplete <&>
+```
+
+# [Comment Tags Code]($section.id('comment'))
+```comment
+TODO(alice): fix #42 at https://example.test
+```
+
+Malformed:
+
+```comment
+FIXME(unclosed <&>
+```
+
+Incomplete:
+
+```comment
+WIP(user
+```
+
+
+# [Code Directive]($section.id('code-directive'))
+[Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
+
+[Native JSON directive]($code.siteAsset('native-snippet.json').language('json'))
 
 # [Rust Code]($section.id('rust'))
 ```rust

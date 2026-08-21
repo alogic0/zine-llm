@@ -35,3 +35,87 @@ code.ziggy .numeric.constant {
 code.ziggy .function {
   color: var(--blue);
 }
+
+code .syntax-comment,
+code .syntax-documentation {
+  color: var(--comment-gray);
+  font-style: italic;
+}
+
+code .syntax-keyword,
+code .syntax-boolean,
+code .syntax-special {
+  color: var(--magenta);
+}
+
+code .syntax-string {
+  color: var(--dark-yellow);
+}
+
+code .syntax-escape {
+  color: var(--light-yellow);
+}
+
+code .syntax-number,
+code .syntax-constant {
+  color: var(--magenta);
+}
+
+code .syntax-function,
+code .syntax-macro {
+  color: var(--blue);
+}
+
+code .syntax-builtin,
+code .syntax-constructor,
+code .syntax-namespace,
+code .syntax-tag,
+code .syntax-type {
+  color: var(--cyan);
+}
+
+code .syntax-attribute,
+code .syntax-label,
+code .syntax-parameter,
+code .syntax-property,
+code .syntax-variable {
+  color: var(--light-yellow);
+}
+
+code .syntax-operator,
+code .syntax-punctuation {
+  color: var(--light-red);
+}
+
+code .syntax-invalid {
+  color: var(--light-red);
+  text-decoration: underline;
+  text-decoration-color: var(--dark-red);
+}
+
+code .syntax-embedded {
+  font-style: inherit;
+}
+
+code .syntax-markup-code {
+  color: var(--dark-yellow);
+}
+
+code .syntax-markup-emphasis {
+  font-style: italic;
+}
+
+code .syntax-markup-heading,
+code .syntax-markup-link,
+code .syntax-markup-list,
+code .syntax-markup-quote {
+  color: var(--blue);
+}
+
+code .syntax-markup-strikethrough {
+  text-decoration: line-through;
+}
+
+code .syntax-markup-strong {
+  font-weight: bold;
+}

@@ -1193,26 +1193,6 @@ fn renderPageInner(
 }
 
 // Null language evaluates to true for convenience.
-pub fn languageExists(language: ?[]const u8) bool {
-    if (!options.enable_treesitter) return true;
-
-    const lang = language orelse return true;
-    if (std.mem.eql(u8, lang, "=html")) return true;
-    if (std.mem.eql(u8, lang, "=mathtex")) return true;
-    if (std.mem.eql(u8, lang, "console")) return true;
-
-    const syntax = @import("syntax");
-    if (syntax.FileType.get_by_name_static(lang) == null) {
-        var buf: [1024]u8 = undefined;
-        const filename = std.fmt.bufPrint(
-            &buf,
-            "file.{s}",
-            .{lang},
-        ) catch "<lang name too long>";
-
-        const guess = syntax.FileType.guess_static(filename, "") orelse return false;
-        log.debug("guessed '{?s}' as '{s}'", .{ language, guess.name });
-    }
-
+pub fn languageExists(_: ?[]const u8) bool {
     return true;
 }

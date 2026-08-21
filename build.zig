@@ -4,6 +4,8 @@ const image_dimension_fixtures = @import("src/image_dimensions_fixtures.zig");
 const builtin = @import("builtin");
 const Io = std.Io;
 
+pub const HighlightMode = @import("src/highlight/mode.zig").Mode;
+
 const required_zig_version = "0.17.0-dev.1756+613c03321";
 
 comptime {
@@ -57,6 +59,9 @@ pub const Options = struct {
     /// **NOT** be deleted by Zine.
     force: bool = false,
 
+    /// Syntax-highlighting backend policy used by the Zine executable.
+    highlight_mode: HighlightMode = .native,
+
     /// Whether Zine should be built from source or grabbed from the
     /// environment. In ephemeral environments like CI runners you might
     /// want to build from source only if you are also saving Zig's cache dirs.
@@ -84,6 +89,7 @@ pub fn website(project: *std.Build, opts: Options) *std.Build.Step.Run {
     const zine_dep = project.dependencyFromBuildZig(@This(), .{
         .optimize = opts.debug.optimize,
         .scope = opts.debug.scopes,
+        .@"highlight-mode" = opts.highlight_mode,
         .@"no-git-version" = true,
     });
 
@@ -127,6 +133,7 @@ pub fn serve(project: *std.Build, opts: Options) *std.Build.Step.Run {
     const zine_dep = project.dependencyFromBuildZig(@This(), .{
         .optimize = opts.debug.optimize,
         .scope = opts.debug.scopes,
+        .@"highlight-mode" = opts.highlight_mode,
         .@"no-git-version" = true,
     });
 
@@ -161,10 +168,15 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const markdown = b.addModule("markdown", .{
+    const markdown_parser = b.dependency("markdown_parser", .{
+        .target = target,
+        .optimize = optimize,
+    }).module("markdown");
+    _ = b.addModule("markdown", .{
         .root_source_file = b.path("src/markdown.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{.{ .name = "markdown_parser", .module = markdown_parser }},
     });
 
     const no_git_version = b.option(
@@ -193,11 +205,24 @@ pub fn build(b: *std.Build) !void {
         "Enable Tracy profiling",
     ) orelse false;
 
-    const highlight = b.option(
+    const legacy_highlight = b.option(
         bool,
         "highlight",
-        "Include treesitter grammars for build-time syntax highlighting (enabled by default). Disabling reduces executable size significantly.",
-    ) orelse true;
+        "Deprecated compatibility option: true selects native and false selects off.",
+    );
+    const highlight_mode = b.option(
+        HighlightMode,
+        "highlight-mode",
+        "Highlighting mode: native (default) or off.",
+    ) orelse if (legacy_highlight orelse true)
+        HighlightMode.native
+    else
+        HighlightMode.off;
+    const highlight_mode_module = b.createModule(.{
+        .root_source_file = b.path("src/highlight/mode.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const zine_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
@@ -231,17 +256,20 @@ pub fn build(b: *std.Build) !void {
             \\// module = zine
             \\const std = @import("std");
             \\pub const tsan = {};
-            \\pub const enable_treesitter = {};
+            \\const highlight = @import("highlight_mode");
+            \\pub const highlight_mode: highlight.Mode = .{f};
             \\pub const version = "{s}";
             \\pub const log_scope_levels: []const std.log.ScopeLevel = &.{{
             \\
-        , .{ tsan, highlight, version });
+        , .{ tsan, std.zig.fmtId(@tagName(highlight_mode)), version });
 
         for (scopes) |l| try options.contents.print(b.allocator,
             \\.{{.scope = .{f}, .level = .debug}},
         , .{std.zig.fmtId(l)});
         try options.contents.print(b.allocator, "}};", .{});
-        break :blk options.createModule();
+        const module = options.createModule();
+        module.addImport("highlight_mode", highlight_mode_module);
+        break :blk module;
     };
 
     const scripty = b.dependency("scripty", .{
@@ -271,15 +299,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     }).module("zeit");
-    const syntax = b.dependency("flow_syntax", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const ts = syntax.builder.dependency("tree_sitter", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const treez = ts.module("treez");
+    const native_syntax = nativeSyntaxDependency(b, target, optimize);
 
     const mime = b.dependency("mime", .{
         .target = target,
@@ -299,7 +319,7 @@ pub fn build(b: *std.Build) !void {
         release.dependOn(&preview_required.step);
         check_release_targets.dependOn(&preview_required.step);
     } else {
-        setupReleaseStep(b, release, check_release_targets, version);
+        setupReleaseStep(b, release, check_release_targets, version, highlight_mode);
     }
 
     const verify_release_archives = b.addSystemCommand(&.{"sh"});
@@ -363,12 +383,15 @@ pub fn build(b: *std.Build) !void {
     zine_mod.addImport("superhtml", superhtml);
     zine_mod.addImport("zeit", zeit);
     zine_mod.addImport("options", options);
+    zine_mod.addImport("highlight_mode", highlight_mode_module);
     zine_mod.addImport("tracy", tracy.module("tracy"));
     zine_mod.addImport("mime", mime.module("mime"));
-    if (highlight) {
-        zine_mod.addImport("syntax", syntax.module("syntax"));
-        zine_mod.addImport("treez", treez);
+    zine_mod.addImport("markdown_parser", markdown_parser);
+    if (highlight_mode.usesNative()) {
+        addNativeSyntaxImports(zine_mod, native_syntax);
     }
+
+    zine_exe.root_module.link_libc = true;
 
     const check = b.step("check", "check the standalone zine executable");
     check.dependOn(&zine_exe.step);
@@ -415,6 +438,83 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&zine_run.step);
 
     const test_step = b.step("test", "build snapshot tests and diff the results");
+    const highlight_mode_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/highlight/mode.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const run_highlight_mode_tests = b.addRunArtifact(highlight_mode_tests);
+    run_highlight_mode_tests.setName("test highlighting backend selection policy");
+
+    const native_options = b.addOptions();
+    try native_options.contents.print(b.allocator,
+        \\const highlight = @import("highlight_mode");
+        \\pub const highlight_mode: highlight.Mode = .native;
+        \\
+    , .{});
+    const native_options_module = native_options.createModule();
+    native_options_module.addImport("highlight_mode", highlight_mode_module);
+    const native_highlight_behavior_test_module = b.createModule(.{
+        .root_source_file = b.path("src/highlight.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    native_highlight_behavior_test_module.addImport("options", native_options_module);
+    native_highlight_behavior_test_module.addImport("highlight_mode", highlight_mode_module);
+    native_highlight_behavior_test_module.addImport("tracy", tracy.module("tracy"));
+    native_highlight_behavior_test_module.addImport("superhtml", superhtml);
+    addNativeSyntaxImports(native_highlight_behavior_test_module, native_syntax);
+    const native_highlight_behavior_test_options = b.addOptions();
+    native_highlight_behavior_test_options.addOption(
+        []const u8,
+        "starter_theme",
+        @embedFile("src/cli/init/assets/highlight.css"),
+    );
+    native_highlight_behavior_test_module.addOptions(
+        "native_highlight_test_options",
+        native_highlight_behavior_test_options,
+    );
+    const native_highlight_behavior_tests = b.addTest(.{
+        .root_module = native_highlight_behavior_test_module,
+    });
+    const run_native_highlight_behavior_tests = b.addRunArtifact(native_highlight_behavior_tests);
+    run_native_highlight_behavior_tests.setName("test native highlighting fallback");
+    const test_highlight_modes_step = b.step(
+        "test-highlight-modes",
+        "Test native and disabled highlighting behavior",
+    );
+    test_highlight_modes_step.dependOn(&run_highlight_mode_tests.step);
+    test_highlight_modes_step.dependOn(&run_native_highlight_behavior_tests.step);
+    test_step.dependOn(test_highlight_modes_step);
+    const native_highlight_test_module = b.createModule(.{
+        .root_source_file = b.path("src/highlight/native.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    addNativeSyntaxImports(native_highlight_test_module, native_syntax);
+    const native_highlight_test_options = b.addOptions();
+    native_highlight_test_options.addOption(
+        []const u8,
+        "starter_theme",
+        @embedFile("src/cli/init/assets/highlight.css"),
+    );
+    native_highlight_test_module.addOptions(
+        "native_highlight_test_options",
+        native_highlight_test_options,
+    );
+    const native_highlight_tests = b.addTest(.{
+        .root_module = native_highlight_test_module,
+    });
+    const run_native_highlight_tests = b.addRunArtifact(native_highlight_tests);
+    run_native_highlight_tests.setName("test native highlighting routing");
+    const test_native_highlighting_step = b.step(
+        "test-native-highlighting",
+        "Run native highlighting integration tests",
+    );
+    test_native_highlighting_step.dependOn(&run_native_highlight_tests.step);
+    test_step.dependOn(&run_native_highlight_tests.step);
     const macos_fsevents_tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/cli/serve/watcher/FSEvents.zig"),
@@ -491,9 +591,7 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_image_dimensions_tests.step);
     test_step.dependOn(&run_image_dimensions_property_tests.step);
     test_step.dependOn(&run_image_dimensions_file_tests.step);
-    const markdown_tests = b.addTest(.{
-        .root_module = markdown,
-    });
+    const markdown_tests = b.addTest(.{ .root_module = markdown_parser });
     const run_markdown_tests = b.addRunArtifact(markdown_tests);
     const semantic_markdown_module = b.createModule(.{
         .root_source_file = b.path("src/markdown/Semantic.zig"),
@@ -503,6 +601,7 @@ pub fn build(b: *std.Build) !void {
     semantic_markdown_module.addImport("supermd", supermd);
     semantic_markdown_module.addImport("scripty", scripty);
     semantic_markdown_module.addImport("superhtml", superhtml);
+    semantic_markdown_module.addImport("markdown_parser", markdown_parser);
     const semantic_markdown_tests = b.addTest(.{
         .root_module = semantic_markdown_module,
     });
@@ -515,6 +614,7 @@ pub fn build(b: *std.Build) !void {
     markdown_concurrency_module.addImport("supermd", supermd);
     markdown_concurrency_module.addImport("scripty", scripty);
     markdown_concurrency_module.addImport("superhtml", superhtml);
+    markdown_concurrency_module.addImport("markdown_parser", markdown_parser);
     markdown_concurrency_module.addImport("fixtures", b.createModule(.{
         .root_source_file = b.path("build/markdown_benchmark_fixtures.zig"),
     }));
@@ -536,6 +636,7 @@ pub fn build(b: *std.Build) !void {
     markdown_property_module.addImport("supermd", supermd);
     markdown_property_module.addImport("scripty", scripty);
     markdown_property_module.addImport("superhtml", superhtml);
+    markdown_property_module.addImport("markdown_parser", markdown_parser);
     const markdown_property_tests = b.addTest(.{
         .root_module = markdown_property_module,
     });
@@ -557,6 +658,7 @@ pub fn build(b: *std.Build) !void {
     markdown_benchmark.root_module.addImport("supermd", supermd);
     markdown_benchmark.root_module.addImport("scripty", scripty);
     markdown_benchmark.root_module.addImport("superhtml", superhtml);
+    markdown_benchmark.root_module.addImport("markdown_parser", markdown_parser);
     markdown_benchmark.root_module.addImport("fixtures", b.createModule(.{
         .root_source_file = b.path("build/markdown_benchmark_fixtures.zig"),
     }));
@@ -580,6 +682,7 @@ pub fn build(b: *std.Build) !void {
     markdown_backend_module.addImport("supermd", supermd);
     markdown_backend_module.addImport("scripty", scripty);
     markdown_backend_module.addImport("superhtml", superhtml);
+    markdown_backend_module.addImport("markdown_parser", markdown_parser);
     const markdown_backend_tests = b.addTest(.{
         .root_module = markdown_backend_module,
     });
@@ -608,6 +711,7 @@ pub fn build(b: *std.Build) !void {
         mode_module.addImport("supermd", supermd);
         mode_module.addImport("scripty", scripty);
         mode_module.addImport("superhtml", superhtml);
+        mode_module.addImport("markdown_parser", markdown_parser);
         const mode_tests = b.addTest(.{ .root_module = mode_module });
         mode_tests.name = b.fmt("markdown-tests-{s}", .{@tagName(mode)});
         const run_mode_tests = b.addRunArtifact(mode_tests);
@@ -906,6 +1010,7 @@ fn setupReleaseStep(
     release_step: *std.Build.Step,
     check_release_targets: *std.Build.Step,
     version: []const u8,
+    highlight_mode: HighlightMode,
 ) void {
     const targets: []const std.Target.Query = &.{
         .{ .cpu_arch = .aarch64, .os_tag = .macos },
@@ -952,22 +1057,26 @@ fn setupReleaseStep(
         supermd.addImport("scripty", scripty);
         supermd.addImport("ziggy", ziggy);
 
+        const markdown_parser = b.dependency("markdown_parser", .{
+            .target = target,
+            .optimize = optimize,
+        }).module("markdown");
+
         const zeit = b.dependency("zeit", .{
             .target = target,
             .optimize = optimize,
         }).module("zeit");
 
-        const syntax = b.dependency("flow_syntax", .{
+        const native_syntax = if (highlight_mode.usesNative())
+            nativeSyntaxDependency(b, target, optimize)
+        else
+            null;
+
+        const highlight_mode_module = b.createModule(.{
+            .root_source_file = b.path("src/highlight/mode.zig"),
             .target = target,
             .optimize = optimize,
         });
-
-        const ts = syntax.builder.dependency("tree_sitter", .{
-            .target = target,
-            .optimize = optimize,
-        });
-
-        const treez = ts.module("treez");
 
         const mime = b.dependency("mime", .{
             .target = target,
@@ -980,12 +1089,15 @@ fn setupReleaseStep(
                 \\// module = zine
                 \\const std = @import("std");
                 \\pub const tsan = false;
-                \\pub const enable_treesitter = true;
+                \\const highlight = @import("highlight_mode");
+                \\pub const highlight_mode: highlight.Mode = .{f};
                 \\pub const version = "{s}";
                 \\pub const log_scope_levels: []const std.log.ScopeLevel = &.{{}};
                 \\
-            , .{version}) catch unreachable;
-            break :blk options.createModule();
+            , .{ std.zig.fmtId(@tagName(highlight_mode)), version }) catch unreachable;
+            const module = options.createModule();
+            module.addImport("highlight_mode", highlight_mode_module);
+            break :blk module;
         };
 
         const zine_exe_release = b.addExecutable(.{
@@ -999,15 +1111,17 @@ fn setupReleaseStep(
         check_release_targets.dependOn(&zine_exe_release.step);
 
         zine_exe_release.root_module.addImport("options", options);
+        zine_exe_release.root_module.addImport("highlight_mode", highlight_mode_module);
         zine_exe_release.root_module.addImport("ziggy", ziggy);
         zine_exe_release.root_module.addImport("scripty", scripty);
         zine_exe_release.root_module.addImport("supermd", supermd);
         zine_exe_release.root_module.addImport("superhtml", superhtml);
         zine_exe_release.root_module.addImport("zeit", zeit);
-        zine_exe_release.root_module.addImport("syntax", syntax.module("syntax"));
-        zine_exe_release.root_module.addImport("treez", treez);
+        if (native_syntax) |dep| addNativeSyntaxImports(zine_exe_release.root_module, dep);
         zine_exe_release.root_module.addImport("tracy", tracy.module("tracy"));
         zine_exe_release.root_module.addImport("mime", mime.module("mime"));
+        zine_exe_release.root_module.addImport("markdown_parser", markdown_parser);
+        zine_exe_release.root_module.link_libc = true;
 
         switch (target.result.os.tag) {
             else => @panic("target must be added to build.zig"),
@@ -1069,6 +1183,40 @@ fn setupReleaseStep(
             },
         }
     }
+}
+
+fn nativeSyntaxDependency(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) *std.Build.Dependency {
+    return b.dependency("zig_native_syntax", .{
+        .target = target,
+        .optimize = optimize,
+        .@"backend-ziggy" = true,
+        .@"backend-ziggy-schema" = true,
+        .@"backend-scripty" = true,
+        .@"backend-html" = true,
+        .@"backend-xml" = true,
+        .@"backend-css" = true,
+        .@"backend-superhtml" = true,
+        .@"backend-markdown" = true,
+    });
+}
+
+fn addNativeSyntaxImports(
+    module: *std.Build.Module,
+    dependency: *std.Build.Dependency,
+) void {
+    module.addImport("native_syntax", dependency.module("native_syntax"));
+    module.addImport("native_syntax_ziggy", dependency.module("native_syntax_ziggy"));
+    module.addImport("native_syntax_ziggy_schema", dependency.module("native_syntax_ziggy_schema"));
+    module.addImport("native_syntax_scripty", dependency.module("native_syntax_scripty"));
+    module.addImport("native_syntax_html", dependency.module("native_syntax_html"));
+    module.addImport("native_syntax_xml", dependency.module("native_syntax_xml"));
+    module.addImport("native_syntax_css", dependency.module("native_syntax_css"));
+    module.addImport("native_syntax_superhtml", dependency.module("native_syntax_superhtml"));
+    module.addImport("native_syntax_markdown", dependency.module("native_syntax_markdown"));
 }
 
 fn getVersion(b: *std.Build, no_git_version: bool) []const u8 {

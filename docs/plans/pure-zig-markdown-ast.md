@@ -232,9 +232,9 @@ The Zig parser preserves `$...` link targets, but angle-bracket destinations cur
 ### Phase 0: Capture the compatibility baseline
 
 Status: implemented on `2026-08-15`. Provenance is recorded in
-`src/markdown/UPSTREAM.md`; the focused fixtures and generated baseline are
-archived in `tests/markdown-oracle/`. The migration-only runner was removed in
-Phase 7 after the pure-Zig parser became authoritative. The
+`zig-markdown-parser`'s `docs/UPSTREAM.md`; the focused fixtures and generated
+baseline are archived in `tests/markdown-oracle/`. The migration-only runner
+was removed in Phase 7 after the pure-Zig parser became authoritative. The
 unmodified source import required by step 3 remains the first Phase 1 change
 and must be kept separate from adaptation work.
 
@@ -269,11 +269,11 @@ change parser behavior.
 1. Copy the four source files into a dedicated module, tentatively:
 
    ```text
-   src/markdown.zig
-   src/markdown/Parser.zig
-   src/markdown/Document.zig
-   src/markdown/renderer.zig
-   src/markdown/UPSTREAM.md
+   zig-markdown-parser/src/markdown.zig
+   zig-markdown-parser/src/markdown/Parser.zig
+   zig-markdown-parser/src/markdown/Document.zig
+   zig-markdown-parser/src/markdown/renderer.zig
+   zig-markdown-parser/docs/UPSTREAM.md
    ```
 
 2. Preserve the upstream tests and make them runnable through `zig build test`.
@@ -476,7 +476,10 @@ After Zine compatibility is green, add pinned CommonMark and GFM spec fixtures f
 
 ## Build and dependency strategy
 
-The initial import belongs in Zine for rapid integration, but the module boundary should permit extraction into a standalone pure-Zig SuperMD package once stable.
+The low-level parser was initially imported into Zine for rapid integration.
+After stabilization, it was extracted into the standalone
+`zig-markdown-parser` package. Zine now consumes that package while retaining
+the application-specific compatibility AST and SuperMD semantic layer.
 
 During migration:
 
@@ -486,12 +489,15 @@ During migration:
 - Do not let the low-level Markdown parser depend on SuperHTML, Zine context, assets, or site configuration.
 - Keep cmark only in the temporary oracle path.
 
-At completion, choose between:
+The final ownership boundary is:
 
-1. Publishing the parser and SuperMD semantic layer as an updated standalone `supermd` dependency; or
-2. Keeping both as local Zine modules if their API is too application-specific.
+- `zig-markdown-parser` owns Markdown syntax parsing, source ranges, syntax
+  rendering, and parser-level tests;
+- Zine owns the compatibility AST facade, directives, Scripty context,
+  SuperHTML integration, and rendering policy.
 
-The standalone package is preferred if the boundary remains clean.
+This keeps the reusable parser independent of Zine page/build types without
+forcing application-specific SuperMD behavior into a general package.
 
 ## Risks and mitigations
 

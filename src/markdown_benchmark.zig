@@ -1,7 +1,7 @@
 const std = @import("std");
 const Io = std.Io;
 const Allocator = std.mem.Allocator;
-const markdown = @import("markdown.zig");
+const markdown = @import("markdown_parser");
 const Semantic = @import("markdown/Semantic.zig");
 const fixtures = @import("fixtures");
 

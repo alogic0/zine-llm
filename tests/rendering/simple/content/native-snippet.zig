@@ -1,0 +1,1 @@
+const escaped = "<directive & source>";
