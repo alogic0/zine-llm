@@ -8,8 +8,8 @@ CSS integration, unsupported-language behavior, and the transition away from
 Tree-sitter, but it will not own reusable language tokenizers or highlighting
 adapters.
 
-Tree-sitter remains Zine's highlighting backend until the experiment provides
-the coverage and failure behavior required by Zine.
+Tree-sitter remains Zine's compatibility fallback until the experiment
+provides the complete coverage and failure behavior required to remove it.
 
 ## Date And Status
 
@@ -55,6 +55,11 @@ concerns and can benefit consumers other than Zine.
 - Existing Zine integration points: `src/highlight.zig`, `src/worker.zig`,
   `build.zig`, and `build.zig.zon`.
 - Initial package verification: `./build.sh test` from the package root.
+- The first integration spike routes eight canonical languages natively while
+  retaining Tree-sitter for Rust and every other unsupported language.
+- Focused commands, first-spike measurements, output checks, and API findings
+  are recorded in
+  [Native Highlighting Integration Validation](../../native-highlighting-validation.md).
 
 ## Revisit When
 
