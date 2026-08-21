@@ -10,6 +10,13 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     if (std.mem.eql(u8, name, "xml")) return @import("native_syntax_xml").backend;
     if (std.mem.eql(u8, name, "css")) return @import("native_syntax_css").backend;
     if (std.mem.eql(u8, name, "superhtml")) return @import("native_syntax_superhtml").backend;
+    if (std.mem.eql(u8, name, "markdown") or
+        std.mem.eql(u8, name, "md") or
+        std.mem.eql(u8, name, "smd") or
+        std.mem.eql(u8, name, "supermd"))
+    {
+        return @import("native_syntax_markdown").backend;
+    }
     return null;
 }
 
@@ -38,6 +45,7 @@ test "only completed canonical languages use native backends" {
         "xml",
         "css",
         "superhtml",
+        "markdown",
     };
     for (native_languages) |language| {
         try std.testing.expect(backendFor(language) != null);
@@ -46,6 +54,15 @@ test "only completed canonical languages use native backends" {
     try std.testing.expectEqual(null, backendFor("rust"));
     try std.testing.expectEqual(null, backendFor("bash"));
     try std.testing.expectEqual(null, backendFor("shtml"));
+}
+
+test "Zine-owned Markdown aliases share the native backend" {
+    const canonical = backendFor("markdown").?;
+    for ([_][]const u8{ "md", "smd", "supermd" }) |alias| {
+        const aliased = backendFor(alias).?;
+        try std.testing.expectEqualStrings(canonical.info.canonical_name, aliased.info.canonical_name);
+        try std.testing.expectEqual(core.BackendKind.parser_backed, aliased.info.kind);
+    }
 }
 
 test "native routing renders completed languages and declines fallback languages" {

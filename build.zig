@@ -1133,6 +1133,7 @@ fn nativeSyntaxDependency(
         .@"backend-xml" = true,
         .@"backend-css" = true,
         .@"backend-superhtml" = true,
+        .@"backend-markdown" = true,
     });
 }
 
@@ -1148,6 +1149,7 @@ fn addNativeSyntaxImports(
     module.addImport("native_syntax_xml", dependency.module("native_syntax_xml"));
     module.addImport("native_syntax_css", dependency.module("native_syntax_css"));
     module.addImport("native_syntax_superhtml", dependency.module("native_syntax_superhtml"));
+    module.addImport("native_syntax_markdown", dependency.module("native_syntax_markdown"));
 }
 
 fn getVersion(b: *std.Build, no_git_version: bool) []const u8 {

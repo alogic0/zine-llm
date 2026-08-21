@@ -73,6 +73,15 @@ $page.title.escape()
 <p :if="$page.title" :text="$page.title"></p>
 ```
 
+# [Markdown Source]($section.id('markdown'))
+```markdown
+## Source heading
+
+- [x] **complete** with [a link](https://example.com)
+
+<span title="<unsafe>">embedded</span>
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 
