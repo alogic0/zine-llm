@@ -28,8 +28,8 @@
             .hash = "zig_markdown_parser-0.1.1-Hjn7-LWAAgBbOyNf5p_kYUKkgBYpN4U0MpHfSzt42BTk",
         },
         .zig_native_syntax = .{
-            .url = "git+https://github.com/alogic0/zig-native-syntax#3d4a45b3d2e28580a13df453aca899637d79d417",
-            .hash = "zig_native_syntax-0.0.0-rNAusW-mCADtvYAceG1dWaRTmkWb8kv5jpdtiRAGHvHf",
+            .url = "git+https://github.com/alogic0/zig-native-syntax#d05d3eb2d6bc87c4e549b8b31143898050ad96c3",
+            .hash = "zig_native_syntax-0.0.0-rNAusSGoCACFBjRIp0N0LwaSEb58-b7jUxbKwSyDmgaD",
         },
         .ziggy = .{
             .url = "git+https://github.com/kristoff-it/ziggy#be51f4dfd95590eae7c8674d660c1f16edef116b",
