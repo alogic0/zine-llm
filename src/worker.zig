@@ -1194,7 +1194,7 @@ fn renderPageInner(
 
 // Null language evaluates to true for convenience.
 pub fn languageExists(language: ?[]const u8) bool {
-    if (!options.enable_treesitter) return true;
+    if (comptime !options.highlight_mode.usesTreeSitter()) return true;
 
     const lang = language orelse return true;
     if (std.mem.eql(u8, lang, "=html")) return true;

@@ -8,8 +8,10 @@ CSS integration, unsupported-language behavior, and the transition away from
 Tree-sitter, but it will not own reusable language tokenizers or highlighting
 adapters.
 
-Tree-sitter remains Zine's compatibility fallback until the experiment
-provides the complete coverage and failure behavior required to remove it.
+Tree-sitter remains Zine's temporary compatibility and comparison backend while
+the ordered native-language backlog is implemented. Native-only builds render
+unsupported languages as escaped plain text, but the dependency will not be
+removed merely because the current Zine fixtures no longer need it.
 
 ## Date And Status
 
@@ -51,6 +53,9 @@ concerns and can benefit consumers other than Zine.
   semantic layers.
 - Removing Tree-sitter remains a separate compatibility decision because the
   native package does not initially cover all currently supported languages.
+- Explicit `tree-sitter`, `native-first`, `native-only`, and `off` modes keep
+  comparisons reproducible without making Tree-sitter the final fallback
+  contract. `native-first` remains the default during the comparison period.
 
 ## Evidence And Verification
 
@@ -62,9 +67,11 @@ concerns and can benefit consumers other than Zine.
 - The integration routes eleven canonical languages natively. Markdown uses
   the independent `zig-markdown-parser` package; Bash and Rust use bounded
   package-owned lexical scanners. Zine owns aliases and SuperMD semantics.
-- Current generated-site fixtures no longer require a Tree-sitter language,
-  but Tree-sitter remains the compatibility fallback until Phase 12 adds and
-  validates explicit backend-selection modes.
+- Current generated-site fixtures no longer require a Tree-sitter language.
+  Phase 12 Slice 12.1 added and validated explicit backend-selection modes on
+  the host architecture. Tree-sitter remains available in `tree-sitter` and
+  `native-first` modes while additional native backends are implemented and
+  compared; `native-only` and `off` compile without importing it.
 - Focused commands, first-spike measurements, output checks, and API findings
   are recorded in
   [Native Highlighting Integration Validation](../../native-highlighting-validation.md).

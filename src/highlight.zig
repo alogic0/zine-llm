@@ -6,7 +6,8 @@ const Writer = std.Io.Writer;
 const options = @import("options");
 const tracy = @import("tracy");
 const HtmlSafe = @import("superhtml").HtmlSafe;
-const native = if (options.enable_treesitter)
+const highlight_mode = options.highlight_mode;
+const native = if (highlight_mode.usesNative())
     @import("highlight/native.zig")
 else
     struct {};
@@ -24,10 +25,10 @@ pub const DotsToUnderscores = struct {
     }
 };
 
-var query_cache: if (options.enable_treesitter)
+var query_cache: if (highlight_mode.usesTreeSitter())
     @import("syntax").QueryCache
 else
-    void = if (options.enable_treesitter) .{
+    void = if (highlight_mode.usesTreeSitter()) .{
     .io = undefined,
     .allocator = @import("main.zig").gpa,
     .mutex = .init,
@@ -113,17 +114,19 @@ pub fn run(
     defer zone.end();
     tracy.messageCopy(lang_name);
 
-    if (!options.enable_treesitter) {
+    if (comptime highlight_mode.usesNative()) {
+        const handled_natively = native.render(arena, lang_name, code, w) catch |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            error.WriteFailed => return error.WriteFailed,
+            else => return error.Unknown,
+        };
+        if (handled_natively) return;
+    }
+
+    if (comptime !highlight_mode.usesTreeSitter()) {
         try w.print("{f}", .{HtmlSafe{ .bytes = code }});
         return;
     }
-
-    const handled_natively = native.render(arena, lang_name, code, w) catch |err| switch (err) {
-        error.OutOfMemory => return error.OutOfMemory,
-        error.WriteFailed => return error.WriteFailed,
-        else => return error.Unknown,
-    };
-    if (handled_natively) return;
 
     // Horrible hack
     query_cache.io = io;
@@ -223,7 +226,7 @@ pub fn run(
 }
 
 pub fn hasNativeBackend(language: []const u8) bool {
-    if (!options.enable_treesitter) return false;
+    if (comptime !highlight_mode.usesNative()) return false;
     return native.backendFor(language) != null;
 }
 
@@ -254,4 +257,38 @@ pub fn runConsole(w: *Writer, source: []const u8) Writer.Error!void {
         }
         if (it.index != null) try w.writeByte('\n');
     }
+}
+
+test "native-only renders unsupported languages as escaped plain text" {
+    if (highlight_mode != .@"native-only") return error.SkipZigTest;
+
+    var out: Writer.Allocating = .init(std.testing.allocator);
+    defer out.deinit();
+
+    try run(
+        std.testing.io,
+        std.testing.allocator,
+        "python",
+        "<tag>&",
+        &out.writer,
+    );
+
+    try std.testing.expectEqualStrings("&lt;tag&gt;&amp;", out.written());
+}
+
+test "native-only still routes completed native backends" {
+    if (highlight_mode != .@"native-only") return error.SkipZigTest;
+
+    var out: Writer.Allocating = .init(std.testing.allocator);
+    defer out.deinit();
+
+    try run(
+        std.testing.io,
+        std.testing.allocator,
+        "zig",
+        "const answer = 42;",
+        &out.writer,
+    );
+
+    try std.testing.expect(std.mem.indexOf(u8, out.written(), "syntax-keyword") != null);
 }

@@ -2,8 +2,6 @@ const String = @This();
 
 const std = @import("std");
 const Writer = std.Io.Writer;
-const options = @import("options");
-const superhtml = @import("superhtml");
 const highlight = @import("../highlight.zig");
 const utils = @import("utils.zig");
 const context = @import("../context.zig");
@@ -395,13 +393,6 @@ pub const Builtins = struct {
                     .err = "the argument to 'syntaxHighlight' must be of type string",
                 },
             };
-
-            if (!options.enable_treesitter) {
-                out.writer.print("{f}", .{superhtml.HtmlSafe{
-                    .bytes = str.value,
-                }}) catch return error.OutOfMemory;
-                return Value.from(gpa, try out.toOwnedSlice());
-            }
 
             highlight.run(ctx._meta.io, gpa, lang, str.value, &out.writer) catch |err| switch (err) {
                 error.NoLanguage => return .{ .err = "unable to find a parser for the provided language" },

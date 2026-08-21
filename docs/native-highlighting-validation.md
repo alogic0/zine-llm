@@ -24,18 +24,48 @@ Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, and `md`,
 `smd`, and `supermd` to `markdown`. `zig-native-syntax` exposes only canonical
 backend names.
 
-Every other language continues through the existing `flow-syntax` and
-Tree-sitter path. The focused routing test uses Python as fallback evidence;
-the current generated-site rendering fixture no longer requires a Tree-sitter
-language. Alias policy remains Zine-owned.
+The default `native-first` mode sends every other language through the existing
+`flow-syntax` and Tree-sitter path. The focused routing test uses Python as
+fallback evidence; the current generated-site rendering fixture no longer
+requires a Tree-sitter language. Alias policy remains Zine-owned.
+
+Zine exposes four build-time modes:
+
+| `-Dhighlight-mode` | Native backends | Tree-sitter | Unsupported language |
+| --- | --- | --- | --- |
+| `tree-sitter` | No | Yes | Existing unknown-language diagnostic |
+| `native-first` | Yes | Fallback | Existing unknown-language diagnostic |
+| `native-only` | Yes | No | Safely escaped plain text |
+| `off` | No | No | Safely escaped plain text |
+
+`native-first` remains the default while new language backends are compared
+against Tree-sitter. The legacy `-Dhighlight=true` and `-Dhighlight=false`
+options select `native-first` and `off`, respectively, unless
+`-Dhighlight-mode` is also supplied. Tree-sitter removal is deferred while the
+ordered native-language backlog is implemented and compared; it is not the
+immediate result of introducing `native-only`.
 
 The focused and host-architecture gates are:
 
 ```sh
 ./build.sh test-native-highlighting
+./build.sh test-highlight-modes
 ./build.sh test
 ./build.sh test-workflows
 ```
+
+The host compilation checks for the selection modes are:
+
+```sh
+./build.sh check -Dhighlight-mode=tree-sitter
+./build.sh check -Dhighlight-mode=native-first
+./build.sh check -Dhighlight-mode=native-only
+./build.sh check -Dhighlight-mode=off
+```
+
+The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
+Zine now links libc explicitly because its Linux watcher uses libc independently
+of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
 The rendering snapshot covers fenced blocks for all eleven native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
@@ -111,9 +141,10 @@ did expose these integration constraints:
 - Bash and Rust are bounded lexical scanners rather than validators. Their
   supported token shapes, malformed-input recovery, and plain-text boundaries
   are documented in the package compatibility notes.
-- Zine's existing `highlight` build option currently enables the combined
-  native-plus-Tree-sitter graph. Separating native selection from fallback
-  removal belongs to the later backend-selection migration, not this spike.
+- Explicit backend selection separates Tree-sitter-only comparison,
+  native-first comparison, native-only validation, and fully disabled
+  highlighting. Tree-sitter remains available as a temporary comparison oracle
+  while broader native coverage is implemented.
 - End-to-end allocation counts are not directly comparable until both the Zig
   allocator path and Tree-sitter's C allocator are observed by one harness.
   Process maximum RSS is used only as a first-spike proxy.
