@@ -10,6 +10,7 @@ Zine routes these exact canonical language names through native backends:
 
 - `bash`;
 - `diff`;
+- `dockerfile`;
 - `json`;
 - `rust`;
 - `zig`;
@@ -71,7 +72,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all fourteen native languages,
+The rendering snapshot covers fenced blocks for all fifteen native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -98,6 +99,10 @@ language.
 TOML comparison covers complete tables and scalars, an unterminated table and
 string with a partial escape, and an incomplete boolean. The native backend
 recovers assignment classification after the malformed table line.
+
+Dockerfile comparison covers parser directives, build stages, flags, variables,
+JSON-form commands, malformed strings, and an incomplete braced variable. It
+does not claim to parse the shell command language embedded in instructions.
 
 ## First-spike comparison
 

@@ -160,6 +160,29 @@ Incomplete:
 enabled = tru
 ```
 
+# [Dockerfile Code]($section.id('dockerfile'))
+```dockerfile
+# syntax=docker/dockerfile:1
+ARG VERSION=latest
+FROM alpine:${VERSION} AS build
+COPY --chown=1000:1000 . .
+RUN printf '%s' "<&> ${VERSION}" && echo done
+CMD ["/bin/app", "--serve"]
+```
+
+Malformed:
+
+```dockerfile
+FROM alpine AS
+RUN echo "unterminated ${NAME} <&>
+```
+
+Incomplete:
+
+```dockerfile
+RUN echo ${NAME
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

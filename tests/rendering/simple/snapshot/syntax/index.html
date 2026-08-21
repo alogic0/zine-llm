@@ -94,6 +94,18 @@ name=<span class="syntax-variable">${name:-&quot;&lt;&amp;&gt;&quot;}</span>
 </span></code></pre>
 <p>Incomplete:</p><pre><code class="toml"><span class="syntax-property">enabled</span> <span class="syntax-operator">=</span> tru
 </code></pre>
+</div><div id="dockerfile"><h1><a class="" href="#dockerfile">Dockerfile Code</a></h1><pre><code class="dockerfile"><span class="syntax-special"># syntax=docker/dockerfile:1</span>
+<span class="syntax-keyword">ARG</span> VERSION<span class="syntax-operator">=</span>latest
+<span class="syntax-keyword">FROM</span> alpine:<span class="syntax-variable">${VERSION}</span> <span class="syntax-keyword">AS</span> build
+<span class="syntax-keyword">COPY</span> <span class="syntax-attribute">--chown</span><span class="syntax-operator">=</span><span class="syntax-number">1000:1000</span> . .
+<span class="syntax-keyword">RUN</span> printf <span class="syntax-string">&#39;%s&#39;</span> <span class="syntax-string">&quot;&lt;&amp;&gt; </span><span class="syntax-string syntax-variable">${VERSION}</span><span class="syntax-string">&quot;</span> <span class="syntax-operator">&amp;&amp;</span> echo done
+<span class="syntax-keyword">CMD</span> <span class="syntax-punctuation">[</span><span class="syntax-string">&quot;/bin/app&quot;</span><span class="syntax-punctuation">,</span> <span class="syntax-string">&quot;--serve&quot;</span><span class="syntax-punctuation">]</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="dockerfile"><span class="syntax-keyword">FROM</span> alpine <span class="syntax-keyword">AS</span>
+<span class="syntax-keyword">RUN</span> echo <span class="syntax-string">&quot;unterminated </span><span class="syntax-string syntax-variable">${NAME}</span><span class="syntax-string"> &lt;&amp;&gt;</span>
+</code></pre>
+<p>Incomplete:</p><pre><code class="dockerfile"><span class="syntax-keyword">RUN</span> echo <span class="syntax-variable">${NAME</span>
+</code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p><p><figure><pre><code class="json"><span class="syntax-punctuation">{</span><span class="syntax-property">&quot;directive&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-string">&quot;&lt;native &amp; JSON&gt;&quot;</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;enabled&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-boolean">true</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;value&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-number">42</span><span class="syntax-punctuation">}</span>

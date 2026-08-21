@@ -130,6 +130,36 @@ test "native TOML recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native Dockerfile recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "# syntax=docker/dockerfile:1\nFROM alpine:${VERSION} AS build\nCOPY --chown=1000 . .\nRUN echo \"<&>\" && true\n",
+            .native_scopes = &.{ .special, .keyword, .variable, .attribute, .number, .string, .operator },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "FROM alpine AS\nRUN echo \"unterminated ${NAME} <&>\n",
+            .native_scopes = &.{ .keyword, .string, .variable },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "RUN echo ${NAME\n",
+            .native_scopes = &.{ .keyword, .variable },
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("dockerfile", case.source, case.native_scopes);
+        const tree = try createTree("dockerfile", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -139,6 +169,8 @@ fn expectNativeScopes(
         native.languages.diff.backend
     else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
+    else if (std.mem.eql(u8, language, "dockerfile"))
+        native.languages.dockerfile.backend
     else
         return error.UnknownNativeComparisonLanguage;
     var sink: native.CaptureSink = .init(std.testing.allocator, source.len);
