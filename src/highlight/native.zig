@@ -8,6 +8,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     {
         return core.languages.bash.backend;
     }
+    if (std.mem.eql(u8, name, "json")) return core.languages.json.backend;
     if (std.mem.eql(u8, name, "rust")) return core.languages.rust.backend;
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
     if (std.mem.eql(u8, name, "ziggy")) return @import("native_syntax_ziggy").backend;
@@ -45,6 +46,7 @@ pub fn render(
 test "only completed canonical languages use native backends" {
     const native_languages = [_][]const u8{
         "bash",
+        "json",
         "rust",
         "zig",
         "ziggy",
@@ -62,6 +64,40 @@ test "only completed canonical languages use native backends" {
 
     try std.testing.expectEqual(null, backendFor("python"));
     try std.testing.expectEqual(null, backendFor("shtml"));
+}
+
+test "native JSON routing covers complete, malformed, and incomplete input" {
+    const cases = [_]struct {
+        source: []const u8,
+        required_class: []const u8,
+    }{
+        .{
+            .source = "{\"name\":\"Zine <&>\",\"enabled\":true,\"value\":1.5e2}",
+            .required_class = "syntax-property",
+        },
+        .{
+            .source = "{\"unicode\":\"\\u12<&>",
+            .required_class = "syntax-escape",
+        },
+        .{
+            .source = "[tru",
+            .required_class = "syntax-boolean",
+        },
+    };
+
+    for (cases) |case| {
+        var output: std.Io.Writer.Allocating = .init(std.testing.allocator);
+        defer output.deinit();
+        try std.testing.expect(try render(
+            std.testing.allocator,
+            "json",
+            case.source,
+            &output.writer,
+        ));
+        try std.testing.expect(std.mem.indexOf(u8, output.written(), case.required_class) != null);
+        try std.testing.expect(std.mem.indexOf(u8, output.written(), "&lt;&amp;&gt;") != null or
+            std.mem.indexOf(u8, case.source, "<&>") == null);
+    }
 }
 
 test "Zine-owned Bash aliases share the native backend" {

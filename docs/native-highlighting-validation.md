@@ -9,6 +9,7 @@ experimental; they are not release policy or portable performance thresholds.
 Zine routes these exact canonical language names through native backends:
 
 - `bash`;
+- `json`;
 - `rust`;
 - `zig`;
 - `ziggy`;
@@ -67,12 +68,24 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all eleven native languages,
+The rendering snapshot covers fenced blocks for all twelve native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
-escaped raw HTML, HTML-sensitive source bytes, a
-`$code.siteAsset(...).language('zig')` directive, and
-`String.syntaxHighlight('zig')`. A build test also requires the starter
+escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
+complete, malformed, and incomplete fences, imported source through
+`$code.siteAsset(...).language('json')`, and `String.syntaxHighlight('json')`.
+Zig retains matching directive and string-helper coverage. A build test also requires the starter
 stylesheet to mention every stable native scope class.
+
+The focused JSON comparison test runs the same complete, malformed, and
+newline-terminated incomplete inputs through both native highlighting and
+Tree-sitter. Complete input retains equivalent semantic coverage under the
+stable native taxonomy. For malformed `\\u12`, native highlighting preserves a
+bounded property, string, and escape classification while Tree-sitter's
+highlight query retains generic string and escape captures but loses the
+property-specific capture. For `tru` before the fence's trailing newline,
+native recovery emits a boolean prefix while Tree-sitter emits no
+`constant.builtin` capture. These are intentional recovery improvements, not
+parity failures.
 
 ## First-spike comparison
 
@@ -141,6 +154,9 @@ did expose these integration constraints:
 - Bash and Rust are bounded lexical scanners rather than validators. Their
   supported token shapes, malformed-input recovery, and plain-text boundaries
   are documented in the package compatibility notes.
+- JSON uses a bounded source-offset scanner because `std.json.Scanner` does not
+  expose token byte offsets. The standard scanner remains the valid-corpus
+  grammar oracle; JSON5-only syntax remains plain text.
 - Explicit backend selection separates Tree-sitter-only comparison,
   native-first comparison, native-only validation, and fully disabled
   highlighting. Tree-sitter remains available as a temporary comparison oracle

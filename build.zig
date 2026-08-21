@@ -527,6 +527,26 @@ pub fn build(b: *std.Build) !void {
     );
     test_native_highlighting_step.dependOn(&run_native_highlight_tests.step);
     test_step.dependOn(&run_native_highlight_tests.step);
+    if (syntax) |tree_sitter_syntax| {
+        const json_comparison_module = b.createModule(.{
+            .root_source_file = b.path("tests/json_highlighting_comparison.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "native_syntax", .module = native_syntax.module("native_syntax") },
+                .{ .name = "syntax", .module = tree_sitter_syntax.module("syntax") },
+                .{ .name = "treez", .module = treez.? },
+            },
+        });
+        json_comparison_module.link_libc = true;
+        const json_comparison_tests = b.addTest(.{
+            .root_module = json_comparison_module,
+        });
+        const run_json_comparison_tests = b.addRunArtifact(json_comparison_tests);
+        run_json_comparison_tests.setName("compare native and Tree-sitter JSON highlighting");
+        test_native_highlighting_step.dependOn(&run_json_comparison_tests.step);
+        test_step.dependOn(&run_json_comparison_tests.step);
+    }
     const macos_fsevents_tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/cli/serve/watcher/FSEvents.zig"),

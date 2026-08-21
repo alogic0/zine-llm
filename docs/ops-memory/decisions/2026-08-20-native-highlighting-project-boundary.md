@@ -64,9 +64,11 @@ concerns and can benefit consumers other than Zine.
 - Existing Zine integration points: `src/highlight.zig`, `src/worker.zig`,
   `build.zig`, and `build.zig.zon`.
 - Initial package verification: `./build.sh test` from the package root.
-- The integration routes eleven canonical languages natively. Markdown uses
+- The integration routes twelve canonical languages natively. Markdown uses
   the independent `zig-markdown-parser` package; Bash and Rust use bounded
-  package-owned lexical scanners. Zine owns aliases and SuperMD semantics.
+  package-owned lexical scanners; JSON uses a source-offset scanner checked
+  against the Zig standard scanner on valid corpus input. Zine owns aliases
+  and SuperMD semantics.
 - Current generated-site fixtures no longer require a Tree-sitter language.
   Phase 12 Slice 12.1 added and validated explicit backend-selection modes on
   the host architecture. Tree-sitter remains available in `tree-sitter` and

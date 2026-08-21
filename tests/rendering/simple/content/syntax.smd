@@ -5,6 +5,7 @@
 .draft = false,
 .custom = .{
     .highlight_source = "const escaped = \"<&>\";",
+    .highlight_json = "{\"escaped\":\"<&>\",\"ok\":true}",
 },
 --- 
 
@@ -91,8 +92,33 @@ if [[ -n "$name" ]]; then
 fi
 ```
 
+# [JSON Code]($section.id('json'))
+```json
+{
+  "name": "Zine <&>",
+  "escaped": "line\nquote=\"",
+  "enabled": true,
+  "missing": null,
+  "value": -1.25e2
+}
+```
+
+Malformed:
+
+```json
+{"unicode":"\u12<&>
+```
+
+Incomplete:
+
+```json
+[tru
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
+
+[Native JSON directive]($code.siteAsset('native-snippet.json').language('json'))
 
 # [Rust Code]($section.id('rust'))
 ```rust
