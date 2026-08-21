@@ -5,7 +5,7 @@ concurrency, robustness, workflow, and release gates. Run local commands from
 the repository root through `build.sh` so they use the pinned Zig compiler.
 Normal local validation builds and tests only the current host architecture.
 
-The low-level syntax parser has its own gates in the sibling
+The low-level syntax parser has its own gates in the standalone
 `zig-markdown-parser` repository:
 
 ```sh
