@@ -10,7 +10,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     {
         return core.languages.bash.backend;
     }
-    if (std.mem.eql(u8, name, "c")) return core.languages.c.backend;
+    if (std.mem.eql(u8, name, "c") or std.mem.eql(u8, name, "glsl")) return core.languages.c.backend;
     if (std.mem.eql(u8, name, "cmake")) return core.languages.cmake.backend;
     if (std.mem.eql(u8, name, "c-sharp") or std.mem.eql(u8, name, "cs") or std.mem.eql(u8, name, "csharp")) return core.languages.c_sharp.backend;
     if (std.mem.eql(u8, name, "cpp") or std.mem.eql(u8, name, "c++")) return core.languages.cpp.backend;
@@ -65,7 +65,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     }
     if (std.mem.eql(u8, name, "kdl")) return core.languages.kdl.backend;
     if (std.mem.eql(u8, name, "nix")) return core.languages.nix.backend;
-    if (std.mem.eql(u8, name, "fish")) return core.languages.fish.backend;
+    if (std.mem.eql(u8, name, "fish") or std.mem.eql(u8, name, "conf")) return core.languages.fish.backend;
     if (std.mem.eql(u8, name, "nu") or std.mem.eql(u8, name, "nushell")) return core.languages.nu.backend;
     if (std.mem.eql(u8, name, "awk")) return core.languages.awk.backend;
     if (std.mem.eql(u8, name, "ssh-config") or std.mem.eql(u8, name, "sshconfig")) return core.languages.ssh_config.backend;
@@ -95,6 +95,23 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     if (std.mem.eql(u8, name, "elm")) return core.languages.elm.backend;
     if (std.mem.eql(u8, name, "purescript") or std.mem.eql(u8, name, "purs")) return core.languages.purescript.backend;
     if (std.mem.eql(u8, name, "nim")) return core.languages.nim.backend;
+    if (std.mem.eql(u8, name, "d") or std.mem.eql(u8, name, "dlang")) return core.languages.d.backend;
+    if (std.mem.eql(u8, name, "v") or std.mem.eql(u8, name, "vlang")) return core.languages.v.backend;
+    if (std.mem.eql(u8, name, "odin")) return core.languages.odin.backend;
+    if (std.mem.eql(u8, name, "c3")) return core.languages.c3.backend;
+    if (std.mem.eql(u8, name, "systemverilog") or std.mem.eql(u8, name, "system-verilog") or std.mem.eql(u8, name, "sv")) return core.languages.systemverilog.backend;
+    if (std.mem.eql(u8, name, "llvm") or std.mem.eql(u8, name, "llvm-ir") or std.mem.eql(u8, name, "ll")) return core.languages.llvm.backend;
+    if (std.mem.eql(u8, name, "openscad") or std.mem.eql(u8, name, "scad")) return core.languages.openscad.backend;
+    if (std.mem.eql(u8, name, "nickel")) return core.languages.nickel.backend;
+    if (std.mem.eql(u8, name, "hare")) return core.languages.hare.backend;
+    if (std.mem.eql(u8, name, "agda")) return core.languages.agda.backend;
+    if (std.mem.eql(u8, name, "query") or std.mem.eql(u8, name, "tree-sitter-query") or std.mem.eql(u8, name, "tsquery")) return core.languages.query.backend;
+    if (std.mem.eql(u8, name, "vim") or std.mem.eql(u8, name, "vimscript")) return core.languages.vim.backend;
+    if (std.mem.eql(u8, name, "uxntal")) return core.languages.uxntal.backend;
+    if (std.mem.eql(u8, name, "comment") or std.mem.eql(u8, name, "comment-tags")) return core.languages.comment.backend;
+    if (std.mem.eql(u8, name, "nimble")) return core.languages.toml.backend;
+    if (std.mem.eql(u8, name, "csproj") or std.mem.eql(u8, name, "props")) return @import("native_syntax_xml").backend;
+    if (std.mem.eql(u8, name, "markdown-inline")) return @import("native_syntax_markdown").backend;
     return null;
 }
 
@@ -189,12 +206,25 @@ test "only completed canonical languages use native backends" {
         "elm",
         "purescript",
         "nim",
+        "d",
+        "v",
+        "odin",
+        "c3",
+        "systemverilog",
+        "llvm",
+        "openscad",
+        "nickel",
+        "hare",
+        "agda",
+        "query",
+        "vim",
+        "uxntal",
+        "comment",
     };
     for (native_languages) |language| {
         try std.testing.expect(backendFor(language) != null);
     }
 
-    try std.testing.expectEqual(null, backendFor("d"));
     try std.testing.expectEqual(null, backendFor("shtml"));
 }
 
@@ -229,6 +259,23 @@ test "Zine-owned roadmap aliases share their canonical native backends" {
         .{ .alias = "f#", .canonical = "fsharp" },
         .{ .alias = "lisp", .canonical = "commonlisp" },
         .{ .alias = "purs", .canonical = "purescript" },
+        .{ .alias = "dlang", .canonical = "d" },
+        .{ .alias = "vlang", .canonical = "v" },
+        .{ .alias = "system-verilog", .canonical = "systemverilog" },
+        .{ .alias = "sv", .canonical = "systemverilog" },
+        .{ .alias = "llvm-ir", .canonical = "llvm" },
+        .{ .alias = "ll", .canonical = "llvm" },
+        .{ .alias = "scad", .canonical = "openscad" },
+        .{ .alias = "tree-sitter-query", .canonical = "query" },
+        .{ .alias = "tsquery", .canonical = "query" },
+        .{ .alias = "vimscript", .canonical = "vim" },
+        .{ .alias = "comment-tags", .canonical = "comment" },
+        .{ .alias = "conf", .canonical = "fish" },
+        .{ .alias = "glsl", .canonical = "c" },
+        .{ .alias = "nimble", .canonical = "toml" },
+        .{ .alias = "csproj", .canonical = "xml" },
+        .{ .alias = "props", .canonical = "xml" },
+        .{ .alias = "markdown-inline", .canonical = "markdown" },
     };
     for (aliases) |entry| {
         try std.testing.expectEqualStrings(
@@ -327,7 +374,7 @@ test "native routing renders completed languages and declines fallback languages
     defer fallback_output.deinit();
     try std.testing.expect(!try render(
         std.testing.allocator,
-        "d",
+        "shtml",
         "class Main {}",
         &fallback_output.writer,
     ));

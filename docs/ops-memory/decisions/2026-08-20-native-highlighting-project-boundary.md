@@ -51,8 +51,9 @@ concerns and can benefit consumers other than Zine.
 - A reusable parser needed by both Zine and a highlighting adapter must have an
   independent package boundary; adapters must not depend back on Zine-owned
   semantic layers.
-- Removing Tree-sitter remains a separate compatibility decision because the
-  native package does not initially cover all currently supported languages.
+- Removing Tree-sitter remains a separate compatibility decision. Completing
+  the ordered native roadmap does not by itself establish parity for aliases,
+  injected languages, diagnostics, build behavior, or release validation.
 - Explicit `tree-sitter`, `native-first`, `native-only`, and `off` modes keep
   comparisons reproducible without making Tree-sitter the final fallback
   contract. `native-first` remains the default during the comparison period.
@@ -64,7 +65,7 @@ concerns and can benefit consumers other than Zine.
 - Existing Zine integration points: `src/highlight.zig`, `src/worker.zig`,
   `build.zig`, and `build.zig.zon`.
 - Initial package verification: `./build.sh test` from the package root.
-- The integration routes seventy-four canonical languages natively. Markdown uses
+- The integration routes eighty-eight canonical languages natively. Markdown uses
   the independent `zig-markdown-parser` package; Bash and Rust use bounded
   package-owned lexical scanners; JSON uses a source-offset scanner checked
   against the Zig standard scanner on valid corpus input. Zine owns aliases
@@ -72,8 +73,8 @@ concerns and can benefit consumers other than Zine.
 - Current generated-site fixtures no longer require a Tree-sitter language.
   Phase 12 Slice 12.1 added and validated explicit backend-selection modes on
   the host architecture. Tree-sitter remains available in `tree-sitter` and
-  `native-first` modes while additional native backends are implemented and
-  compared; `native-only` and `off` compile without importing it.
+  `native-first` modes for the explicit compatibility and removal review;
+  `native-only` and `off` compile without importing it.
 - Focused commands, first-spike measurements, output checks, and API findings
   are recorded in
   [Native Highlighting Integration Validation](../../native-highlighting-validation.md).

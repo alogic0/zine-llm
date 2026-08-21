@@ -81,7 +81,21 @@ Zine routes these exact canonical language names through native backends:
 - `julia`;
 - `elm`;
 - `purescript`;
-- `nim`.
+- `nim`;
+- `d`;
+- `v`;
+- `odin`;
+- `c3`;
+- `systemverilog`;
+- `llvm`;
+- `openscad`;
+- `nickel`;
+- `hare`;
+- `agda`;
+- `query`;
+- `vim`;
+- `uxntal`;
+- `comment`.
 
 Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
 `diff`, `js` to `javascript`, `ts` to `typescript`, and `md`, `smd`, and
@@ -94,12 +108,21 @@ maps to `po`; `restructuredtext` maps to `rst`; `tex` maps to `latex`;
 `orgmode` maps to `org`; `email` maps to `mail`; `rpm-spec` maps to `rpmspec`;
 `rpm-bash` maps to `rpmbash`; `f#` maps to `fsharp`; `lisp` maps to
 `commonlisp`; and `purs` maps to `purescript`.
+`dlang` maps to `d`; `vlang` maps to `v`; `system-verilog` and `sv` map
+to `systemverilog`; `llvm-ir` and `ll` map to `llvm`; `scad` maps to
+`openscad`; `tree-sitter-query` and `tsquery` map to `query`; `vimscript`
+maps to `vim`; and `comment-tags` maps to `comment`.
+
+Flow file types that intentionally reuse another grammar also reuse the
+corresponding native backend: `conf` maps to Fish, `glsl` to C, `nimble` to
+TOML, `csproj` and `props` to XML, and `markdown-inline` to Markdown.
 `zig-native-syntax` exposes only canonical backend names.
 
 The default `native-first` mode sends every other language through the existing
-`flow-syntax` and Tree-sitter path. The focused routing test uses D as
-fallback evidence; the current generated-site rendering fixture no longer
-requires a Tree-sitter language. Alias policy remains Zine-owned.
+`flow-syntax` and Tree-sitter path. The focused routing test uses the
+deliberately unsupported `shtml` label as fallback evidence; the current
+generated-site rendering fixture no longer requires a Tree-sitter language.
+Alias policy remains Zine-owned.
 
 Zine exposes four build-time modes:
 
@@ -139,7 +162,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all seventy-four native languages,
+The rendering snapshot covers fenced blocks for all eighty-eight native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -227,6 +250,16 @@ reuses the native Bash backend, while its Tree-sitter comparison fixture also
 contains an RPM macro because Flow's standalone RPM Bash query only captures
 RPM constructs. Full parsing, embedded-language injection, type resolution,
 and dialect-specific validation remain outside this increment.
+
+The final roadmap increment from D through generic comment tags compares
+complete, malformed, and incomplete input for all fourteen backends. D, V,
+Odin, C3, SystemVerilog, LLVM IR, OpenSCAD, Nickel, Hare, Agda, Tree-sitter
+Query, Vimscript, and Uxntal use bounded language configurations. The comment
+backend is a dedicated scanner for text ranges already known to be comments;
+it recognizes tag families, optional owners, issue numbers, and URLs without
+owning surrounding comment delimiters. Grammar validation, macro expansion,
+embedded-language injection, and semantic analysis remain outside this
+increment.
 
 ## First-spike comparison
 

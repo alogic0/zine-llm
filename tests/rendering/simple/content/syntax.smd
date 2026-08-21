@@ -1328,6 +1328,272 @@ Incomplete:
 ```
 
 
+# [D Code]($section.id('d'))
+```d
+module demo; struct Item { string value = "x\n<&>"; bool enabled = true; } // comment
+```
+
+Malformed:
+
+```d
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```d
+/* incomplete <&>
+```
+
+# [V Code]($section.id('v'))
+```v
+module main
+struct Item { value string }
+value := "x\n<&>" // comment
+```
+
+Malformed:
+
+```v
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```v
+/* incomplete <&>
+```
+
+# [Odin Code]($section.id('odin'))
+```odin
+package main
+Item :: struct { value: string }
+value := "x\n<&>" // comment
+```
+
+Malformed:
+
+```odin
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```odin
+/* incomplete <&>
+```
+
+# [C3 Code]($section.id('c3'))
+```c3
+module demo; struct Item { string value; } string value = "x\n<&>"; // comment
+```
+
+Malformed:
+
+```c3
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```c3
+/* incomplete <&>
+```
+
+# [SystemVerilog Code]($section.id('systemverilog'))
+```systemverilog
+module demo; string value = "x\n<&>"; logic enabled = true; // comment
+endmodule
+```
+
+Malformed:
+
+```systemverilog
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```systemverilog
+/* incomplete <&>
+```
+
+# [LLVM IR Code]($section.id('llvm'))
+```llvm
+@text = private constant [3 x i8] c"x\0A<&>"
+define i32 @main() { ret i32 42 } ; comment
+```
+
+Malformed:
+
+```llvm
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```llvm
+; incomplete <&>
+```
+
+# [OpenSCAD Code]($section.id('openscad'))
+```openscad
+module demo() { value = "x\n<&>"; enabled = true; } // comment
+```
+
+Malformed:
+
+```openscad
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```openscad
+/* incomplete <&>
+```
+
+# [Nickel Code]($section.id('nickel'))
+```nickel
+let item = { value = "x\n<&>", enabled = true } in item # comment
+```
+
+Malformed:
+
+```nickel
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```nickel
+/* incomplete <&>
+```
+
+# [Hare Code]($section.id('hare'))
+```hare
+export fn main() void = { let value: str = "x\n<&>"; }; // comment
+```
+
+Malformed:
+
+```hare
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```hare
+/* incomplete <&>
+```
+
+# [Agda Code]($section.id('agda'))
+```agda
+module Demo where
+data Item : Set where
+  item : Item
+text = "x\n<&>" -- comment
+```
+
+Malformed:
+
+```agda
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```agda
+{- incomplete <&>
+```
+
+# [Tree-sitter Query Code]($section.id('query'))
+```query
+(function_definition name: (identifier) @function (#match? @function "^x\n<&>")) ; comment
+```
+
+Malformed:
+
+```query
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```query
+; incomplete <&>
+```
+
+# [Vimscript Code]($section.id('vim'))
+```vim
+function Demo()
+  let value = 'x\n<&>'
+  let enabled = v:true
+endfunction
+" comment
+```
+
+Malformed:
+
+```vim
+let value = 'bad\q<&>
+let enabled = v:true
+```
+
+Incomplete:
+
+```vim
+" incomplete <&>
+```
+
+# [Uxntal Code]($section.id('uxntal'))
+```uxntal
+|0100 @main #2a #01 ADD "x\n
+BRK ( comment )
+```
+
+Malformed:
+
+```uxntal
+value = "bad\q<&>
+next = true | false
+```
+
+Incomplete:
+
+```uxntal
+( incomplete <&>
+```
+
+# [Comment Tags Code]($section.id('comment'))
+```comment
+TODO(alice): fix #42 at https://example.test
+```
+
+Malformed:
+
+```comment
+FIXME(unclosed <&>
+```
+
+Incomplete:
+
+```comment
+WIP(user
+```
+
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 
