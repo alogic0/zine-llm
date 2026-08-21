@@ -411,6 +411,332 @@ function(build name)
   message(STATUS "<&>")
 ```
 
+
+# [Java Code]($section.id('java'))
+```java
+public class Demo { int n = 42; String s = "x<&>"; }
+```
+
+Malformed:
+
+```java
+String s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```java
+/** incomplete <&>
+```
+
+# [C# Code]($section.id('c-sharp'))
+```c-sharp
+public class Demo { int N = 42; string S = "x<&>"; }
+```
+
+Malformed:
+
+```c-sharp
+string s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```c-sharp
+/* incomplete <&>
+```
+
+# [C++ Code]($section.id('cpp'))
+```cpp
+#include <string>
+class Demo { public: int n = 42; };
+```
+
+Malformed:
+
+```cpp
+const char* s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```cpp
+/* incomplete <&>
+```
+
+# [Go Code]($section.id('go'))
+```go
+package main
+func run() string { return "x<&>" }
+```
+
+Malformed:
+
+```go
+var s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```go
+/* incomplete <&>
+```
+
+# [PowerShell Code]($section.id('powershell'))
+```powershell
+function Test-X { param([string]$Name) Write-Output($Name) }
+```
+
+Malformed:
+
+```powershell
+$x = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```powershell
+<# incomplete <&>
+```
+
+# [PHP Code]($section.id('php'))
+```php
+<?php function run(string $x): bool { return true; }
+```
+
+Malformed:
+
+```php
+$x = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```php
+/* incomplete <&>
+```
+
+# [Lua Code]($section.id('lua'))
+```lua
+local n = 42
+function run() return "x<&>" end
+```
+
+Malformed:
+
+```lua
+local s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```lua
+--[[ incomplete <&>
+```
+
+# [Kotlin Code]($section.id('kotlin'))
+```kotlin
+class Demo { val n: Int = 42; fun run(): String = "x<&>" }
+```
+
+Malformed:
+
+```kotlin
+val s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```kotlin
+/* incomplete <&>
+```
+
+# [Ruby Code]($section.id('ruby'))
+```ruby
+class Demo
+  def run()
+    puts("x<&>")
+  end
+end
+```
+
+Malformed:
+
+```ruby
+s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```ruby
+# incomplete <&>
+```
+
+# [Swift Code]($section.id('swift'))
+```swift
+struct Demo { let n: Int = 42; func run() -> String { "x<&>" } }
+```
+
+Malformed:
+
+```swift
+let s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```swift
+/* incomplete <&>
+```
+
+# [Assembly Code]($section.id('asm'))
+```asm
+start:
+  mov rax, 42
+  ret
+```
+
+Malformed:
+
+```asm
+msg: .ascii "unterminated\u12<&>
+```
+
+Incomplete:
+
+```asm
+# incomplete <&>
+```
+
+# [NASM Code]($section.id('nasm'))
+```nasm
+section .text
+start:
+  mov rax, 42
+  ret
+```
+
+Malformed:
+
+```nasm
+msg: db "unterminated\u12<&>
+```
+
+Incomplete:
+
+```nasm
+; incomplete <&>
+```
+
+# [Objective-C Code]($section.id('objc'))
+```objc
+#import <Foundation/Foundation.h>
+@interface Demo
+@end
+```
+
+Malformed:
+
+```objc
+NSString *s = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```objc
+/* incomplete <&>
+```
+
+# [Vue Code]($section.id('vue'))
+```vue
+<template><div class="x">{{ value }}<&></div></template>
+```
+
+Malformed:
+
+```vue
+<template><div title="open<&>
+```
+
+Incomplete:
+
+```vue
+<!-- incomplete <&>
+```
+
+# [Astro Code]($section.id('astro'))
+```astro
+---
+const x = 1;
+---
+<main class="x"><&></main>
+```
+
+Malformed:
+
+```astro
+---
+const x = '<&>'
+<div>
+```
+
+Incomplete:
+
+```astro
+<!-- incomplete <&>
+```
+
+# [JSDoc Code]($section.id('jsdoc'))
+```jsdoc
+/** @param {string} value `code` <&> */
+```
+
+Malformed:
+
+```jsdoc
+/** @param {string value <&>
+```
+
+Incomplete:
+
+```jsdoc
+/** @returns {bool}
+```
+
+# [Regular Expression Code]($section.id('regex'))
+```regex
+^(?<name>[A-Za-z_]\w+)$
+```
+
+Malformed:
+
+```regex
+^(unterminated[<&>\d+
+```
+
+Incomplete:
+
+```regex
+foo(bar|baz
+```
+
+# [Protocol Buffers Code]($section.id('proto'))
+```proto
+syntax = "proto3"; message Entry { string name = 1; }
+```
+
+Malformed:
+
+```proto
+string name = "unterminated\u12<&>
+```
+
+Incomplete:
+
+```proto
+/* incomplete <&>
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

@@ -235,6 +235,133 @@ const hidden = true;
 <p>Incomplete function:</p><pre><code class="cmake"><span class="syntax-keyword">function</span><span class="syntax-punctuation">(</span><span class="syntax-variable">build</span> <span class="syntax-variable">name</span><span class="syntax-punctuation">)</span>
   <span class="syntax-function">message</span><span class="syntax-punctuation">(</span><span class="syntax-variable">STATUS</span> <span class="syntax-string">&quot;&lt;&amp;&gt;&quot;</span><span class="syntax-punctuation">)</span>
 </code></pre>
+</div><div id="java"><h1><a class="" href="#java">Java Code</a></h1><pre><code class="java"><span class="syntax-keyword">public</span> <span class="syntax-keyword">class</span> <span class="syntax-variable">Demo</span> <span class="syntax-punctuation">{</span> <span class="syntax-builtin syntax-type">int</span> <span class="syntax-property">n</span> <span class="syntax-operator">=</span> <span class="syntax-number">42</span><span class="syntax-punctuation">;</span> <span class="syntax-builtin syntax-type">String</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;x&lt;&amp;&gt;&quot;</span><span class="syntax-punctuation">;</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="java"><span class="syntax-builtin syntax-type">String</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="java"><span class="syntax-comment syntax-documentation">/** incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="c-sharp"><h1><a class="" href="#c-sharp">C# Code</a></h1><pre><code class="c-sharp"><span class="syntax-keyword">public</span> <span class="syntax-keyword">class</span> <span class="syntax-variable">Demo</span> <span class="syntax-punctuation">{</span> <span class="syntax-builtin syntax-type">int</span> <span class="syntax-property">N</span> <span class="syntax-operator">=</span> <span class="syntax-number">42</span><span class="syntax-punctuation">;</span> <span class="syntax-builtin syntax-type">string</span> <span class="syntax-property">S</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;x&lt;&amp;&gt;&quot;</span><span class="syntax-punctuation">;</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="c-sharp"><span class="syntax-builtin syntax-type">string</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="c-sharp"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="cpp"><h1><a class="" href="#cpp">C++ Code</a></h1><pre><code class="cpp"><span class="syntax-macro">#include &lt;string&gt;</span>
+<span class="syntax-keyword">class</span> <span class="syntax-variable">Demo</span> <span class="syntax-punctuation">{</span> <span class="syntax-keyword">public</span><span class="syntax-operator">:</span> <span class="syntax-builtin syntax-type">int</span> <span class="syntax-property">n</span> <span class="syntax-operator">=</span> <span class="syntax-number">42</span><span class="syntax-punctuation">;</span> <span class="syntax-punctuation">}</span><span class="syntax-punctuation">;</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="cpp"><span class="syntax-keyword">const</span> <span class="syntax-builtin syntax-type">char</span><span class="syntax-operator">*</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="cpp"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="go"><h1><a class="" href="#go">Go Code</a></h1><pre><code class="go"><span class="syntax-keyword">package</span> <span class="syntax-variable">main</span>
+<span class="syntax-keyword">func</span> <span class="syntax-function">run</span><span class="syntax-punctuation">(</span><span class="syntax-punctuation">)</span> <span class="syntax-builtin syntax-type">string</span> <span class="syntax-punctuation">{</span> <span class="syntax-keyword">return</span> <span class="syntax-string">&quot;x&lt;&amp;&gt;&quot;</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="go"><span class="syntax-keyword">var</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="go"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="powershell"><h1><a class="" href="#powershell">PowerShell Code</a></h1><pre><code class="powershell"><span class="syntax-keyword">function</span> <span class="syntax-variable">Test-X</span> <span class="syntax-punctuation">{</span> <span class="syntax-keyword">param</span><span class="syntax-punctuation">(</span><span class="syntax-punctuation">[</span><span class="syntax-builtin syntax-type">string</span><span class="syntax-punctuation">]</span><span class="syntax-variable">$Name</span><span class="syntax-punctuation">)</span> <span class="syntax-function">Write-Output</span><span class="syntax-punctuation">(</span><span class="syntax-variable">$Name</span><span class="syntax-punctuation">)</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="powershell"><span class="syntax-variable">$x</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="powershell"><span class="syntax-comment">&lt;# incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="php"><h1><a class="" href="#php">PHP Code</a></h1><pre><code class="php"><span class="syntax-operator">&lt;?</span><span class="syntax-variable">php</span> <span class="syntax-keyword">function</span> <span class="syntax-function">run</span><span class="syntax-punctuation">(</span><span class="syntax-builtin syntax-type">string</span> <span class="syntax-variable">$x</span><span class="syntax-punctuation">)</span><span class="syntax-operator">:</span> <span class="syntax-builtin syntax-type">bool</span> <span class="syntax-punctuation">{</span> <span class="syntax-keyword">return</span> <span class="syntax-boolean">true</span><span class="syntax-punctuation">;</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="php"><span class="syntax-variable">$x</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="php"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="lua"><h1><a class="" href="#lua">Lua Code</a></h1><pre><code class="lua"><span class="syntax-keyword">local</span> <span class="syntax-property">n</span> <span class="syntax-operator">=</span> <span class="syntax-number">42</span>
+<span class="syntax-keyword">function</span> <span class="syntax-function">run</span><span class="syntax-punctuation">(</span><span class="syntax-punctuation">)</span> <span class="syntax-keyword">return</span> <span class="syntax-string">&quot;x&lt;&amp;&gt;&quot;</span> <span class="syntax-keyword">end</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="lua"><span class="syntax-keyword">local</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="lua"><span class="syntax-comment">--[[ incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="kotlin"><h1><a class="" href="#kotlin">Kotlin Code</a></h1><pre><code class="kotlin"><span class="syntax-keyword">class</span> <span class="syntax-variable">Demo</span> <span class="syntax-punctuation">{</span> <span class="syntax-keyword">val</span> <span class="syntax-label">n</span><span class="syntax-operator">:</span> <span class="syntax-builtin syntax-type">Int</span> <span class="syntax-operator">=</span> <span class="syntax-number">42</span><span class="syntax-punctuation">;</span> <span class="syntax-keyword">fun</span> <span class="syntax-function">run</span><span class="syntax-punctuation">(</span><span class="syntax-punctuation">)</span><span class="syntax-operator">:</span> <span class="syntax-builtin syntax-type">String</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;x&lt;&amp;&gt;&quot;</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="kotlin"><span class="syntax-keyword">val</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="kotlin"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="ruby"><h1><a class="" href="#ruby">Ruby Code</a></h1><pre><code class="ruby"><span class="syntax-keyword">class</span> <span class="syntax-variable">Demo</span>
+  <span class="syntax-keyword">def</span> <span class="syntax-function">run</span><span class="syntax-punctuation">(</span><span class="syntax-punctuation">)</span>
+    <span class="syntax-function">puts</span><span class="syntax-punctuation">(</span><span class="syntax-string">&quot;x&lt;&amp;&gt;&quot;</span><span class="syntax-punctuation">)</span>
+  <span class="syntax-keyword">end</span>
+<span class="syntax-keyword">end</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="ruby"><span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="ruby"><span class="syntax-comment"># incomplete &lt;&amp;&gt;</span>
+</code></pre>
+</div><div id="swift"><h1><a class="" href="#swift">Swift Code</a></h1><pre><code class="swift"><span class="syntax-keyword">struct</span> <span class="syntax-variable">Demo</span> <span class="syntax-punctuation">{</span> <span class="syntax-keyword">let</span> <span class="syntax-label">n</span><span class="syntax-operator">:</span> <span class="syntax-builtin syntax-type">Int</span> <span class="syntax-operator">=</span> <span class="syntax-number">42</span><span class="syntax-punctuation">;</span> <span class="syntax-keyword">func</span> <span class="syntax-function">run</span><span class="syntax-punctuation">(</span><span class="syntax-punctuation">)</span> <span class="syntax-operator">-&gt;</span> <span class="syntax-builtin syntax-type">String</span> <span class="syntax-punctuation">{</span> <span class="syntax-string">&quot;x&lt;&amp;&gt;&quot;</span> <span class="syntax-punctuation">}</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="swift"><span class="syntax-keyword">let</span> <span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="swift"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="asm"><h1><a class="" href="#asm">Assembly Code</a></h1><pre><code class="asm"><span class="syntax-label">start</span><span class="syntax-operator">:</span>
+  <span class="syntax-keyword">mov</span> <span class="syntax-builtin syntax-type">rax</span><span class="syntax-punctuation">,</span> <span class="syntax-number">42</span>
+  <span class="syntax-keyword">ret</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="asm"><span class="syntax-label">msg</span><span class="syntax-operator">:</span> <span class="syntax-punctuation">.</span><span class="syntax-property">ascii</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="asm"><span class="syntax-comment"># incomplete &lt;&amp;&gt;</span>
+</code></pre>
+</div><div id="nasm"><h1><a class="" href="#nasm">NASM Code</a></h1><pre><code class="nasm"><span class="syntax-keyword">section</span> <span class="syntax-punctuation">.</span><span class="syntax-property">text</span>
+<span class="syntax-label">start</span><span class="syntax-operator">:</span>
+  <span class="syntax-keyword">mov</span> <span class="syntax-builtin syntax-type">rax</span><span class="syntax-punctuation">,</span> <span class="syntax-number">42</span>
+  <span class="syntax-keyword">ret</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="nasm"><span class="syntax-label">msg</span><span class="syntax-operator">:</span> <span class="syntax-keyword">db</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="nasm"><span class="syntax-comment">; incomplete &lt;&amp;&gt;</span>
+</code></pre>
+</div><div id="objc"><h1><a class="" href="#objc">Objective-C Code</a></h1><pre><code class="objc"><span class="syntax-macro">#import &lt;Foundation/Foundation.h&gt;</span>
+<span class="syntax-attribute">@interface</span> <span class="syntax-variable">Demo</span>
+<span class="syntax-attribute">@end</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="objc"><span class="syntax-variable">NSString</span> <span class="syntax-operator">*</span><span class="syntax-property">s</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="objc"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="vue"><h1><a class="" href="#vue">Vue Code</a></h1><pre><code class="vue"><span class="syntax-punctuation">&lt;</span><span class="syntax-tag">template</span><span class="syntax-punctuation">&gt;</span><span class="syntax-punctuation">&lt;</span><span class="syntax-tag">div</span> <span class="syntax-attribute">class</span><span class="syntax-operator">=</span><span class="syntax-string">&quot;x&quot;</span><span class="syntax-punctuation">&gt;</span><span class="syntax-embedded">{{ value }}</span><span class="syntax-punctuation">&lt;</span>&amp;<span class="syntax-punctuation">&gt;</span><span class="syntax-punctuation">&lt;</span><span class="syntax-punctuation">/</span><span class="syntax-tag">div</span><span class="syntax-punctuation">&gt;</span><span class="syntax-punctuation">&lt;</span><span class="syntax-punctuation">/</span><span class="syntax-tag">template</span><span class="syntax-punctuation">&gt;</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="vue"><span class="syntax-punctuation">&lt;</span><span class="syntax-tag">template</span><span class="syntax-punctuation">&gt;</span><span class="syntax-punctuation">&lt;</span><span class="syntax-tag">div</span> <span class="syntax-attribute">title</span><span class="syntax-operator">=</span><span class="syntax-string">&quot;open&lt;&amp;&gt;</span>
+</code></pre>
+<p>Incomplete:</p><pre><code class="vue"><span class="syntax-comment">&lt;!-- incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="astro"><h1><a class="" href="#astro">Astro Code</a></h1><pre><code class="astro"><span class="syntax-special">---</span><span class="syntax-embedded">
+const x = 1;</span>
+<span class="syntax-special">---</span>
+<span class="syntax-punctuation">&lt;</span><span class="syntax-tag">main</span> <span class="syntax-attribute">class</span><span class="syntax-operator">=</span><span class="syntax-string">&quot;x&quot;</span><span class="syntax-punctuation">&gt;</span><span class="syntax-punctuation">&lt;</span>&amp;<span class="syntax-punctuation">&gt;</span><span class="syntax-punctuation">&lt;</span><span class="syntax-punctuation">/</span><span class="syntax-tag">main</span><span class="syntax-punctuation">&gt;</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="astro"><span class="syntax-special">---</span><span class="syntax-embedded">
+const x = &#39;&lt;&amp;&gt;&#39;
+&lt;div&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="astro"><span class="syntax-comment">&lt;!-- incomplete &lt;&amp;&gt;
+</span></code></pre>
+</div><div id="jsdoc"><h1><a class="" href="#jsdoc">JSDoc Code</a></h1><pre><code class="jsdoc"><span class="syntax-comment syntax-documentation">/** </span><span class="syntax-attribute syntax-comment syntax-documentation">@param</span><span class="syntax-comment syntax-documentation"> </span><span class="syntax-comment syntax-documentation syntax-type">{string}</span><span class="syntax-comment syntax-documentation"> value </span><span class="syntax-comment syntax-documentation syntax-markup-code">`code`</span><span class="syntax-comment syntax-documentation"> &lt;&amp;&gt; */
+</span></code></pre>
+<p>Malformed:</p><pre><code class="jsdoc"><span class="syntax-comment syntax-documentation">/** </span><span class="syntax-attribute syntax-comment syntax-documentation">@param</span><span class="syntax-comment syntax-documentation"> </span><span class="syntax-comment syntax-documentation syntax-type">{string value &lt;&amp;&gt;</span><span class="syntax-comment syntax-documentation">
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="jsdoc"><span class="syntax-comment syntax-documentation">/** </span><span class="syntax-attribute syntax-comment syntax-documentation">@returns</span><span class="syntax-comment syntax-documentation"> </span><span class="syntax-comment syntax-documentation syntax-type">{bool}</span><span class="syntax-comment syntax-documentation">
+</span></code></pre>
+</div><div id="regex"><h1><a class="" href="#regex">Regular Expression Code</a></h1><pre><code class="regex"><span class="syntax-special">^</span><span class="syntax-punctuation">(</span><span class="syntax-operator">?</span>&lt;name&gt;<span class="syntax-string">[A-Za-z_]</span><span class="syntax-escape">\w</span><span class="syntax-operator">+</span><span class="syntax-punctuation">)</span><span class="syntax-special">$</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="regex"><span class="syntax-special">^</span><span class="syntax-punctuation">(</span>unterminated<span class="syntax-string">[&lt;&amp;&gt;\d+
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="regex">foo<span class="syntax-punctuation">(</span>bar<span class="syntax-operator">|</span>baz
+</code></pre>
+</div><div id="proto"><h1><a class="" href="#proto">Protocol Buffers Code</a></h1><pre><code class="proto"><span class="syntax-keyword">syntax</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;proto3&quot;</span><span class="syntax-punctuation">;</span> <span class="syntax-keyword">message</span> <span class="syntax-variable">Entry</span> <span class="syntax-punctuation">{</span> <span class="syntax-builtin syntax-type">string</span> <span class="syntax-property">name</span> <span class="syntax-operator">=</span> <span class="syntax-number">1</span><span class="syntax-punctuation">;</span> <span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="proto"><span class="syntax-builtin syntax-type">string</span> <span class="syntax-property">name</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\u12</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="proto"><span class="syntax-comment">/* incomplete &lt;&amp;&gt;
+</span></code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p><p><figure><pre><code class="json"><span class="syntax-punctuation">{</span><span class="syntax-property">&quot;directive&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-string">&quot;&lt;native &amp; JSON&gt;&quot;</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;enabled&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-boolean">true</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;value&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-number">42</span><span class="syntax-punctuation">}</span>

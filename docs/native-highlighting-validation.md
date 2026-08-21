@@ -8,14 +8,30 @@ experimental; they are not release policy or portable performance thresholds.
 
 Zine routes these exact canonical language names through native backends:
 
+- `asm`;
+- `astro`;
 - `bash`;
 - `c`;
 - `cmake`;
+- `c-sharp`;
+- `cpp`;
 - `diff`;
 - `dockerfile`;
+- `go`;
 - `hcl`;
 - `json`;
 - `javascript`;
+- `java`;
+- `jsdoc`;
+- `kotlin`;
+- `lua`;
+- `nasm`;
+- `objc`;
+- `php`;
+- `powershell`;
+- `proto`;
+- `regex`;
+- `ruby`;
 - `make`;
 - `rust`;
 - `zig`;
@@ -28,18 +44,23 @@ Zine routes these exact canonical language names through native backends:
 - `css`;
 - `superhtml`;
 - `toml`;
+- `swift`;
 - `typescript`;
 - `yaml`;
+- `vue`;
 - `markdown`;
 - `python`.
 
 Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
 `diff`, `js` to `javascript`, `ts` to `typescript`, and `md`, `smd`, and
-`supermd` to `markdown`; `yml` maps to `yaml`.
+`supermd` to `markdown`; `yml` maps to `yaml`; `cs` and `csharp` map to
+`c-sharp`; `c++` maps to `cpp`; `kt` maps to `kotlin`; `rb` maps to `ruby`;
+`assembly` maps to `asm`; `objective-c` maps to `objc`; and `protobuf` maps to
+`proto`.
 `zig-native-syntax` exposes only canonical backend names.
 
 The default `native-first` mode sends every other language through the existing
-`flow-syntax` and Tree-sitter path. The focused routing test uses Java as
+`flow-syntax` and Tree-sitter path. The focused routing test uses KDL as
 fallback evidence; the current generated-site rendering fixture no longer
 requires a Tree-sitter language. Alias policy remains Zine-owned.
 
@@ -81,7 +102,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all twenty-four native languages,
+The rendering snapshot covers fenced blocks for all forty-two native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -154,6 +175,13 @@ interpreted as shell.
 CMake comparison covers command calls, control-flow keywords, primitive
 values, quoted strings, and line-bounded malformed input. Evaluation and
 generator expressions remain outside the scanner.
+
+The roadmap increment from Java through Protocol Buffers compares complete,
+malformed, and incomplete input for every backend. Conventional languages use
+language-specific keyword and literal policies over shared bounded recovery;
+Vue and Astro use component-markup recovery, while JSDoc and regular
+expressions have dedicated scanners. Embedded languages, semantic resolution,
+macro expansion, and dialect validation remain outside these backends.
 
 ## First-spike comparison
 

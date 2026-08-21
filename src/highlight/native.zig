@@ -2,6 +2,8 @@ const std = @import("std");
 const core = @import("native_syntax");
 
 pub fn backendFor(name: []const u8) ?core.Backend {
+    if (std.mem.eql(u8, name, "asm") or std.mem.eql(u8, name, "assembly")) return core.languages.assembly.backend;
+    if (std.mem.eql(u8, name, "astro")) return core.languages.astro.backend;
     if (std.mem.eql(u8, name, "bash") or
         std.mem.eql(u8, name, "sh") or
         std.mem.eql(u8, name, "shell"))
@@ -10,25 +12,41 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     }
     if (std.mem.eql(u8, name, "c")) return core.languages.c.backend;
     if (std.mem.eql(u8, name, "cmake")) return core.languages.cmake.backend;
+    if (std.mem.eql(u8, name, "c-sharp") or std.mem.eql(u8, name, "cs") or std.mem.eql(u8, name, "csharp")) return core.languages.c_sharp.backend;
+    if (std.mem.eql(u8, name, "cpp") or std.mem.eql(u8, name, "c++")) return core.languages.cpp.backend;
     if (std.mem.eql(u8, name, "diff") or std.mem.eql(u8, name, "patch")) {
         return core.languages.diff.backend;
     }
     if (std.mem.eql(u8, name, "dockerfile")) return core.languages.dockerfile.backend;
+    if (std.mem.eql(u8, name, "go")) return core.languages.go.backend;
     if (std.mem.eql(u8, name, "hcl")) return core.languages.hcl.backend;
     if (std.mem.eql(u8, name, "json")) return core.languages.json.backend;
     if (std.mem.eql(u8, name, "javascript") or std.mem.eql(u8, name, "js")) {
         return core.languages.javascript.backend;
     }
+    if (std.mem.eql(u8, name, "java")) return core.languages.java.backend;
+    if (std.mem.eql(u8, name, "jsdoc")) return core.languages.jsdoc.backend;
+    if (std.mem.eql(u8, name, "kotlin") or std.mem.eql(u8, name, "kt")) return core.languages.kotlin.backend;
+    if (std.mem.eql(u8, name, "lua")) return core.languages.lua.backend;
     if (std.mem.eql(u8, name, "make")) return core.languages.make.backend;
+    if (std.mem.eql(u8, name, "nasm")) return core.languages.nasm.backend;
+    if (std.mem.eql(u8, name, "objc") or std.mem.eql(u8, name, "objective-c")) return core.languages.objc.backend;
+    if (std.mem.eql(u8, name, "php")) return core.languages.php.backend;
+    if (std.mem.eql(u8, name, "powershell")) return core.languages.powershell.backend;
+    if (std.mem.eql(u8, name, "proto") or std.mem.eql(u8, name, "protobuf")) return core.languages.proto.backend;
     if (std.mem.eql(u8, name, "python")) return core.languages.python.backend;
+    if (std.mem.eql(u8, name, "regex")) return core.languages.regex.backend;
     if (std.mem.eql(u8, name, "rust")) return core.languages.rust.backend;
+    if (std.mem.eql(u8, name, "ruby") or std.mem.eql(u8, name, "rb")) return core.languages.ruby.backend;
     if (std.mem.eql(u8, name, "toml")) return core.languages.toml.backend;
+    if (std.mem.eql(u8, name, "swift")) return core.languages.swift.backend;
     if (std.mem.eql(u8, name, "typescript") or std.mem.eql(u8, name, "ts")) {
         return core.languages.typescript.backend;
     }
     if (std.mem.eql(u8, name, "yaml") or std.mem.eql(u8, name, "yml")) {
         return core.languages.yaml.backend;
     }
+    if (std.mem.eql(u8, name, "vue")) return core.languages.vue.backend;
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
     if (std.mem.eql(u8, name, "ziggy")) return @import("native_syntax_ziggy").backend;
     if (std.mem.eql(u8, name, "ziggy-schema")) return @import("native_syntax_ziggy_schema").backend;
@@ -65,19 +83,37 @@ pub fn render(
 
 test "only completed canonical languages use native backends" {
     const native_languages = [_][]const u8{
+        "asm",
+        "astro",
         "bash",
         "c",
         "cmake",
+        "c-sharp",
+        "cpp",
         "diff",
         "dockerfile",
+        "go",
         "hcl",
         "json",
         "javascript",
+        "java",
+        "jsdoc",
+        "kotlin",
+        "lua",
         "make",
+        "nasm",
+        "objc",
+        "php",
+        "powershell",
+        "proto",
+        "regex",
+        "ruby",
         "rust",
         "toml",
+        "swift",
         "typescript",
         "yaml",
+        "vue",
         "zig",
         "ziggy",
         "ziggy-schema",
@@ -94,7 +130,7 @@ test "only completed canonical languages use native backends" {
         try std.testing.expect(backendFor(language) != null);
     }
 
-    try std.testing.expectEqual(null, backendFor("java"));
+    try std.testing.expectEqual(null, backendFor("kdl"));
     try std.testing.expectEqual(null, backendFor("shtml"));
 }
 
@@ -103,6 +139,25 @@ test "Zine-owned yml alias shares the native YAML backend" {
     const aliased = backendFor("yml").?;
     try std.testing.expectEqualStrings(canonical.info.canonical_name, aliased.info.canonical_name);
     try std.testing.expectEqual(core.BackendKind.lexical, aliased.info.kind);
+}
+
+test "Zine-owned roadmap aliases share their canonical native backends" {
+    const aliases = [_]struct { alias: []const u8, canonical: []const u8 }{
+        .{ .alias = "cs", .canonical = "c-sharp" },
+        .{ .alias = "csharp", .canonical = "c-sharp" },
+        .{ .alias = "c++", .canonical = "cpp" },
+        .{ .alias = "kt", .canonical = "kotlin" },
+        .{ .alias = "rb", .canonical = "ruby" },
+        .{ .alias = "assembly", .canonical = "asm" },
+        .{ .alias = "objective-c", .canonical = "objc" },
+        .{ .alias = "protobuf", .canonical = "proto" },
+    };
+    for (aliases) |entry| {
+        try std.testing.expectEqualStrings(
+            backendFor(entry.canonical).?.info.canonical_name,
+            backendFor(entry.alias).?.info.canonical_name,
+        );
+    }
 }
 
 test "Zine-owned ts alias shares the native TypeScript backend" {
@@ -194,7 +249,7 @@ test "native routing renders completed languages and declines fallback languages
     defer fallback_output.deinit();
     try std.testing.expect(!try render(
         std.testing.allocator,
-        "java",
+        "kdl",
         "class Main {}",
         &fallback_output.writer,
     ));

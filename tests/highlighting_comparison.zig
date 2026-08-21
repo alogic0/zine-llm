@@ -388,6 +388,37 @@ test "native CMake recovery remains compared with Tree-sitter" {
     try compareLanguage("cmake", cases[0..]);
 }
 
+test "native roadmap languages 25 through 42 remain compared with Tree-sitter" {
+    const specs = [_]struct { language: []const u8, complete: []const u8, malformed: []const u8, incomplete: []const u8, complete_scopes: []const native.Scope, malformed_scopes: []const native.Scope, incomplete_scopes: []const native.Scope }{
+        .{ .language = "java", .complete = "public class Demo { int n = 42; String s = \"x<&>\"; boolean ok = true; }", .malformed = "class X { String s = \"bad\\u12<&>\n", .incomplete = "/** incomplete <&>", .complete_scopes = &.{ .keyword, .type, .number, .string, .boolean }, .malformed_scopes = &.{ .keyword, .string, .escape }, .incomplete_scopes = &.{ .comment, .documentation } },
+        .{ .language = "c-sharp", .complete = "public class Demo { int N = 42; string S = \"x<&>\"; bool Ok = true; }", .malformed = "class X { string s = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .keyword, .type, .number, .string, .boolean }, .malformed_scopes = &.{ .keyword, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "cpp", .complete = "#include <string>\nclass Demo { public: int n = 42; bool ok = true; };", .malformed = "const char* s = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .macro, .keyword, .type, .number, .boolean }, .malformed_scopes = &.{ .keyword, .type, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "go", .complete = "package main\nfunc run() string { n := 42; return \"x<&>\" }", .malformed = "var s = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .keyword, .type, .number, .string, .function }, .malformed_scopes = &.{ .keyword, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "powershell", .complete = "function Test-X { param([string]$Name) $ok = $true; Write-Output($Name) }", .malformed = "$x = \"bad\\u12<&>\n", .incomplete = "<# incomplete <&>", .complete_scopes = &.{ .keyword, .type, .variable, .boolean, .function }, .malformed_scopes = &.{ .variable, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "php", .complete = "<?php function run(string $x): bool { return true; }", .malformed = "$x = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .keyword, .type, .variable, .boolean, .function }, .malformed_scopes = &.{ .variable, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "lua", .complete = "local n = 42\nfunction run() return \"x<&>\" end", .malformed = "local s = \"bad\\u12<&>\n", .incomplete = "--[[ incomplete <&>", .complete_scopes = &.{ .keyword, .number, .function, .string }, .malformed_scopes = &.{ .keyword, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "kotlin", .complete = "class Demo { val n: Int = 42; fun run(): String = \"x<&>\" }", .malformed = "val s = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .keyword, .type, .number, .string }, .malformed_scopes = &.{ .keyword, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "ruby", .complete = "class Demo\n def run()\n  puts(\"x<&>\")\n end\nend", .malformed = "s = \"bad\\u12<&>\n", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .function, .string }, .malformed_scopes = &.{ .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "swift", .complete = "struct Demo { let n: Int = 42; func run() -> String { \"x<&>\" } }", .malformed = "let s = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .keyword, .type, .number, .string }, .malformed_scopes = &.{ .keyword, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "asm", .complete = "start:\n mov rax, 42\n ret", .malformed = "msg: .ascii \"bad\\u12<&>\n", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .label, .keyword, .type, .number }, .malformed_scopes = &.{ .label, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "nasm", .complete = "section .text\nstart:\n mov rax, 42\n ret", .malformed = "msg: db \"bad\\u12<&>\n", .incomplete = "; incomplete <&>", .complete_scopes = &.{ .keyword, .label, .type, .number }, .malformed_scopes = &.{ .label, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "objc", .complete = "#import <Foundation/Foundation.h>\n@interface Demo\n@end\nint run() { return 42; }", .malformed = "NSString *s = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .macro, .attribute, .type, .function, .keyword, .number }, .malformed_scopes = &.{ .variable, .string, .escape }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "vue", .complete = "<template><div class=\"x\">{{ value }}<&></div></template>", .malformed = "<template><div title=\"open<&>\n", .incomplete = "<!-- incomplete <&>", .complete_scopes = &.{ .tag, .attribute, .string, .embedded }, .malformed_scopes = &.{ .tag, .attribute, .string }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "astro", .complete = "---\nconst x = 1;\n---\n<main class=\"x\"><&></main>", .malformed = "---\nconst x = '<&>'\n<div>", .incomplete = "<!-- incomplete <&>", .complete_scopes = &.{ .special, .embedded, .tag, .attribute, .string }, .malformed_scopes = &.{ .special, .embedded }, .incomplete_scopes = &.{.comment} },
+        .{ .language = "jsdoc", .complete = "/** @param {string} value `code` <&> */", .malformed = "/** @param {string value <&>", .incomplete = "/** @returns {bool}", .complete_scopes = &.{ .comment, .documentation, .attribute, .type, .markup_code }, .malformed_scopes = &.{ .comment, .attribute, .type }, .incomplete_scopes = &.{ .comment, .attribute, .type } },
+        .{ .language = "regex", .complete = "^(?<name>[A-Za-z_]\\w+)$", .malformed = "^(unterminated[<&>\\d+", .incomplete = "foo(bar|baz", .complete_scopes = &.{ .special, .punctuation, .string, .escape, .operator }, .malformed_scopes = &.{ .special, .punctuation, .string }, .incomplete_scopes = &.{ .punctuation, .operator } },
+        .{ .language = "proto", .complete = "syntax = \"proto3\"; message Entry { string name = 1; bool ok = 2; }", .malformed = "string name = \"bad\\u12<&>\n", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .keyword, .string, .type, .property, .number }, .malformed_scopes = &.{ .type, .property, .string, .escape }, .incomplete_scopes = &.{.comment} },
+    };
+    for (specs) |spec| {
+        const cases = [_]Case{
+            .{ .source = spec.complete, .native_scopes = spec.complete_scopes, .tree_captures = &.{} },
+            .{ .source = spec.malformed, .native_scopes = spec.malformed_scopes, .tree_captures = &.{} },
+            .{ .source = spec.incomplete, .native_scopes = spec.incomplete_scopes, .tree_captures = &.{} },
+        };
+        try compareLanguage(spec.language, cases[0..]);
+    }
+}
+
 fn compareLanguage(language: []const u8, cases: []const Case) !void {
     var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
     defer query_cache.deinit();
@@ -421,7 +452,7 @@ fn expectNativeScopes(
         native.languages.make.backend
     else if (std.mem.eql(u8, language, "cmake"))
         native.languages.cmake.backend
-    else if (std.mem.eql(u8, language, "toml"))
+    else if (std.mem.eql(u8, language, "java")) native.languages.java.backend else if (std.mem.eql(u8, language, "c-sharp")) native.languages.c_sharp.backend else if (std.mem.eql(u8, language, "cpp")) native.languages.cpp.backend else if (std.mem.eql(u8, language, "go")) native.languages.go.backend else if (std.mem.eql(u8, language, "powershell")) native.languages.powershell.backend else if (std.mem.eql(u8, language, "php")) native.languages.php.backend else if (std.mem.eql(u8, language, "lua")) native.languages.lua.backend else if (std.mem.eql(u8, language, "kotlin")) native.languages.kotlin.backend else if (std.mem.eql(u8, language, "ruby")) native.languages.ruby.backend else if (std.mem.eql(u8, language, "swift")) native.languages.swift.backend else if (std.mem.eql(u8, language, "asm")) native.languages.assembly.backend else if (std.mem.eql(u8, language, "nasm")) native.languages.nasm.backend else if (std.mem.eql(u8, language, "objc")) native.languages.objc.backend else if (std.mem.eql(u8, language, "vue")) native.languages.vue.backend else if (std.mem.eql(u8, language, "astro")) native.languages.astro.backend else if (std.mem.eql(u8, language, "jsdoc")) native.languages.jsdoc.backend else if (std.mem.eql(u8, language, "regex")) native.languages.regex.backend else if (std.mem.eql(u8, language, "proto")) native.languages.proto.backend else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))
         native.languages.dockerfile.backend
