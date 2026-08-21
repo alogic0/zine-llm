@@ -529,7 +529,7 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_native_highlight_tests.step);
     if (syntax) |tree_sitter_syntax| {
         const json_comparison_module = b.createModule(.{
-            .root_source_file = b.path("tests/json_highlighting_comparison.zig"),
+            .root_source_file = b.path("tests/highlighting_comparison.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{

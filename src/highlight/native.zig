@@ -8,6 +8,9 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     {
         return core.languages.bash.backend;
     }
+    if (std.mem.eql(u8, name, "diff") or std.mem.eql(u8, name, "patch")) {
+        return core.languages.diff.backend;
+    }
     if (std.mem.eql(u8, name, "json")) return core.languages.json.backend;
     if (std.mem.eql(u8, name, "rust")) return core.languages.rust.backend;
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
@@ -46,6 +49,7 @@ pub fn render(
 test "only completed canonical languages use native backends" {
     const native_languages = [_][]const u8{
         "bash",
+        "diff",
         "json",
         "rust",
         "zig",
@@ -64,6 +68,13 @@ test "only completed canonical languages use native backends" {
 
     try std.testing.expectEqual(null, backendFor("python"));
     try std.testing.expectEqual(null, backendFor("shtml"));
+}
+
+test "Zine-owned patch alias shares the native Diff backend" {
+    const canonical = backendFor("diff").?;
+    const aliased = backendFor("patch").?;
+    try std.testing.expectEqualStrings(canonical.info.canonical_name, aliased.info.canonical_name);
+    try std.testing.expectEqual(core.BackendKind.lexical, aliased.info.kind);
 }
 
 test "native JSON routing covers complete, malformed, and incomplete input" {

@@ -9,6 +9,7 @@ experimental; they are not release policy or portable performance thresholds.
 Zine routes these exact canonical language names through native backends:
 
 - `bash`;
+- `diff`;
 - `json`;
 - `rust`;
 - `zig`;
@@ -21,7 +22,8 @@ Zine routes these exact canonical language names through native backends:
 - `superhtml`;
 - `markdown`.
 
-Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, and `md`,
+Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
+`diff`, and `md`,
 `smd`, and `supermd` to `markdown`. `zig-native-syntax` exposes only canonical
 backend names.
 
@@ -68,7 +70,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all twelve native languages,
+The rendering snapshot covers fenced blocks for all thirteen native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -86,6 +88,11 @@ property-specific capture. For `tru` before the fence's trailing newline,
 native recovery emits a boolean prefix while Tree-sitter emits no
 `constant.builtin` capture. These are intentional recovery improvements, not
 parity failures.
+
+Diff comparison covers complete, malformed, and incomplete unified-patch
+lines. The native backend intentionally classifies patch structure only and
+leaves changed payload plain, avoiding false claims about the embedded source
+language.
 
 ## First-spike comparison
 

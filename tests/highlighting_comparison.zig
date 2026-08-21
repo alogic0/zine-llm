@@ -50,7 +50,7 @@ test "native JSON recovery remains compared with Tree-sitter" {
         );
         defer tree.destroy();
         try tree.refresh_full(case.source);
-        try expectTreeCaptureRangesValid(tree, case.source.len);
+        _ = try expectTreeCaptureRangesValid(tree, case.source.len);
         for (case.tree_captures) |capture_name| {
             if (!try hasTreeCapture(tree, capture_name)) {
                 std.debug.print(
@@ -68,6 +68,62 @@ test "native JSON recovery remains compared with Tree-sitter" {
             try std.testing.expect(!try hasTreeCapture(tree, "string.special.key"));
         }
     }
+}
+
+test "native Diff recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "diff --git a/a b/a\n--- a/a\n+++ b/a\n@@ -1 +1 @@\n-old\n+new\n",
+            .native_scopes = &.{ .keyword, .label, .special, .operator },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "@@ -1 +1\n+unterminated <&>",
+            .native_scopes = &.{ .special, .operator },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "+++",
+            .native_scopes = &.{.operator},
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("diff", case.source, case.native_scopes);
+        const tree = try createTree("diff", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
+fn expectNativeScopes(
+    language: []const u8,
+    source: []const u8,
+    expected: []const native.Scope,
+) !void {
+    const backend = if (std.mem.eql(u8, language, "diff"))
+        native.languages.diff.backend
+    else
+        return error.UnknownNativeComparisonLanguage;
+    var sink: native.CaptureSink = .init(std.testing.allocator, source.len);
+    defer sink.deinit();
+    try backend.highlight(source, &sink);
+    for (expected) |scope| try std.testing.expect(hasNativeScope(sink.captures(), scope));
+}
+
+fn createTree(
+    language: []const u8,
+    source: []const u8,
+    query_cache: *syntax.QueryCache,
+) !*syntax {
+    const tree = try syntax.create_file_type_static(std.testing.allocator, language, query_cache);
+    errdefer tree.destroy();
+    try tree.refresh_full(source);
+    return tree;
 }
 
 fn hasNativeScope(captures: []const native.Capture, expected: native.Scope) bool {
@@ -91,17 +147,20 @@ fn hasTreeCapture(tree: *syntax, expected: []const u8) !bool {
     return false;
 }
 
-fn expectTreeCaptureRangesValid(tree: *syntax, source_len: usize) !void {
-    const parsed = tree.tree orelse return;
+fn expectTreeCaptureRangesValid(tree: *syntax, source_len: usize) !usize {
+    const parsed = tree.tree orelse return 0;
     const cursor = try treez.Query.Cursor.create();
     defer cursor.destroy();
     cursor.execute(tree.query, parsed.getRootNode());
 
+    var count: usize = 0;
     while (cursor.nextMatch()) |match| {
         for (match.captures()) |capture| {
+            count += 1;
             const range = capture.node.getRange();
             try std.testing.expect(range.start_byte <= range.end_byte);
             try std.testing.expect(range.end_byte <= source_len);
         }
     }
+    return count;
 }
