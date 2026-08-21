@@ -220,6 +220,36 @@ test "native SQL recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native C recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "#include <stdint.h>\n/** docs */\nstatic int render(const char *text) { return text != NULL ? 0xffu : 0; }\n",
+            .native_scopes = &.{ .macro, .comment, .documentation, .keyword, .builtin, .type, .function, .variable, .constant, .number, .operator, .punctuation },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "#define OPEN(x) \\\n  ((x) + 1\nint main( { return \"unterminated\\n<&>\n",
+            .native_scopes = &.{ .macro, .builtin, .function, .keyword, .string, .escape },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "/* unfinished\nint hidden(void);\n",
+            .native_scopes = &.{.comment},
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("c", case.source, case.native_scopes);
+        const tree = try createTree("c", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -227,6 +257,8 @@ fn expectNativeScopes(
 ) !void {
     const backend = if (std.mem.eql(u8, language, "diff"))
         native.languages.diff.backend
+    else if (std.mem.eql(u8, language, "c"))
+        native.languages.c.backend
     else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))

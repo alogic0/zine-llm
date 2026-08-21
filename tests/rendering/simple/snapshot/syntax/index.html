@@ -130,6 +130,20 @@ name FROM users WHERE value = &#39;unterminated &lt;&amp;&gt;
 <p>Incomplete:</p><pre><code class="sql"><span class="syntax-keyword">SELECT</span> <span class="syntax-string">$body$unfinished
 &lt;&amp;&gt;
 </span></code></pre>
+</div><div id="c"><h1><a class="" href="#c">C Code</a></h1><pre><code class="c"><span class="syntax-macro">#include &lt;stdint.h&gt;</span>
+<span class="syntax-macro">#define SCALE(x) ((x) * 2)</span>
+<span class="syntax-comment syntax-documentation">/** Documentation &lt;&amp;&gt;. */</span>
+<span class="syntax-keyword">static</span> <span class="syntax-builtin syntax-type">int</span> <span class="syntax-function">render</span><span class="syntax-punctuation">(</span><span class="syntax-keyword">const</span> <span class="syntax-builtin syntax-type">char</span> <span class="syntax-operator">*</span><span class="syntax-variable">text</span><span class="syntax-punctuation">)</span> <span class="syntax-punctuation">{</span>
+    <span class="syntax-keyword">return</span> <span class="syntax-variable">text</span> <span class="syntax-operator">!=</span> <span class="syntax-constant">NULL</span> <span class="syntax-operator">?</span> <span class="syntax-function">SCALE</span><span class="syntax-punctuation">(</span><span class="syntax-number">0xffu</span><span class="syntax-punctuation">)</span> <span class="syntax-punctuation">:</span> <span class="syntax-number">0</span><span class="syntax-punctuation">;</span>
+<span class="syntax-punctuation">}</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="c"><span class="syntax-macro">#define OPEN(x) \
+  ((x) + 1</span>
+<span class="syntax-builtin syntax-type">int</span> <span class="syntax-function">main</span><span class="syntax-punctuation">(</span> <span class="syntax-punctuation">{</span> <span class="syntax-keyword">return</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\n</span><span class="syntax-string">&lt;&amp;&gt;
+</span></code></pre>
+<p>Incomplete:</p><pre><code class="c"><span class="syntax-comment">/* unfinished
+int hidden(void);
+</span></code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p><p><figure><pre><code class="json"><span class="syntax-punctuation">{</span><span class="syntax-property">&quot;directive&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-string">&quot;&lt;native &amp; JSON&gt;&quot;</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;enabled&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-boolean">true</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;value&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-number">42</span><span class="syntax-punctuation">}</span>

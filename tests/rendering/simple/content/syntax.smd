@@ -229,6 +229,31 @@ SELECT $body$unfinished
 <&>
 ```
 
+# [C Code]($section.id('c'))
+```c
+#include <stdint.h>
+#define SCALE(x) ((x) * 2)
+/** Documentation <&>. */
+static int render(const char *text) {
+    return text != NULL ? SCALE(0xffu) : 0;
+}
+```
+
+Malformed:
+
+```c
+#define OPEN(x) \
+  ((x) + 1
+int main( { return "unterminated\n<&>
+```
+
+Incomplete:
+
+```c
+/* unfinished
+int hidden(void);
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

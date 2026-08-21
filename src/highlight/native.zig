@@ -8,6 +8,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     {
         return core.languages.bash.backend;
     }
+    if (std.mem.eql(u8, name, "c")) return core.languages.c.backend;
     if (std.mem.eql(u8, name, "diff") or std.mem.eql(u8, name, "patch")) {
         return core.languages.diff.backend;
     }
@@ -53,6 +54,7 @@ pub fn render(
 test "only completed canonical languages use native backends" {
     const native_languages = [_][]const u8{
         "bash",
+        "c",
         "diff",
         "dockerfile",
         "json",
