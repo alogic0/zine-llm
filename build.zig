@@ -423,6 +423,16 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     addNativeSyntaxImports(native_highlight_test_module, native_syntax);
+    const native_highlight_test_options = b.addOptions();
+    native_highlight_test_options.addOption(
+        []const u8,
+        "starter_theme",
+        @embedFile("src/cli/init/assets/highlight.css"),
+    );
+    native_highlight_test_module.addOptions(
+        "native_highlight_test_options",
+        native_highlight_test_options,
+    );
     const native_highlight_tests = b.addTest(.{
         .root_module = native_highlight_test_module,
     });

@@ -1,8 +1,11 @@
 ---
 .title = "Sections",
 .date = .date("2020-07-06T00:00:00"),
-.layout = "index.shtml",
+.layout = "syntax.shtml",
 .draft = false,
+.custom = .{
+    .highlight_source = "const escaped = \"<&>\";",
+},
 --- 
 
 # [Zig Code]($section.id('zig'))
@@ -22,6 +25,56 @@ pub inline fn main() anyerror!void {
     SampleFunction(1, &sample);
 }
 ```
+
+# [Ziggy Code]($section.id('ziggy'))
+```ziggy
+.config = .{
+    .enabled = true,
+    .name = "<site & docs>",
+}
+```
+
+# [Ziggy Schema Code]($section.id('ziggy-schema'))
+```ziggy-schema
+$ = Config
+
+struct Config {
+    enabled: bool,
+    name: bytes,
+}
+```
+
+# [Scripty Code]($section.id('scripty'))
+```scripty
+$page.title.escape()
+```
+
+# [HTML Code]($section.id('html'))
+```html
+<div data-value="<unsafe>">&amp;</div>
+```
+
+# [XML Code]($section.id('xml'))
+```xml
+<?xml version="1.0"?>
+<item key="<unsafe>">&amp;</item>
+```
+
+# [CSS Code]($section.id('css'))
+```css
+.card::before {
+    content: "<unsafe>&";
+    color: #c678dd;
+}
+```
+
+# [SuperHTML Code]($section.id('superhtml'))
+```superhtml
+<p :if="$page.title" :text="$page.title"></p>
+```
+
+# [Code Directive]($section.id('code-directive'))
+[Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 
 # [Rust Code]($section.id('rust'))
 ```rust

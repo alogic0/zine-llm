@@ -70,3 +70,10 @@ test "native routing renders completed languages and declines fallback languages
     ));
     try std.testing.expectEqual(@as(usize, 0), fallback_output.written().len);
 }
+
+test "starter theme maps every stable native scope class" {
+    const starter_theme = @import("native_highlight_test_options").starter_theme;
+    for (std.enums.values(core.Scope)) |scope| {
+        try std.testing.expect(std.mem.indexOf(u8, starter_theme, scope.cssClass()) != null);
+    }
+}
