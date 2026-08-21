@@ -82,6 +82,15 @@ $page.title.escape()
 <span title="<unsafe>">embedded</span>
 ```
 
+# [Bash Code]($section.id('bash'))
+```bash
+#!/usr/bin/env bash
+name=${name:-"<&>"}
+if [[ -n "$name" ]]; then
+    printf '%s\n' "$(printf '%s' "$name")"
+fi
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

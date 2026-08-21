@@ -2,6 +2,12 @@ const std = @import("std");
 const core = @import("native_syntax");
 
 pub fn backendFor(name: []const u8) ?core.Backend {
+    if (std.mem.eql(u8, name, "bash") or
+        std.mem.eql(u8, name, "sh") or
+        std.mem.eql(u8, name, "shell"))
+    {
+        return core.languages.bash.backend;
+    }
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
     if (std.mem.eql(u8, name, "ziggy")) return @import("native_syntax_ziggy").backend;
     if (std.mem.eql(u8, name, "ziggy-schema")) return @import("native_syntax_ziggy_schema").backend;
@@ -37,6 +43,7 @@ pub fn render(
 
 test "only completed canonical languages use native backends" {
     const native_languages = [_][]const u8{
+        "bash",
         "zig",
         "ziggy",
         "ziggy-schema",
@@ -52,8 +59,16 @@ test "only completed canonical languages use native backends" {
     }
 
     try std.testing.expectEqual(null, backendFor("rust"));
-    try std.testing.expectEqual(null, backendFor("bash"));
     try std.testing.expectEqual(null, backendFor("shtml"));
+}
+
+test "Zine-owned Bash aliases share the native backend" {
+    const canonical = backendFor("bash").?;
+    for ([_][]const u8{ "sh", "shell" }) |alias| {
+        const aliased = backendFor(alias).?;
+        try std.testing.expectEqualStrings(canonical.info.canonical_name, aliased.info.canonical_name);
+        try std.testing.expectEqual(core.BackendKind.lexical, aliased.info.kind);
+    }
 }
 
 test "Zine-owned Markdown aliases share the native backend" {

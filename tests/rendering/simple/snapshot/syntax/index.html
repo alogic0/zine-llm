@@ -53,6 +53,12 @@
 
 <span class="syntax-embedded">&lt;span title=&quot;&lt;unsafe&gt;&quot;&gt;</span>embedded<span class="syntax-embedded">&lt;/span&gt;</span>
 </code></pre>
+</div><div id="bash"><h1><a class="" href="#bash">Bash Code</a></h1><pre><code class="bash"><span class="syntax-comment">#!/usr/bin/env bash</span>
+name=<span class="syntax-variable">${name:-&quot;&lt;&amp;&gt;&quot;}</span>
+<span class="syntax-keyword">if</span> <span class="syntax-punctuation">[</span><span class="syntax-punctuation">[</span> -n <span class="syntax-string">&quot;</span><span class="syntax-string syntax-variable">$name</span><span class="syntax-string">&quot;</span> <span class="syntax-punctuation">]</span><span class="syntax-punctuation">]</span><span class="syntax-operator">;</span> <span class="syntax-keyword">then</span>
+    printf <span class="syntax-string">&#39;%s\n&#39;</span> <span class="syntax-string">&quot;</span><span class="syntax-embedded syntax-string">$(printf &#39;%s&#39; &quot;$name&quot;)</span><span class="syntax-string">&quot;</span>
+<span class="syntax-keyword">fi</span>
+</code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p></div><div id="rust"><h1><a class="" href="#rust">Rust Code</a></h1><pre><code class="rust"><span class="attribute">#</span><span class="punctuation_bracket attribute">[</span><span class="constructor constant attribute">derive</span><span class="punctuation_bracket attribute">(</span><span class="constructor constant attribute">Debug</span><span class="punctuation_delimiter attribute">,</span><span class="attribute"> </span><span class="constructor constant attribute">Clone</span><span class="punctuation_delimiter attribute">,</span><span class="attribute"> </span><span class="constructor constant attribute">PartialEq</span><span class="punctuation_bracket attribute">)</span><span class="punctuation_bracket attribute">]</span>
