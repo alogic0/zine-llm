@@ -419,6 +419,57 @@ test "native roadmap languages 25 through 42 remain compared with Tree-sitter" {
     }
 }
 
+test "native roadmap languages 43 through 74 remain compared with Tree-sitter" {
+    const specs = [_]struct {
+        language: []const u8,
+        complete: []const u8,
+        incomplete: []const u8,
+        complete_scopes: []const native.Scope,
+        malformed_scopes: []const native.Scope = &.{ .string, .escape, .operator },
+    }{
+        .{ .language = "kdl", .complete = "node key=\"x\\n<&>\" count=42 enabled=true // comment", .incomplete = "// incomplete <&>", .complete_scopes = &.{ .variable, .string } },
+        .{ .language = "nix", .complete = "let value = \"x\\n<&>\"; count = 42; enabled = true; # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "fish", .complete = "function run; set value \"x\\n<&>\"; end # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "nu", .complete = "def run [] { let value = \"x\\n<&>\" } # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "awk", .complete = "BEGIN { value = \"x\\n<&>\"; print(value) } # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "ssh-config", .complete = "Host demo\n HostName \"x\\n<&>\" # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "gitcommit", .complete = "feat: render \"x\\n<&>\" 42 true\n# comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .variable, .string } },
+        .{ .language = "git-rebase", .complete = "pick 42 feat \"x\\n<&>\"\n# comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "po", .complete = "msgid \"x\\n<&>\"\nmsgstr \"value\"\n# comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "rst", .complete = "note \"x\\n<&>\" 42 true\n.. comment", .incomplete = ".. incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "latex", .complete = "section { \"x\\n<&>\" 42 true } % comment", .incomplete = "% incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "typst", .complete = "let value = \"x\\n<&>\"; // comment", .incomplete = "/* incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "org", .complete = "TODO \"x\\n<&>\" 42 true\n# comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "dtd", .complete = "ELEMENT note (PCDATA) \"x\\n<&>\" <!-- comment", .incomplete = "<!-- incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "mail", .complete = "Subject: \"x\\n<&>\" 42 true\n> comment", .incomplete = "> incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "hurl", .complete = "GET \"x\\n<&>\"\nstatus = 42 # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "ninja", .complete = "rule run\n command = \"x\\n<&>\" # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "rpmspec", .complete = "Name = \"x\\n<&>\"\nVersion = 42 # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "rpmbash", .complete = "if true; then\n value=\"x\\n<&>\"\n echo %{name}\nfi # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string }, .malformed_scopes = &.{ .string, .escape } },
+        .{ .language = "gdscript", .complete = "func run(): var value = \"x\\n<&>\" # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "perl", .complete = "sub run { my $value = \"x\\n<&>\"; } # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "elixir", .complete = "def run do value = \"x\\n<&>\" end # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "fsharp", .complete = "let run () = let value = \"x\\n<&>\" in value // comment", .incomplete = "// incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "ocaml", .complete = "let run () = let value = \"x\\n<&>\" in value (* comment *)", .incomplete = "(* incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "haskell", .complete = "run = let value = \"x\\n<&>\" in value -- comment", .incomplete = "-- incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "gleam", .complete = "pub fn run() { let value = \"x\\n<&>\" } // comment", .incomplete = "// incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "commonlisp", .complete = "(defun run () (let ((value \"x\\n<&>\")) value)) ; comment", .incomplete = "; incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "scheme", .complete = "(define (run) (let ((value \"x\\n<&>\")) value)) ; comment", .incomplete = "; incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "julia", .complete = "function run() value = \"x\\n<&>\"; end # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "elm", .complete = "run = let value = \"x\\n<&>\" in value -- comment", .incomplete = "-- incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "purescript", .complete = "run = let value = \"x\\n<&>\" in value -- comment", .incomplete = "-- incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+        .{ .language = "nim", .complete = "proc run() = let value = \"x\\n<&>\" # comment", .incomplete = "# incomplete <&>", .complete_scopes = &.{ .keyword, .string } },
+    };
+    for (specs) |spec| {
+        const cases = [_]Case{
+            .{ .source = spec.complete, .native_scopes = spec.complete_scopes, .tree_captures = &.{} },
+            .{ .source = "value = \"bad\\q<&>\nnext = true | false\n", .native_scopes = spec.malformed_scopes, .tree_captures = &.{} },
+            .{ .source = spec.incomplete, .native_scopes = &.{.comment}, .tree_captures = &.{} },
+        };
+        try compareLanguage(spec.language, cases[0..]);
+    }
+}
+
 fn compareLanguage(language: []const u8, cases: []const Case) !void {
     var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
     defer query_cache.deinit();
@@ -427,7 +478,10 @@ fn compareLanguage(language: []const u8, cases: []const Case) !void {
         const tree = try createTree(language, case.source, query_cache);
         defer tree.destroy();
         const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
-        if (index == 0) try std.testing.expect(capture_count > 0);
+        if (index == 0 and capture_count == 0) {
+            std.debug.print("Tree-sitter produced no captures for {s}\n", .{language});
+            return error.TestUnexpectedResult;
+        }
     }
 }
 
@@ -452,7 +506,7 @@ fn expectNativeScopes(
         native.languages.make.backend
     else if (std.mem.eql(u8, language, "cmake"))
         native.languages.cmake.backend
-    else if (std.mem.eql(u8, language, "java")) native.languages.java.backend else if (std.mem.eql(u8, language, "c-sharp")) native.languages.c_sharp.backend else if (std.mem.eql(u8, language, "cpp")) native.languages.cpp.backend else if (std.mem.eql(u8, language, "go")) native.languages.go.backend else if (std.mem.eql(u8, language, "powershell")) native.languages.powershell.backend else if (std.mem.eql(u8, language, "php")) native.languages.php.backend else if (std.mem.eql(u8, language, "lua")) native.languages.lua.backend else if (std.mem.eql(u8, language, "kotlin")) native.languages.kotlin.backend else if (std.mem.eql(u8, language, "ruby")) native.languages.ruby.backend else if (std.mem.eql(u8, language, "swift")) native.languages.swift.backend else if (std.mem.eql(u8, language, "asm")) native.languages.assembly.backend else if (std.mem.eql(u8, language, "nasm")) native.languages.nasm.backend else if (std.mem.eql(u8, language, "objc")) native.languages.objc.backend else if (std.mem.eql(u8, language, "vue")) native.languages.vue.backend else if (std.mem.eql(u8, language, "astro")) native.languages.astro.backend else if (std.mem.eql(u8, language, "jsdoc")) native.languages.jsdoc.backend else if (std.mem.eql(u8, language, "regex")) native.languages.regex.backend else if (std.mem.eql(u8, language, "proto")) native.languages.proto.backend else if (std.mem.eql(u8, language, "toml"))
+    else if (std.mem.eql(u8, language, "kdl")) native.languages.kdl.backend else if (std.mem.eql(u8, language, "nix")) native.languages.nix.backend else if (std.mem.eql(u8, language, "fish")) native.languages.fish.backend else if (std.mem.eql(u8, language, "nu")) native.languages.nu.backend else if (std.mem.eql(u8, language, "awk")) native.languages.awk.backend else if (std.mem.eql(u8, language, "ssh-config")) native.languages.ssh_config.backend else if (std.mem.eql(u8, language, "gitcommit")) native.languages.gitcommit.backend else if (std.mem.eql(u8, language, "git-rebase")) native.languages.git_rebase.backend else if (std.mem.eql(u8, language, "po")) native.languages.po.backend else if (std.mem.eql(u8, language, "rst")) native.languages.rst.backend else if (std.mem.eql(u8, language, "latex")) native.languages.latex.backend else if (std.mem.eql(u8, language, "typst")) native.languages.typst.backend else if (std.mem.eql(u8, language, "org")) native.languages.org.backend else if (std.mem.eql(u8, language, "dtd")) native.languages.dtd.backend else if (std.mem.eql(u8, language, "mail")) native.languages.mail.backend else if (std.mem.eql(u8, language, "hurl")) native.languages.hurl.backend else if (std.mem.eql(u8, language, "ninja")) native.languages.ninja.backend else if (std.mem.eql(u8, language, "rpmspec")) native.languages.rpmspec.backend else if (std.mem.eql(u8, language, "rpmbash")) native.languages.rpmbash.backend else if (std.mem.eql(u8, language, "gdscript")) native.languages.gdscript.backend else if (std.mem.eql(u8, language, "perl")) native.languages.perl.backend else if (std.mem.eql(u8, language, "elixir")) native.languages.elixir.backend else if (std.mem.eql(u8, language, "fsharp")) native.languages.fsharp.backend else if (std.mem.eql(u8, language, "ocaml")) native.languages.ocaml.backend else if (std.mem.eql(u8, language, "haskell")) native.languages.haskell.backend else if (std.mem.eql(u8, language, "gleam")) native.languages.gleam.backend else if (std.mem.eql(u8, language, "commonlisp")) native.languages.commonlisp.backend else if (std.mem.eql(u8, language, "scheme")) native.languages.scheme.backend else if (std.mem.eql(u8, language, "julia")) native.languages.julia.backend else if (std.mem.eql(u8, language, "elm")) native.languages.elm.backend else if (std.mem.eql(u8, language, "purescript")) native.languages.purescript.backend else if (std.mem.eql(u8, language, "nim")) native.languages.nim.backend else if (std.mem.eql(u8, language, "java")) native.languages.java.backend else if (std.mem.eql(u8, language, "c-sharp")) native.languages.c_sharp.backend else if (std.mem.eql(u8, language, "cpp")) native.languages.cpp.backend else if (std.mem.eql(u8, language, "go")) native.languages.go.backend else if (std.mem.eql(u8, language, "powershell")) native.languages.powershell.backend else if (std.mem.eql(u8, language, "php")) native.languages.php.backend else if (std.mem.eql(u8, language, "lua")) native.languages.lua.backend else if (std.mem.eql(u8, language, "kotlin")) native.languages.kotlin.backend else if (std.mem.eql(u8, language, "ruby")) native.languages.ruby.backend else if (std.mem.eql(u8, language, "swift")) native.languages.swift.backend else if (std.mem.eql(u8, language, "asm")) native.languages.assembly.backend else if (std.mem.eql(u8, language, "nasm")) native.languages.nasm.backend else if (std.mem.eql(u8, language, "objc")) native.languages.objc.backend else if (std.mem.eql(u8, language, "vue")) native.languages.vue.backend else if (std.mem.eql(u8, language, "astro")) native.languages.astro.backend else if (std.mem.eql(u8, language, "jsdoc")) native.languages.jsdoc.backend else if (std.mem.eql(u8, language, "regex")) native.languages.regex.backend else if (std.mem.eql(u8, language, "proto")) native.languages.proto.backend else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))
         native.languages.dockerfile.backend
@@ -465,7 +519,12 @@ fn expectNativeScopes(
     var sink: native.CaptureSink = .init(std.testing.allocator, source.len);
     defer sink.deinit();
     try backend.highlight(source, &sink);
-    for (expected) |scope| try std.testing.expect(hasNativeScope(sink.captures(), scope));
+    for (expected) |scope| {
+        if (!hasNativeScope(sink.captures(), scope)) {
+            std.debug.print("Native highlighter produced no {s} scope for {s}\n", .{ @tagName(scope), language });
+            return error.TestUnexpectedResult;
+        }
+    }
 }
 
 fn createTree(

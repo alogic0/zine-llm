@@ -25,6 +25,7 @@ Zine routes these exact canonical language names through native backends:
 - `jsdoc`;
 - `kotlin`;
 - `lua`;
+- `make`;
 - `nasm`;
 - `objc`;
 - `php`;
@@ -32,8 +33,12 @@ Zine routes these exact canonical language names through native backends:
 - `proto`;
 - `regex`;
 - `ruby`;
-- `make`;
 - `rust`;
+- `toml`;
+- `swift`;
+- `typescript`;
+- `yaml`;
+- `vue`;
 - `zig`;
 - `ziggy`;
 - `ziggy-schema`;
@@ -43,24 +48,56 @@ Zine routes these exact canonical language names through native backends:
 - `xml`;
 - `css`;
 - `superhtml`;
-- `toml`;
-- `swift`;
-- `typescript`;
-- `yaml`;
-- `vue`;
 - `markdown`;
-- `python`.
+- `python`;
+- `kdl`;
+- `nix`;
+- `fish`;
+- `nu`;
+- `awk`;
+- `ssh-config`;
+- `gitcommit`;
+- `git-rebase`;
+- `po`;
+- `rst`;
+- `latex`;
+- `typst`;
+- `org`;
+- `dtd`;
+- `mail`;
+- `hurl`;
+- `ninja`;
+- `rpmspec`;
+- `rpmbash`;
+- `gdscript`;
+- `perl`;
+- `elixir`;
+- `fsharp`;
+- `ocaml`;
+- `haskell`;
+- `gleam`;
+- `commonlisp`;
+- `scheme`;
+- `julia`;
+- `elm`;
+- `purescript`;
+- `nim`.
 
 Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, `patch` to
 `diff`, `js` to `javascript`, `ts` to `typescript`, and `md`, `smd`, and
 `supermd` to `markdown`; `yml` maps to `yaml`; `cs` and `csharp` map to
 `c-sharp`; `c++` maps to `cpp`; `kt` maps to `kotlin`; `rb` maps to `ruby`;
 `assembly` maps to `asm`; `objective-c` maps to `objc`; and `protobuf` maps to
-`proto`.
+`proto`. `nushell` maps to `nu`; `sshconfig` maps to `ssh-config`;
+`git-commit` maps to `gitcommit`; `gitrebase` maps to `git-rebase`; `gettext`
+maps to `po`; `restructuredtext` maps to `rst`; `tex` maps to `latex`;
+`orgmode` maps to `org`; `email` maps to `mail`; `rpm-spec` maps to `rpmspec`;
+`rpm-bash` maps to `rpmbash`; `f#` maps to `fsharp`; `lisp` maps to
+`commonlisp`; and `purs` maps to `purescript`.
 `zig-native-syntax` exposes only canonical backend names.
 
 The default `native-first` mode sends every other language through the existing
-`flow-syntax` and Tree-sitter path. The focused routing test uses KDL as
+`flow-syntax` and Tree-sitter path. The focused routing test uses D as
 fallback evidence; the current generated-site rendering fixture no longer
 requires a Tree-sitter language. Alias policy remains Zine-owned.
 
@@ -102,7 +139,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all forty-two native languages,
+The rendering snapshot covers fenced blocks for all seventy-four native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -182,6 +219,14 @@ language-specific keyword and literal policies over shared bounded recovery;
 Vue and Astro use component-markup recovery, while JSDoc and regular
 expressions have dedicated scanners. Embedded languages, semantic resolution,
 macro expansion, and dialect validation remain outside these backends.
+
+The roadmap increment from KDL through Nim compares complete, malformed, and
+incomplete input for all thirty-two backends. These are bounded lexical
+highlighters with language-specific token policies; RPM Bash intentionally
+reuses the native Bash backend, while its Tree-sitter comparison fixture also
+contains an RPM macro because Flow's standalone RPM Bash query only captures
+RPM constructs. Full parsing, embedded-language injection, type resolution,
+and dialect-specific validation remain outside this increment.
 
 ## First-spike comparison
 

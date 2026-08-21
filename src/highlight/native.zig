@@ -63,6 +63,38 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     {
         return @import("native_syntax_markdown").backend;
     }
+    if (std.mem.eql(u8, name, "kdl")) return core.languages.kdl.backend;
+    if (std.mem.eql(u8, name, "nix")) return core.languages.nix.backend;
+    if (std.mem.eql(u8, name, "fish")) return core.languages.fish.backend;
+    if (std.mem.eql(u8, name, "nu") or std.mem.eql(u8, name, "nushell")) return core.languages.nu.backend;
+    if (std.mem.eql(u8, name, "awk")) return core.languages.awk.backend;
+    if (std.mem.eql(u8, name, "ssh-config") or std.mem.eql(u8, name, "sshconfig")) return core.languages.ssh_config.backend;
+    if (std.mem.eql(u8, name, "gitcommit") or std.mem.eql(u8, name, "git-commit")) return core.languages.gitcommit.backend;
+    if (std.mem.eql(u8, name, "git-rebase") or std.mem.eql(u8, name, "gitrebase")) return core.languages.git_rebase.backend;
+    if (std.mem.eql(u8, name, "po") or std.mem.eql(u8, name, "gettext")) return core.languages.po.backend;
+    if (std.mem.eql(u8, name, "rst") or std.mem.eql(u8, name, "restructuredtext")) return core.languages.rst.backend;
+    if (std.mem.eql(u8, name, "latex") or std.mem.eql(u8, name, "tex")) return core.languages.latex.backend;
+    if (std.mem.eql(u8, name, "typst")) return core.languages.typst.backend;
+    if (std.mem.eql(u8, name, "org") or std.mem.eql(u8, name, "orgmode")) return core.languages.org.backend;
+    if (std.mem.eql(u8, name, "dtd")) return core.languages.dtd.backend;
+    if (std.mem.eql(u8, name, "mail") or std.mem.eql(u8, name, "email")) return core.languages.mail.backend;
+    if (std.mem.eql(u8, name, "hurl")) return core.languages.hurl.backend;
+    if (std.mem.eql(u8, name, "ninja")) return core.languages.ninja.backend;
+    if (std.mem.eql(u8, name, "rpmspec") or std.mem.eql(u8, name, "rpm-spec")) return core.languages.rpmspec.backend;
+    if (std.mem.eql(u8, name, "rpmbash") or std.mem.eql(u8, name, "rpm-bash")) return core.languages.rpmbash.backend;
+    if (std.mem.eql(u8, name, "gdscript")) return core.languages.gdscript.backend;
+    if (std.mem.eql(u8, name, "perl")) return core.languages.perl.backend;
+    if (std.mem.eql(u8, name, "elixir")) return core.languages.elixir.backend;
+    if (std.mem.eql(u8, name, "fsharp") or std.mem.eql(u8, name, "f#")) return core.languages.fsharp.backend;
+    if (std.mem.eql(u8, name, "ocaml")) return core.languages.ocaml.backend;
+    if (std.mem.eql(u8, name, "haskell")) return core.languages.haskell.backend;
+    if (std.mem.eql(u8, name, "gleam")) return core.languages.gleam.backend;
+    if (std.mem.eql(u8, name, "commonlisp") or std.mem.eql(u8, name, "lisp")) return core.languages.commonlisp.backend;
+    if (std.mem.eql(u8, name, "scheme")) return core.languages.scheme.backend;
+    if (std.mem.eql(u8, name, "julia")) return core.languages.julia.backend;
+    if (std.mem.eql(u8, name, "elm")) return core.languages.elm.backend;
+    if (std.mem.eql(u8, name, "purescript") or std.mem.eql(u8, name, "purs")) return core.languages.purescript.backend;
+    if (std.mem.eql(u8, name, "nim")) return core.languages.nim.backend;
     return null;
 }
 
@@ -125,12 +157,44 @@ test "only completed canonical languages use native backends" {
         "superhtml",
         "markdown",
         "python",
+        "kdl",
+        "nix",
+        "fish",
+        "nu",
+        "awk",
+        "ssh-config",
+        "gitcommit",
+        "git-rebase",
+        "po",
+        "rst",
+        "latex",
+        "typst",
+        "org",
+        "dtd",
+        "mail",
+        "hurl",
+        "ninja",
+        "rpmspec",
+        "rpmbash",
+        "gdscript",
+        "perl",
+        "elixir",
+        "fsharp",
+        "ocaml",
+        "haskell",
+        "gleam",
+        "commonlisp",
+        "scheme",
+        "julia",
+        "elm",
+        "purescript",
+        "nim",
     };
     for (native_languages) |language| {
         try std.testing.expect(backendFor(language) != null);
     }
 
-    try std.testing.expectEqual(null, backendFor("kdl"));
+    try std.testing.expectEqual(null, backendFor("d"));
     try std.testing.expectEqual(null, backendFor("shtml"));
 }
 
@@ -151,6 +215,20 @@ test "Zine-owned roadmap aliases share their canonical native backends" {
         .{ .alias = "assembly", .canonical = "asm" },
         .{ .alias = "objective-c", .canonical = "objc" },
         .{ .alias = "protobuf", .canonical = "proto" },
+        .{ .alias = "nushell", .canonical = "nu" },
+        .{ .alias = "sshconfig", .canonical = "ssh-config" },
+        .{ .alias = "git-commit", .canonical = "gitcommit" },
+        .{ .alias = "gitrebase", .canonical = "git-rebase" },
+        .{ .alias = "gettext", .canonical = "po" },
+        .{ .alias = "restructuredtext", .canonical = "rst" },
+        .{ .alias = "tex", .canonical = "latex" },
+        .{ .alias = "orgmode", .canonical = "org" },
+        .{ .alias = "email", .canonical = "mail" },
+        .{ .alias = "rpm-spec", .canonical = "rpmspec" },
+        .{ .alias = "rpm-bash", .canonical = "rpmbash" },
+        .{ .alias = "f#", .canonical = "fsharp" },
+        .{ .alias = "lisp", .canonical = "commonlisp" },
+        .{ .alias = "purs", .canonical = "purescript" },
     };
     for (aliases) |entry| {
         try std.testing.expectEqualStrings(
@@ -249,7 +327,7 @@ test "native routing renders completed languages and declines fallback languages
     defer fallback_output.deinit();
     try std.testing.expect(!try render(
         std.testing.allocator,
-        "kdl",
+        "d",
         "class Main {}",
         &fallback_output.writer,
     ));
