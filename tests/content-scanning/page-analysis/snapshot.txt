@@ -180,14 +180,6 @@ content/index.smd:43:1: error: missing site asset
 |    ![](bad.jpg) // wrong
 |    ^^^^^^^^^^^^
 
-content/other.smd:19:1: error: unknown language code
-|    ```zig++ wrong
-|    ^^^^^^^^^^^^^^^
-
-content/other.smd:22:1: error: unknown language code
-|    [](<$code.siteAsset('code.zig').language('zig++')>) //wrong
-|    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 ----------------------------
        -- VARIANT --
 ----------------------------
