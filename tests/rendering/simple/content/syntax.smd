@@ -278,6 +278,29 @@ Incomplete alias:
 const hidden = true;
 ```
 
+# [TypeScript Code]($section.id('typescript'))
+```typescript
+/** Documentation <&>. */
+export interface Entry<T extends object> {
+  readonly value: T;
+  enabled?: boolean;
+}
+export type Result<T> = Promise<T | null>;
+```
+
+Malformed:
+
+```typescript
+interface Broken<T extends { value: string
+const text = `unfinished ${value}\n<&>
+```
+
+Incomplete alias:
+
+```ts
+type = string
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

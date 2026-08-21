@@ -20,6 +20,9 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     if (std.mem.eql(u8, name, "python")) return core.languages.python.backend;
     if (std.mem.eql(u8, name, "rust")) return core.languages.rust.backend;
     if (std.mem.eql(u8, name, "toml")) return core.languages.toml.backend;
+    if (std.mem.eql(u8, name, "typescript") or std.mem.eql(u8, name, "ts")) {
+        return core.languages.typescript.backend;
+    }
     if (std.mem.eql(u8, name, "zig")) return core.languages.zig.backend;
     if (std.mem.eql(u8, name, "ziggy")) return @import("native_syntax_ziggy").backend;
     if (std.mem.eql(u8, name, "ziggy-schema")) return @import("native_syntax_ziggy_schema").backend;
@@ -64,6 +67,7 @@ test "only completed canonical languages use native backends" {
         "javascript",
         "rust",
         "toml",
+        "typescript",
         "zig",
         "ziggy",
         "ziggy-schema",
@@ -82,6 +86,13 @@ test "only completed canonical languages use native backends" {
 
     try std.testing.expectEqual(null, backendFor("java"));
     try std.testing.expectEqual(null, backendFor("shtml"));
+}
+
+test "Zine-owned ts alias shares the native TypeScript backend" {
+    const canonical = backendFor("typescript").?;
+    const aliased = backendFor("ts").?;
+    try std.testing.expectEqualStrings(canonical.info.canonical_name, aliased.info.canonical_name);
+    try std.testing.expectEqual(core.BackendKind.lexical, aliased.info.kind);
 }
 
 test "Zine-owned js alias shares the native JavaScript backend" {

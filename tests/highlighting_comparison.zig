@@ -280,6 +280,36 @@ test "native JavaScript recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native TypeScript recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{
+            .source = "/** docs */\nexport interface Entry<T extends object> { readonly value: T; enabled?: boolean; }\ntype Result<T> = Promise<T | null>;\n",
+            .native_scopes = &.{ .comment, .documentation, .keyword, .type, .builtin, .variable, .constant, .operator, .punctuation },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "interface Broken<T extends { value: string\nconst text = `unfinished ${value}\\n<&>\n",
+            .native_scopes = &.{ .keyword, .type, .builtin, .variable, .string, .escape, .punctuation },
+            .tree_captures = &.{},
+        },
+        .{
+            .source = "type = string\n",
+            .native_scopes = &.{ .keyword, .builtin, .type, .operator },
+            .tree_captures = &.{},
+        },
+    };
+
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes("typescript", case.source, case.native_scopes);
+        const tree = try createTree("typescript", case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -291,6 +321,8 @@ fn expectNativeScopes(
         native.languages.c.backend
     else if (std.mem.eql(u8, language, "javascript"))
         native.languages.javascript.backend
+    else if (std.mem.eql(u8, language, "typescript"))
+        native.languages.typescript.backend
     else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))
