@@ -24,7 +24,8 @@ of many languages. Zig's standard-library documentation renderer demonstrates
 that native token and AST streams can instead be converted to escaped,
 classified HTML. Zine and its dependencies already have native parsing or
 tokenizing facilities for Zig, HTML, XML, SuperHTML, CSS, Ziggy, Ziggy Schema,
-Scripty, and Markdown, while broader language support would require additional
+Scripty, and Markdown. The independent package also owns bounded Bash and Rust
+lexical scanners; broader language support requires additional demand-backed
 native implementations.
 
 Those implementations have independent API, testing, dependency, and release
@@ -58,10 +59,12 @@ concerns and can benefit consumers other than Zine.
 - Existing Zine integration points: `src/highlight.zig`, `src/worker.zig`,
   `build.zig`, and `build.zig.zon`.
 - Initial package verification: `./build.sh test` from the package root.
-- The integration routes nine canonical languages natively while retaining
-  Tree-sitter for Rust and every other unsupported language. Markdown uses the
-  independent `zig-markdown-parser` package, while Zine owns its `md`, `smd`,
-  and `supermd` aliases and SuperMD semantics.
+- The integration routes eleven canonical languages natively. Markdown uses
+  the independent `zig-markdown-parser` package; Bash and Rust use bounded
+  package-owned lexical scanners. Zine owns aliases and SuperMD semantics.
+- Current generated-site fixtures no longer require a Tree-sitter language,
+  but Tree-sitter remains the compatibility fallback until Phase 12 adds and
+  validates explicit backend-selection modes.
 - Focused commands, first-spike measurements, output checks, and API findings
   are recorded in
   [Native Highlighting Integration Validation](../../native-highlighting-validation.md).

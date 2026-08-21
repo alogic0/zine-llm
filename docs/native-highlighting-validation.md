@@ -8,6 +8,8 @@ experimental; they are not release policy or portable performance thresholds.
 
 Zine routes these exact canonical language names through native backends:
 
+- `bash`;
+- `rust`;
 - `zig`;
 - `ziggy`;
 - `ziggy-schema`;
@@ -18,13 +20,14 @@ Zine routes these exact canonical language names through native backends:
 - `superhtml`;
 - `markdown`.
 
-Zine also maps the consumer-owned aliases `md`, `smd`, and `supermd` to the
-canonical Markdown backend. `zig-native-syntax` exposes only `markdown`.
+Zine maps the consumer-owned aliases `sh` and `shell` to `bash`, and `md`,
+`smd`, and `supermd` to `markdown`. `zig-native-syntax` exposes only canonical
+backend names.
 
 Every other language continues through the existing `flow-syntax` and
-Tree-sitter path. In particular, the rendering fixture retains Rust as
-fallback evidence. Alias policy remains Zine-owned; the native package exposes
-only canonical backends.
+Tree-sitter path. The focused routing test uses Python as fallback evidence;
+the current generated-site rendering fixture no longer requires a Tree-sitter
+language. Alias policy remains Zine-owned.
 
 The focused and host-architecture gates are:
 
@@ -34,9 +37,10 @@ The focused and host-architecture gates are:
 ./build.sh test-workflows
 ```
 
-The rendering snapshot covers fenced blocks for all nine native languages,
-including Markdown structural scopes and escaped raw HTML, HTML-sensitive
-source bytes, a `$code.siteAsset(...).language('zig')` directive, and
+The rendering snapshot covers fenced blocks for all eleven native languages,
+including bounded Bash and Rust scanners, Markdown structural scopes and
+escaped raw HTML, HTML-sensitive source bytes, a
+`$code.siteAsset(...).language('zig')` directive, and
 `String.syntaxHighlight('zig')`. A build test also requires the starter
 stylesheet to mention every stable native scope class.
 
@@ -77,11 +81,12 @@ process-level peak-memory observation, not an allocator-count comparison:
 Tree-sitter allocates behind a C boundary, and Zine does not currently expose a
 common allocation tracker for both paths.
 
-Representative output differs only where intended. Zig uses stable
-`syntax-*` classes from the native package, while the Rust section remains
-byte-for-byte identical through Tree-sitter. The expanded candidate fixture
-exposes hostile source bytes through every Zine entry point, while the package
-conformance suite verifies recovery after stripping spans and decoding
+In that first spike, representative output differed only where intended: Zig
+used stable `syntax-*` classes while Rust remained byte-for-byte identical
+through Tree-sitter. Phase 11 subsequently converted Rust and added Bash; their
+intentional snapshot changes use the same stable scope classes. The expanded
+fixture exposes hostile source bytes through every Zine entry point, while the
+package conformance suite verifies recovery after stripping spans and decoding
 entities.
 
 ## API findings
@@ -103,6 +108,9 @@ did expose these integration constraints:
 - Raw HTML is initially classified as embedded Markdown content, and fenced
   code is classified as one Markdown code region. Nested HTML and language
   composition remain deferred consumer-configuration work.
+- Bash and Rust are bounded lexical scanners rather than validators. Their
+  supported token shapes, malformed-input recovery, and plain-text boundaries
+  are documented in the package compatibility notes.
 - Zine's existing `highlight` build option currently enables the combined
   native-plus-Tree-sitter graph. Separating native selection from fallback
   removal belongs to the later backend-selection migration, not this spike.
