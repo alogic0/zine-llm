@@ -4,14 +4,13 @@
 
 Native syntax highlighting will be developed in the independent
 `zig-native-syntax` Zig package. Zine will own fenced-code language aliases,
-CSS integration, unsupported-language behavior, and the transition away from
-Tree-sitter, but it will not own reusable language tokenizers or highlighting
-adapters.
+CSS integration, and unsupported-language behavior, but it will not own
+reusable language tokenizers or highlighting adapters.
 
-Tree-sitter remains Zine's temporary compatibility and comparison backend while
-the ordered native-language backlog is implemented. Native-only builds render
-unsupported languages as escaped plain text, but the dependency will not be
-removed merely because the current Zine fixtures no longer need it.
+Zine uses native highlighting by default and renders unsupported languages as
+escaped plain text. The completed compatibility audit covers every former Flow
+file type, so Flow and Tree-sitter are no longer Zine dependencies. An `off`
+mode remains available for builds that disable highlighting.
 
 ## Date And Status
 
@@ -21,14 +20,13 @@ removed merely because the current Zine fixtures no longer need it.
 
 ## Context
 
-Zine currently uses `flow-syntax` and Tree-sitter for build-time highlighting
+Zine previously used `flow-syntax` and Tree-sitter for build-time highlighting
 of many languages. Zig's standard-library documentation renderer demonstrates
 that native token and AST streams can instead be converted to escaped,
 classified HTML. Zine and its dependencies already have native parsing or
 tokenizing facilities for Zig, HTML, XML, SuperHTML, CSS, Ziggy, Ziggy Schema,
-Scripty, and Markdown. The independent package also owns bounded Bash and Rust
-lexical scanners; broader language support requires additional demand-backed
-native implementations.
+Scripty, and Markdown. The independent package now owns parser-backed adapters
+and bounded lexical scanners for the complete supported language inventory.
 
 Those implementations have independent API, testing, dependency, and release
 concerns and can benefit consumers other than Zine.
@@ -51,12 +49,13 @@ concerns and can benefit consumers other than Zine.
 - A reusable parser needed by both Zine and a highlighting adapter must have an
   independent package boundary; adapters must not depend back on Zine-owned
   semantic layers.
-- Removing Tree-sitter remains a separate compatibility decision. Completing
-  the ordered native roadmap does not by itself establish parity for aliases,
-  injected languages, diagnostics, build behavior, or release validation.
-- Explicit `tree-sitter`, `native-first`, `native-only`, and `off` modes keep
-  comparisons reproducible without making Tree-sitter the final fallback
-  contract. `native-first` remains the default during the comparison period.
+- Tree-sitter removal required a separate compatibility decision after the
+  ordered native roadmap: aliases, intentional grammar reuse, unsupported
+  labels, build modes, generated-site rendering, and host build behavior all
+  needed explicit evidence.
+- The temporary `tree-sitter`, `native-first`, and `native-only` comparison
+  modes were removed after that audit. `native` is now the default and `off`
+  is the only alternative.
 
 ## Evidence And Verification
 
@@ -70,11 +69,16 @@ concerns and can benefit consumers other than Zine.
   package-owned lexical scanners; JSON uses a source-offset scanner checked
   against the Zig standard scanner on valid corpus input. Zine owns aliases
   and SuperMD semantics.
-- Current generated-site fixtures no longer require a Tree-sitter language.
-  Phase 12 Slice 12.1 added and validated explicit backend-selection modes on
-  the host architecture. Tree-sitter remains available in `tree-sitter` and
-  `native-first` modes for the explicit compatibility and removal review;
-  `native-only` and `off` compile without importing it.
+- The final inventory test covers all 93 former Flow file-type names: 87 direct
+  native routes and six intentional reused backends. Scripty is an additional
+  Zine-only native language.
+- Generated-site fixtures cover all 88 canonical native languages. Focused
+  tests verify aliases, malformed input, unsupported-language escaping, and
+  both supported build modes on the host architecture.
+- The final ReleaseFast host comparison reduced the installed executable from
+  156,455,424 bytes to 16,044,032 bytes and the loaded ELF sections from
+  137,639,775 bytes to 3,970,099 bytes. These single-run measurements support
+  dependency removal but are not portable performance thresholds.
 - Focused commands, first-spike measurements, output checks, and API findings
   are recorded in
   [Native Highlighting Integration Validation](../../native-highlighting-validation.md).

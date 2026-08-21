@@ -1,8 +1,9 @@
 # Native Highlighting Integration Validation
 
-This document records the first Zine integration spike for
-`zig-native-syntax`. The local path dependency and measurements are
-experimental; they are not release policy or portable performance thresholds.
+This document records Zine's `zig-native-syntax` integration contract, the
+Tree-sitter removal audit, and historical comparison measurements. The local
+path dependency remains branch-local integration policy, and the measurements
+are not portable performance thresholds.
 
 ## Integration contract
 
@@ -118,27 +119,23 @@ corresponding native backend: `conf` maps to Fish, `glsl` to C, `nimble` to
 TOML, `csproj` and `props` to XML, and `markdown-inline` to Markdown.
 `zig-native-syntax` exposes only canonical backend names.
 
-The default `native-first` mode sends every other language through the existing
-`flow-syntax` and Tree-sitter path. The focused routing test uses the
-deliberately unsupported `shtml` label as fallback evidence; the current
-generated-site rendering fixture no longer requires a Tree-sitter language.
-Alias policy remains Zine-owned.
+The default `native` mode sends recognized languages through their native
+backend. An unrecognized label, including the focused test's deliberately
+unsupported `shtml`, is rendered as safely escaped plain text. Alias policy
+remains Zine-owned.
 
-Zine exposes four build-time modes:
+Zine exposes two build-time modes:
 
-| `-Dhighlight-mode` | Native backends | Tree-sitter | Unsupported language |
-| --- | --- | --- | --- |
-| `tree-sitter` | No | Yes | Existing unknown-language diagnostic |
-| `native-first` | Yes | Fallback | Existing unknown-language diagnostic |
-| `native-only` | Yes | No | Safely escaped plain text |
-| `off` | No | No | Safely escaped plain text |
+| `-Dhighlight-mode` | Native backends | Unsupported language |
+| --- | --- | --- |
+| `native` | Yes | Safely escaped plain text |
+| `off` | No | Safely escaped plain text |
 
-`native-first` remains the default while new language backends are compared
-against Tree-sitter. The legacy `-Dhighlight=true` and `-Dhighlight=false`
-options select `native-first` and `off`, respectively, unless
-`-Dhighlight-mode` is also supplied. Tree-sitter removal is deferred while the
-ordered native-language backlog is implemented and compared; it is not the
-immediate result of introducing `native-only`.
+`native` is the default. The legacy `-Dhighlight=true` and
+`-Dhighlight=false` options select `native` and `off`, respectively, unless
+`-Dhighlight-mode` is also supplied. The former `tree-sitter`, `native-first`,
+and `native-only` values were transitional comparison modes and are no longer
+accepted.
 
 The focused and host-architecture gates are:
 
@@ -149,31 +146,33 @@ The focused and host-architecture gates are:
 ./build.sh test-workflows
 ```
 
-The host compilation checks for the selection modes are:
+The host compilation checks for the supported modes are:
 
 ```sh
-./build.sh check -Dhighlight-mode=tree-sitter
-./build.sh check -Dhighlight-mode=native-first
-./build.sh check -Dhighlight-mode=native-only
+./build.sh check -Dhighlight-mode=native
 ./build.sh check -Dhighlight-mode=off
 ```
 
-The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
-Zine now links libc explicitly because its Linux watcher uses libc independently
-of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
+Zine no longer depends on or imports `flow-syntax`, `tree_sitter`, or `treez`.
+The `off` executable also does not import `zig-native-syntax`. Zine links libc
+explicitly because its Linux watcher uses libc independently of syntax
+highlighting.
 
-The rendering snapshot covers fenced blocks for all eighty-eight native languages,
-including bounded Bash and Rust scanners, Markdown structural scopes and
-escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
-complete, malformed, and incomplete fences, imported source through
+The rendering snapshot covers fenced blocks for all eighty-eight native
+languages, including bounded Bash and Rust scanners, Markdown structural
+scopes and escaped raw HTML, and HTML-sensitive source bytes. JSON additionally
+covers complete, malformed, and incomplete fences, imported source through
 `$code.siteAsset(...).language('json')`, and `String.syntaxHighlight('json')`.
-Zig retains matching directive and string-helper coverage. A build test also requires the starter
-stylesheet to mention every stable native scope class.
+Zig retains matching directive and string-helper coverage. A build test also
+requires the starter stylesheet to mention every stable native scope class.
 
-The focused JSON comparison test runs the same complete, malformed, and
-newline-terminated incomplete inputs through both native highlighting and
-Tree-sitter. Complete input retains equivalent semantic coverage under the
-stable native taxonomy. For malformed `\\u12`, native highlighting preserves a
+## Historical comparison coverage
+
+During the transition, the now-removed comparison harness ran the same
+complete, malformed, and newline-terminated JSON inputs through both native
+highlighting and Tree-sitter. Complete input retained equivalent semantic
+coverage under the stable native taxonomy. For malformed `\\u12`, native
+highlighting preserves a
 bounded property, string, and escape classification while Tree-sitter's
 highlight query retains generic string and escape captures but loses the
 property-specific capture. For `tru` before the fence's trailing newline,
@@ -373,13 +372,12 @@ did expose these integration constraints:
 - JSON uses a bounded source-offset scanner because `std.json.Scanner` does not
   expose token byte offsets. The standard scanner remains the valid-corpus
   grammar oracle; JSON5-only syntax remains plain text.
-- Explicit backend selection separates Tree-sitter-only comparison,
-  native-first comparison, native-only validation, and fully disabled
-  highlighting. Tree-sitter remains available as a temporary comparison oracle
-  while broader native coverage is implemented.
+- The final compatibility audit covered every former Flow file type and allowed
+  Zine to retire the temporary Tree-sitter comparison modes. The supported
+  choices are now native highlighting and fully disabled highlighting.
 - End-to-end allocation counts are not directly comparable until both the Zig
   allocator path and Tree-sitter's C allocator are observed by one harness.
   Process maximum RSS is used only as a first-spike proxy.
 
-No Phase 1 ownership or lifetime boundary needs revision before adding more
-languages.
+The final integration did not require a revision to the package's ownership or
+lifetime boundary.
