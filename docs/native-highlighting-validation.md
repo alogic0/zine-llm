@@ -261,6 +261,48 @@ owning surrounding comment delimiters. Grammar validation, macro expansion,
 embedded-language injection, and semantic analysis remain outside this
 increment.
 
+## Tree-sitter removal audit
+
+The final compatibility and footprint audit was recorded on 2026-08-21 with
+the pinned Zig compiler on the local `x86_64-linux` architecture. It established
+that all 93 names previously declared by Flow's `file_types.zig` have a native
+route. Eighty-seven map directly to a canonical native backend. The remaining
+six preserve Flow's intentional grammar reuse: `conf` maps to Fish, `glsl` to
+C, `nimble` to TOML, `csproj` and `props` to XML, and `markdown-inline` to
+Markdown. Scripty is an additional Zine language that was not a Flow file type.
+
+The routing suite retains the complete 93-name inventory as a regression test.
+The rendering snapshot exercises all 88 canonical native languages, aliases
+are checked against their canonical backend, and unsupported labels are checked
+for safely escaped plain-text output. No generated-site fixture or supported
+language needs the Tree-sitter fallback.
+
+For a final size comparison, the Tree-sitter-only and native-only executables
+were built sequentially with ReleaseFast optimization, separate empty local
+caches and install prefixes, and the existing shared global dependency cache:
+
+```sh
+/usr/bin/time -f 'elapsed_seconds=%e maximum_rss_kib=%M' \
+  ./build.sh -Doptimize=ReleaseFast -Dhighlight-mode=<mode> \
+  --cache-dir <empty-cache> --prefix <empty-prefix>
+```
+
+| Measurement | Tree-sitter-only | Native-only | Change |
+| --- | ---: | ---: | ---: |
+| Fresh build elapsed time | 86.87 s | 49.91 s | -36.96 s (-42.5%) |
+| Fresh build maximum RSS | 1,197,492 KiB | 1,264,732 KiB | +67,240 KiB (+5.6%) |
+| Installed executable | 156,455,424 B | 16,044,032 B | -140,411,392 B (-89.7%) |
+| Loaded ELF sections | 137,639,775 B | 3,970,099 B | -133,669,676 B (-97.1%) |
+| Dependency source tree | 871,122,356 B | 7,366,156 B | -863,756,200 B (-99.2%) |
+
+The dependency-source row compares the active Flow and Tree-sitter package
+trees with the `zig-native-syntax` working tree while excluding `.git`,
+`.zig-cache`, and `zig-out`. The measurements are single-run evidence for the
+dependency-removal decision, not portable performance thresholds. In
+particular, the maximum-RSS result does not demonstrate a native memory
+regression: it is a compiler-process peak from one build and does not isolate
+the highlighting implementation.
+
 ## First-spike comparison
 
 The comparison was recorded on 2026-08-20 with the pinned Zig compiler on the
