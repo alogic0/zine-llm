@@ -387,6 +387,30 @@ target: dep
 	@echo $(VALUE) <&>
 ```
 
+# [CMake Code]($section.id('cmake'))
+```cmake
+cmake_minimum_required(VERSION 3.28)
+project(Demo)
+set(NAME "demo\n<&>")
+if(ON)
+  add_executable(app main.cpp)
+endif()
+```
+
+Malformed:
+
+```cmake
+set(NAME "unterminated\q<&>
+if(ON)
+```
+
+Incomplete function:
+
+```cmake
+function(build name)
+  message(STATUS "<&>")
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

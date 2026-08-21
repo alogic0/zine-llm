@@ -222,6 +222,19 @@ const hidden = true;
 <p>Incomplete recipe:</p><pre><code class="make"><span class="syntax-label">target</span><span class="syntax-operator">:</span> dep
 <span class="syntax-embedded">	@echo </span><span class="syntax-embedded syntax-variable">$(VALUE)</span><span class="syntax-embedded"> &lt;&amp;&gt;</span>
 </code></pre>
+</div><div id="cmake"><h1><a class="" href="#cmake">CMake Code</a></h1><pre><code class="cmake"><span class="syntax-function">cmake_minimum_required</span><span class="syntax-punctuation">(</span><span class="syntax-variable">VERSION</span> <span class="syntax-number">3.28</span><span class="syntax-punctuation">)</span>
+<span class="syntax-function">project</span><span class="syntax-punctuation">(</span><span class="syntax-variable">Demo</span><span class="syntax-punctuation">)</span>
+<span class="syntax-function">set</span><span class="syntax-punctuation">(</span><span class="syntax-variable">NAME</span> <span class="syntax-string">&quot;demo</span><span class="syntax-escape syntax-string">\n</span><span class="syntax-string">&lt;&amp;&gt;&quot;</span><span class="syntax-punctuation">)</span>
+<span class="syntax-keyword">if</span><span class="syntax-punctuation">(</span><span class="syntax-boolean">ON</span><span class="syntax-punctuation">)</span>
+  <span class="syntax-function">add_executable</span><span class="syntax-punctuation">(</span><span class="syntax-variable">app</span> <span class="syntax-variable">main</span><span class="syntax-punctuation">.</span><span class="syntax-property">cpp</span><span class="syntax-punctuation">)</span>
+<span class="syntax-keyword">endif</span><span class="syntax-punctuation">(</span><span class="syntax-punctuation">)</span>
+</code></pre>
+<p>Malformed:</p><pre><code class="cmake"><span class="syntax-function">set</span><span class="syntax-punctuation">(</span><span class="syntax-variable">NAME</span> <span class="syntax-string">&quot;unterminated</span><span class="syntax-escape syntax-string">\q</span><span class="syntax-string">&lt;&amp;&gt;
+</span><span class="syntax-keyword">if</span><span class="syntax-punctuation">(</span><span class="syntax-boolean">ON</span><span class="syntax-punctuation">)</span>
+</code></pre>
+<p>Incomplete function:</p><pre><code class="cmake"><span class="syntax-keyword">function</span><span class="syntax-punctuation">(</span><span class="syntax-variable">build</span> <span class="syntax-variable">name</span><span class="syntax-punctuation">)</span>
+  <span class="syntax-function">message</span><span class="syntax-punctuation">(</span><span class="syntax-variable">STATUS</span> <span class="syntax-string">&quot;&lt;&amp;&gt;&quot;</span><span class="syntax-punctuation">)</span>
+</code></pre>
 </div><div id="code-directive"><h1><a class="" href="#code-directive">Code Directive</a></h1><p><figure><pre><code class="zig"><span class="syntax-keyword">const</span> <span class="syntax-variable">escaped</span> <span class="syntax-operator">=</span> <span class="syntax-string">&quot;&lt;directive &amp; source&gt;&quot;</span><span class="syntax-punctuation">;</span>
 </code></pre>
 <figcaption>Native code directive</figcaption></figure></p><p><figure><pre><code class="json"><span class="syntax-punctuation">{</span><span class="syntax-property">&quot;directive&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-string">&quot;&lt;native &amp; JSON&gt;&quot;</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;enabled&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-boolean">true</span><span class="syntax-punctuation">,</span><span class="syntax-property">&quot;value&quot;</span><span class="syntax-punctuation">:</span><span class="syntax-number">42</span><span class="syntax-punctuation">}</span>

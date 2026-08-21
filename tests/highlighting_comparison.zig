@@ -379,6 +379,15 @@ test "native Make recovery remains compared with Tree-sitter" {
     try compareLanguage("make", cases[0..]);
 }
 
+test "native CMake recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{ .source = "cmake_minimum_required(VERSION 3.28)\nset(NAME \"demo<&>\")\nif(ON)\nendif()\n", .native_scopes = &.{ .function, .number, .string, .keyword, .boolean, .punctuation }, .tree_captures = &.{} },
+        .{ .source = "set(NAME \"unterminated\\q<&>\nif(ON)\n", .native_scopes = &.{ .function, .string, .escape, .keyword, .boolean }, .tree_captures = &.{} },
+        .{ .source = "function(build name)\n message(STATUS \"<&>\")\n", .native_scopes = &.{ .keyword, .function, .string }, .tree_captures = &.{} },
+    };
+    try compareLanguage("cmake", cases[0..]);
+}
+
 fn compareLanguage(language: []const u8, cases: []const Case) !void {
     var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
     defer query_cache.deinit();
@@ -410,6 +419,8 @@ fn expectNativeScopes(
         native.languages.hcl.backend
     else if (std.mem.eql(u8, language, "make"))
         native.languages.make.backend
+    else if (std.mem.eql(u8, language, "cmake"))
+        native.languages.cmake.backend
     else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))

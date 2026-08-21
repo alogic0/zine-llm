@@ -10,6 +10,7 @@ Zine routes these exact canonical language names through native backends:
 
 - `bash`;
 - `c`;
+- `cmake`;
 - `diff`;
 - `dockerfile`;
 - `hcl`;
@@ -80,7 +81,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all twenty-three native languages,
+The rendering snapshot covers fenced blocks for all twenty-four native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -149,6 +150,10 @@ remain outside the lexical backend.
 Make comparison covers directives, assignments, targets, variables, strings,
 and tab-prefixed recipes. Recipe bodies remain embedded text rather than being
 interpreted as shell.
+
+CMake comparison covers command calls, control-flow keywords, primitive
+values, quoted strings, and line-bounded malformed input. Evaluation and
+generator expressions remain outside the scanner.
 
 ## First-spike comparison
 
