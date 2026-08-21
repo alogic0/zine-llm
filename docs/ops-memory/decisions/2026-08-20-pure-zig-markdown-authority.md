@@ -2,9 +2,9 @@
 
 ## Decision
 
-Use Zine's in-tree pure-Zig Markdown parser as the only production parser. Do
-not restore cmark-gfm as a selectable fallback or use undocumented cmark quirks
-as the definition of correctness.
+Use the independently packaged pure-Zig `zig-markdown-parser` as Zine's only
+production parser. Do not restore cmark-gfm as a selectable fallback or use
+undocumented cmark quirks as the definition of correctness.
 
 The compatibility target is the syntax and behavior declared in
 `src/markdown/FEATURES.md` and covered by Zine's tests. The retained vendored
@@ -38,6 +38,9 @@ snapshots, robustness tests, workflows, and release targets passed.
 ## Consequences
 
 - Zine has one parser implementation and no cmark runtime/build dependency.
+- Low-level Markdown syntax, source ranges, rendering, and parser tests belong
+  to `zig-markdown-parser`; Zine owns the compatibility AST facade and SuperMD
+  semantic pass.
 - CommonMark/GFM compatibility claims are limited to the documented and tested
   feature set; complete specification conformance is not implied.
 - Intentional deviations—such as no indented code blocks and byte-oriented
@@ -54,8 +57,9 @@ snapshots, robustness tests, workflows, and release targets passed.
 - Supported behavior: `src/markdown/FEATURES.md`
 - Migration rationale and phases: `docs/plans/pure-zig-markdown-ast.md`
 - Production gates: `docs/markdown-validation.md`
-- Vendored package boundary: `vendor/UPSTREAM.md`
+- Parser provenance: `zig-markdown-parser`'s `docs/UPSTREAM.md`
 - Migration completion commit: `535dbe9`
+- Standalone parser extraction: the `zig-markdown-parser` repository
 
 Verification commands:
 

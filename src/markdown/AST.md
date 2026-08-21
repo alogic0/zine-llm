@@ -1,9 +1,9 @@
 # Markdown AST contract
 
-`Ast.zig` is the stable handle layer between the compact parser `Document` and
-Zine/SuperMD semantics. It does not replace the parser document or copy its
-strings. Instead, it owns the document and adds indexed sidecars for relations,
-source ranges, directives, and metadata.
+`Ast.zig` is Zine's stable handle layer between the `zig-markdown-parser`
+`Document` and Zine/SuperMD semantics. It does not replace the parser document
+or copy its strings. Instead, it owns the document and adds indexed sidecars
+for relations, source ranges, directives, and metadata.
 
 Instantiate the contract with the caller's directive type:
 

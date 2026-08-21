@@ -27,6 +27,9 @@
             .url = "git+https://github.com/kristoff-it/flow-syntax#b42c3e985215e88a8faa260cbf7eb248822c339c",
             .hash = "flow_syntax-0.7.2-X8jOoSuMAQBanH2g5oW4BQmkW6s5AdfrRUE2byWrMVKp",
         },
+        .markdown_parser = .{
+            .path = "../zig-markdown-parser",
+        },
         .zig_native_syntax = .{
             .path = "../zig-native-syntax",
         },

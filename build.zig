@@ -161,10 +161,15 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const markdown = b.addModule("markdown", .{
+    const markdown_parser = b.dependency("markdown_parser", .{
+        .target = target,
+        .optimize = optimize,
+    }).module("markdown");
+    _ = b.addModule("markdown", .{
         .root_source_file = b.path("src/markdown.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{.{ .name = "markdown_parser", .module = markdown_parser }},
     });
 
     const no_git_version = b.option(
@@ -366,6 +371,7 @@ pub fn build(b: *std.Build) !void {
     zine_mod.addImport("options", options);
     zine_mod.addImport("tracy", tracy.module("tracy"));
     zine_mod.addImport("mime", mime.module("mime"));
+    zine_mod.addImport("markdown_parser", markdown_parser);
     if (highlight) {
         zine_mod.addImport("syntax", syntax.module("syntax"));
         zine_mod.addImport("treez", treez);
@@ -520,9 +526,7 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&run_image_dimensions_tests.step);
     test_step.dependOn(&run_image_dimensions_property_tests.step);
     test_step.dependOn(&run_image_dimensions_file_tests.step);
-    const markdown_tests = b.addTest(.{
-        .root_module = markdown,
-    });
+    const markdown_tests = b.addTest(.{ .root_module = markdown_parser });
     const run_markdown_tests = b.addRunArtifact(markdown_tests);
     const semantic_markdown_module = b.createModule(.{
         .root_source_file = b.path("src/markdown/Semantic.zig"),
@@ -532,6 +536,7 @@ pub fn build(b: *std.Build) !void {
     semantic_markdown_module.addImport("supermd", supermd);
     semantic_markdown_module.addImport("scripty", scripty);
     semantic_markdown_module.addImport("superhtml", superhtml);
+    semantic_markdown_module.addImport("markdown_parser", markdown_parser);
     const semantic_markdown_tests = b.addTest(.{
         .root_module = semantic_markdown_module,
     });
@@ -544,6 +549,7 @@ pub fn build(b: *std.Build) !void {
     markdown_concurrency_module.addImport("supermd", supermd);
     markdown_concurrency_module.addImport("scripty", scripty);
     markdown_concurrency_module.addImport("superhtml", superhtml);
+    markdown_concurrency_module.addImport("markdown_parser", markdown_parser);
     markdown_concurrency_module.addImport("fixtures", b.createModule(.{
         .root_source_file = b.path("build/markdown_benchmark_fixtures.zig"),
     }));
@@ -565,6 +571,7 @@ pub fn build(b: *std.Build) !void {
     markdown_property_module.addImport("supermd", supermd);
     markdown_property_module.addImport("scripty", scripty);
     markdown_property_module.addImport("superhtml", superhtml);
+    markdown_property_module.addImport("markdown_parser", markdown_parser);
     const markdown_property_tests = b.addTest(.{
         .root_module = markdown_property_module,
     });
@@ -586,6 +593,7 @@ pub fn build(b: *std.Build) !void {
     markdown_benchmark.root_module.addImport("supermd", supermd);
     markdown_benchmark.root_module.addImport("scripty", scripty);
     markdown_benchmark.root_module.addImport("superhtml", superhtml);
+    markdown_benchmark.root_module.addImport("markdown_parser", markdown_parser);
     markdown_benchmark.root_module.addImport("fixtures", b.createModule(.{
         .root_source_file = b.path("build/markdown_benchmark_fixtures.zig"),
     }));
@@ -609,6 +617,7 @@ pub fn build(b: *std.Build) !void {
     markdown_backend_module.addImport("supermd", supermd);
     markdown_backend_module.addImport("scripty", scripty);
     markdown_backend_module.addImport("superhtml", superhtml);
+    markdown_backend_module.addImport("markdown_parser", markdown_parser);
     const markdown_backend_tests = b.addTest(.{
         .root_module = markdown_backend_module,
     });
@@ -637,6 +646,7 @@ pub fn build(b: *std.Build) !void {
         mode_module.addImport("supermd", supermd);
         mode_module.addImport("scripty", scripty);
         mode_module.addImport("superhtml", superhtml);
+        mode_module.addImport("markdown_parser", markdown_parser);
         const mode_tests = b.addTest(.{ .root_module = mode_module });
         mode_tests.name = b.fmt("markdown-tests-{s}", .{@tagName(mode)});
         const run_mode_tests = b.addRunArtifact(mode_tests);
@@ -981,6 +991,11 @@ fn setupReleaseStep(
         supermd.addImport("scripty", scripty);
         supermd.addImport("ziggy", ziggy);
 
+        const markdown_parser = b.dependency("markdown_parser", .{
+            .target = target,
+            .optimize = optimize,
+        }).module("markdown");
+
         const zeit = b.dependency("zeit", .{
             .target = target,
             .optimize = optimize,
@@ -1039,6 +1054,7 @@ fn setupReleaseStep(
         addNativeSyntaxImports(zine_exe_release.root_module, native_syntax);
         zine_exe_release.root_module.addImport("tracy", tracy.module("tracy"));
         zine_exe_release.root_module.addImport("mime", mime.module("mime"));
+        zine_exe_release.root_module.addImport("markdown_parser", markdown_parser);
 
         switch (target.result.os.tag) {
             else => @panic("target must be added to build.zig"),

@@ -1,9 +1,9 @@
 # Supported Markdown and SuperMD syntax
 
-Zine uses its in-tree pure-Zig parser for Markdown syntax and a separate
-semantic pass for SuperMD directives. The compatibility target is Zine's
-documented syntax and test corpus; this is not a claim of complete CommonMark
-or GFM conformance.
+Zine uses the independently packaged pure-Zig `zig-markdown-parser` for
+Markdown syntax and a separate in-tree semantic pass for SuperMD directives.
+The compatibility target is Zine's documented syntax and test corpus; this is
+not a claim of complete CommonMark or GFM conformance.
 
 ## Block syntax
 

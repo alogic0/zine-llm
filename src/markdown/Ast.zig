@@ -7,9 +7,10 @@
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const Document = @import("Document.zig");
-const Parser = @import("Parser.zig");
-const Source = @import("Source.zig");
+const markdown_parser = @import("markdown_parser");
+const Document = markdown_parser.Document;
+const Parser = markdown_parser.Parser;
+const Source = markdown_parser.Source;
 
 pub const Index = Document.Node.Index;
 

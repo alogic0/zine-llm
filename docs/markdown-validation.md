@@ -5,6 +5,18 @@ concurrency, robustness, workflow, and release gates. Run local commands from
 the repository root through `build.sh` so they use the pinned Zig compiler.
 Normal local validation builds and tests only the current host architecture.
 
+The low-level syntax parser has its own gates in the sibling
+`zig-markdown-parser` repository:
+
+```sh
+./build.sh test
+./build.sh test-modes
+```
+
+Run those commands from that repository when changing parser internals. Zine's
+focused Markdown gate also runs the parser package tests through the dependency
+graph, then validates its local AST facade and SuperMD semantics.
+
 ## Performance and memory
 
 ```sh

@@ -13,9 +13,9 @@ const html = superhtml.html;
 const scripty = @import("scripty");
 const ScriptyVM = scripty.VM(supermd.Value);
 const SyntaxAst = @import("Ast.zig");
-const Document = @import("Document.zig");
-const Parser = @import("Parser.zig");
-const Source = @import("Source.zig");
+const markdown_parser = @import("markdown_parser");
+const Parser = markdown_parser.Parser;
+const Source = markdown_parser.Source;
 
 pub const Markdown = SyntaxAst.Contract(supermd.Directive);
 pub const Node = Markdown.Node;
