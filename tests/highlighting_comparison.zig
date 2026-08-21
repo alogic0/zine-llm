@@ -370,6 +370,27 @@ test "native HCL recovery remains compared with Tree-sitter" {
     }
 }
 
+test "native Make recovery remains compared with Tree-sitter" {
+    const cases = [_]Case{
+        .{ .source = "include config.mk\nCC := cc\nall: build\n\t$(CC) -o app main.c <&>\n", .native_scopes = &.{ .keyword, .property, .label, .variable, .operator, .embedded }, .tree_captures = &.{} },
+        .{ .source = "VALUE = \"unterminated\\q<&>\nnext: dep\n", .native_scopes = &.{ .property, .string, .escape, .label, .operator }, .tree_captures = &.{} },
+        .{ .source = "target: dep\n\t@echo $(VALUE) <&>\n", .native_scopes = &.{ .label, .operator, .embedded, .variable }, .tree_captures = &.{} },
+    };
+    try compareLanguage("make", cases[0..]);
+}
+
+fn compareLanguage(language: []const u8, cases: []const Case) !void {
+    var query_cache = try syntax.QueryCache.create(std.testing.io, std.testing.allocator, .{});
+    defer query_cache.deinit();
+    for (cases, 0..) |case, index| {
+        try expectNativeScopes(language, case.source, case.native_scopes);
+        const tree = try createTree(language, case.source, query_cache);
+        defer tree.destroy();
+        const capture_count = try expectTreeCaptureRangesValid(tree, case.source.len);
+        if (index == 0) try std.testing.expect(capture_count > 0);
+    }
+}
+
 fn expectNativeScopes(
     language: []const u8,
     source: []const u8,
@@ -387,6 +408,8 @@ fn expectNativeScopes(
         native.languages.yaml.backend
     else if (std.mem.eql(u8, language, "hcl"))
         native.languages.hcl.backend
+    else if (std.mem.eql(u8, language, "make"))
+        native.languages.make.backend
     else if (std.mem.eql(u8, language, "toml"))
         native.languages.toml.backend
     else if (std.mem.eql(u8, language, "dockerfile"))

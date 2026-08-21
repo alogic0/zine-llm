@@ -363,6 +363,30 @@ text = <<-EOF
   unfinished <&>
 ```
 
+# [Make Code]($section.id('make'))
+```make
+include config.mk
+CC := cc
+MESSAGE = "hello\n<&>"
+
+all: build
+	$(CC) -o app main.c
+```
+
+Malformed:
+
+```make
+VALUE = "unterminated\q<&>
+next: dep
+```
+
+Incomplete recipe:
+
+```make
+target: dep
+	@echo $(VALUE) <&>
+```
+
 # [Code Directive]($section.id('code-directive'))
 [Native code directive]($code.siteAsset('native-snippet.zig').language('zig'))
 

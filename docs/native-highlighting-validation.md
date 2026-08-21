@@ -15,6 +15,7 @@ Zine routes these exact canonical language names through native backends:
 - `hcl`;
 - `json`;
 - `javascript`;
+- `make`;
 - `rust`;
 - `zig`;
 - `ziggy`;
@@ -79,7 +80,7 @@ The `native-only` and `off` builds do not import `flow-syntax` or `treez`.
 Zine now links libc explicitly because its Linux watcher uses libc independently
 of Tree-sitter; this also restores the legacy `-Dhighlight=false` build.
 
-The rendering snapshot covers fenced blocks for all twenty-two native languages,
+The rendering snapshot covers fenced blocks for all twenty-three native languages,
 including bounded Bash and Rust scanners, Markdown structural scopes and
 escaped raw HTML, and HTML-sensitive source bytes. JSON additionally covers
 complete, malformed, and incomplete fences, imported source through
@@ -144,6 +145,10 @@ HCL comparison covers blocks, attributes, primitive types and values,
 functions, traversals, quoted template introducers, line-bounded malformed
 strings, and incomplete heredocs. Expression evaluation and template parsing
 remain outside the lexical backend.
+
+Make comparison covers directives, assignments, targets, variables, strings,
+and tab-prefixed recipes. Recipe bodies remain embedded text rather than being
+interpreted as shell.
 
 ## First-spike comparison
 

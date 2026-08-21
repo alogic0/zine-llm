@@ -18,6 +18,7 @@ pub fn backendFor(name: []const u8) ?core.Backend {
     if (std.mem.eql(u8, name, "javascript") or std.mem.eql(u8, name, "js")) {
         return core.languages.javascript.backend;
     }
+    if (std.mem.eql(u8, name, "make")) return core.languages.make.backend;
     if (std.mem.eql(u8, name, "python")) return core.languages.python.backend;
     if (std.mem.eql(u8, name, "rust")) return core.languages.rust.backend;
     if (std.mem.eql(u8, name, "toml")) return core.languages.toml.backend;
@@ -70,6 +71,7 @@ test "only completed canonical languages use native backends" {
         "hcl",
         "json",
         "javascript",
+        "make",
         "rust",
         "toml",
         "typescript",
