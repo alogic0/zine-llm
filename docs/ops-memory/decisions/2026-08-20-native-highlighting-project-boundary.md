@@ -64,6 +64,8 @@ concerns and can benefit consumers other than Zine.
 - Existing Zine integration points: `src/highlight.zig`, `src/worker.zig`,
   `build.zig`, and `build.zig.zon`.
 - Initial package verification: `./build.sh test` from the package root.
+- The completed package is published and Zine pins its exact Git commit and
+  Zig package hash in `build.zig.zon`.
 - The integration routes eighty-eight canonical languages natively. Markdown uses
   the independent `zig-markdown-parser` package; Bash and Rust use bounded
   package-owned lexical scanners; JSON uses a source-offset scanner checked

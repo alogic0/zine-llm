@@ -1,9 +1,9 @@
 # Native Highlighting Integration Validation
 
 This document records Zine's `zig-native-syntax` integration contract, the
-Tree-sitter removal audit, and historical comparison measurements. The local
-path dependency remains branch-local integration policy, and the measurements
-are not portable performance thresholds.
+Tree-sitter removal audit, and historical comparison measurements. Zine uses a
+commit-pinned Git dependency; the measurements are not portable performance
+thresholds.
 
 ## Integration contract
 
